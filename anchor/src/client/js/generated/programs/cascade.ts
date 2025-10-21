@@ -13,13 +13,49 @@ import {
   type Address,
   type ReadonlyUint8Array,
 } from 'gill';
-import { type ParsedGreetInstruction } from '../instructions';
+import {
+  type ParsedCloseStreamInstruction,
+  type ParsedCreateStreamInstruction,
+  type ParsedEmployerEmergencyWithdrawInstruction,
+  type ParsedRefreshActivityInstruction,
+  type ParsedTopUpStreamInstruction,
+  type ParsedWithdrawInstruction,
+} from '../instructions';
 
 export const CASCADE_PROGRAM_ADDRESS =
   '6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ' as Address<'6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ'>;
 
+export enum CascadeAccount {
+  PaymentStream,
+}
+
+export function identifyCascadeAccount(
+  account: { data: ReadonlyUint8Array } | ReadonlyUint8Array
+): CascadeAccount {
+  const data = 'data' in account ? account.data : account;
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([124, 85, 193, 22, 93, 1, 143, 75])
+      ),
+      0
+    )
+  ) {
+    return CascadeAccount.PaymentStream;
+  }
+  throw new Error(
+    'The provided account could not be identified as a cascade account.'
+  );
+}
+
 export enum CascadeInstruction {
-  Greet,
+  CloseStream,
+  CreateStream,
+  EmployerEmergencyWithdraw,
+  RefreshActivity,
+  TopUpStream,
+  Withdraw,
 }
 
 export function identifyCascadeInstruction(
@@ -30,12 +66,67 @@ export function identifyCascadeInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([203, 194, 3, 150, 228, 58, 181, 62])
+        new Uint8Array([255, 241, 196, 212, 95, 93, 160, 89])
       ),
       0
     )
   ) {
-    return CascadeInstruction.Greet;
+    return CascadeInstruction.CloseStream;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([71, 188, 111, 127, 108, 40, 229, 158])
+      ),
+      0
+    )
+  ) {
+    return CascadeInstruction.CreateStream;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([53, 243, 175, 174, 220, 22, 246, 211])
+      ),
+      0
+    )
+  ) {
+    return CascadeInstruction.EmployerEmergencyWithdraw;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([55, 172, 115, 3, 200, 89, 189, 250])
+      ),
+      0
+    )
+  ) {
+    return CascadeInstruction.RefreshActivity;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([12, 244, 26, 215, 160, 204, 9, 151])
+      ),
+      0
+    )
+  ) {
+    return CascadeInstruction.TopUpStream;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([183, 18, 70, 156, 148, 109, 161, 34])
+      ),
+      0
+    )
+  ) {
+    return CascadeInstruction.Withdraw;
   }
   throw new Error(
     'The provided instruction could not be identified as a cascade instruction.'
@@ -44,6 +135,22 @@ export function identifyCascadeInstruction(
 
 export type ParsedCascadeInstruction<
   TProgram extends string = '6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ',
-> = {
-  instructionType: CascadeInstruction.Greet;
-} & ParsedGreetInstruction<TProgram>;
+> =
+  | ({
+      instructionType: CascadeInstruction.CloseStream;
+    } & ParsedCloseStreamInstruction<TProgram>)
+  | ({
+      instructionType: CascadeInstruction.CreateStream;
+    } & ParsedCreateStreamInstruction<TProgram>)
+  | ({
+      instructionType: CascadeInstruction.EmployerEmergencyWithdraw;
+    } & ParsedEmployerEmergencyWithdrawInstruction<TProgram>)
+  | ({
+      instructionType: CascadeInstruction.RefreshActivity;
+    } & ParsedRefreshActivityInstruction<TProgram>)
+  | ({
+      instructionType: CascadeInstruction.TopUpStream;
+    } & ParsedTopUpStreamInstruction<TProgram>)
+  | ({
+      instructionType: CascadeInstruction.Withdraw;
+    } & ParsedWithdrawInstruction<TProgram>);

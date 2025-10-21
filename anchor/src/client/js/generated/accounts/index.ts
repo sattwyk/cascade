@@ -6,9 +6,4 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from './closeStream';
-export * from './createStream';
-export * from './employerEmergencyWithdraw';
-export * from './refreshActivity';
-export * from './topUpStream';
-export * from './withdraw';
+export * from './paymentStream';
