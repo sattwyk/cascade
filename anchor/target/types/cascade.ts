@@ -534,7 +534,7 @@ export type Cascade = {
             "type": "pubkey"
           },
           {
-            "name": "hoursElapsed",
+            "name": "hourlyRate",
             "type": "u64"
           },
           {
