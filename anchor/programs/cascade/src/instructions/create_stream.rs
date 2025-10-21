@@ -14,7 +14,7 @@ pub fn create_stream(
     stream.employee = ctx.accounts.employee.key();
     stream.mint = ctx.accounts.mint.key();
     stream.vault = ctx.accounts.vault.key();
-    stream.hours_elapsed = hourly_rate;
+    stream.hourly_rate = hourly_rate;
     stream.total_deposited = total_deposit;
     stream.withdrawn_amount = 0;
     stream.created_at = clock.unix_timestamp;

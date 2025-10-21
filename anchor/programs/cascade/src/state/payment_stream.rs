@@ -7,7 +7,7 @@ pub struct PaymentStream {
     pub employee: Pubkey,
     pub mint: Pubkey,
     pub vault: Pubkey,
-    pub hours_elapsed: u64,
+    pub hourly_rate: u64,
     pub total_deposited: u64,
     pub withdrawn_amount: u64,
     pub created_at: i64,

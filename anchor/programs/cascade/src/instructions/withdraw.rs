@@ -14,12 +14,14 @@ pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
     );
 
     // Calculate total earned based on time elapsed
-    let hours_elapsed = clock
+    let seconds_elapsed = clock
         .unix_timestamp
         .checked_sub(stream.created_at)
         .ok_or(ErrorCode::InvalidTimestamp)?;
+
+    let hours_elapsed = seconds_elapsed / 3600;
     let total_earned_uncapped = (hours_elapsed as u64)
-        .checked_mul(stream.hours_elapsed)
+        .checked_mul(stream.hourly_rate)
         .ok_or(ErrorCode::MathOverflow)?;
 
     // Cap earned amount at total deposited
