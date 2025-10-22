@@ -54,6 +54,7 @@
     "@types/node": "^24.6.2",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
+    "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "^9.37.0",
     "eslint-config-next": "16.0.0",
     "esrun": "^3.2.30",
