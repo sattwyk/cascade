@@ -1,22 +1,38 @@
 import { AppAlert } from '@/components/app-alert';
 import { useSolana } from '@/components/solana/use-solana';
-import { useGetProgramAccountQuery } from '@/features/cascade/data-access/use-get-program-account-query';
 
-export function CascadeUiProgram() {
-  const { cluster } = useSolana();
-  const query = useGetProgramAccountQuery();
+import { usePaymentStreamQuery } from '../data-access/use-payment-stream-query';
 
-  if (query.isLoading) {
+export function CascadeUiProgram({ employee }: { employee?: string } = {}) {
+  const { account, cluster } = useSolana();
+  const employer = account?.address;
+  const streamQuery = usePaymentStreamQuery({ employer, employee });
+
+  if (!employer) {
+    return null;
+  }
+
+  if (!employee) {
+    return <AppAlert>Select an employee address to load their payment stream.</AppAlert>;
+  }
+
+  if (streamQuery.isLoading) {
     return <span className="loading loading-spinner loading-lg"></span>;
   }
-  if (!query.data?.value) {
+
+  const streamAccount = streamQuery.data;
+
+  if (!streamAccount || !('exists' in streamAccount) || !streamAccount.exists) {
     return (
-      <AppAlert>Program account not found on {cluster.label}. Be sure to deploy your program and try again.</AppAlert>
+      <AppAlert>
+        Stream account not found on {cluster.label}. Create a stream or verify the provided addresses.
+      </AppAlert>
     );
   }
+
   return (
-    <div className={'space-y-6'}>
-      <pre>{JSON.stringify(query.data.value.data, null, 2)}</pre>
+    <div className="space-y-6">
+      <pre>{JSON.stringify(streamAccount.data, null, 2)}</pre>
     </div>
   );
 }
