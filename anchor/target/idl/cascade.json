@@ -528,7 +528,7 @@
             "type": "pubkey"
           },
           {
-            "name": "hours_elapsed",
+            "name": "hourly_rate",
             "type": "u64"
           },
           {

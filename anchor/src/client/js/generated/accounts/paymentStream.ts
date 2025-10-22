@@ -59,7 +59,7 @@ export type PaymentStream = {
   employee: Address;
   mint: Address;
   vault: Address;
-  hoursElapsed: bigint;
+  hourlyRate: bigint;
   totalDeposited: bigint;
   withdrawnAmount: bigint;
   createdAt: bigint;
@@ -73,7 +73,7 @@ export type PaymentStreamArgs = {
   employee: Address;
   mint: Address;
   vault: Address;
-  hoursElapsed: number | bigint;
+  hourlyRate: number | bigint;
   totalDeposited: number | bigint;
   withdrawnAmount: number | bigint;
   createdAt: number | bigint;
@@ -90,7 +90,7 @@ export function getPaymentStreamEncoder(): FixedSizeEncoder<PaymentStreamArgs> {
       ['employee', getAddressEncoder()],
       ['mint', getAddressEncoder()],
       ['vault', getAddressEncoder()],
-      ['hoursElapsed', getU64Encoder()],
+      ['hourlyRate', getU64Encoder()],
       ['totalDeposited', getU64Encoder()],
       ['withdrawnAmount', getU64Encoder()],
       ['createdAt', getI64Encoder()],
@@ -109,7 +109,7 @@ export function getPaymentStreamDecoder(): FixedSizeDecoder<PaymentStream> {
     ['employee', getAddressDecoder()],
     ['mint', getAddressDecoder()],
     ['vault', getAddressDecoder()],
-    ['hoursElapsed', getU64Decoder()],
+    ['hourlyRate', getU64Decoder()],
     ['totalDeposited', getU64Decoder()],
     ['withdrawnAmount', getU64Decoder()],
     ['createdAt', getI64Decoder()],
