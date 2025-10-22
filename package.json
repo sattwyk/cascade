@@ -11,7 +11,7 @@
     "dev": "next dev --turbopack",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "next lint",
+    "lint": "eslint",
     "setup": "pnpm run anchor keys sync && pnpm run codama:js",
     "start": "next start",
     "prepare": "husky"
