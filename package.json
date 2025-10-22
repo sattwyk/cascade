@@ -13,7 +13,8 @@
     "format:check": "prettier --check .",
     "lint": "next lint",
     "setup": "pnpm run anchor keys sync && pnpm run codama:js",
-    "start": "next start"
+    "start": "next start",
+    "prepare": "husky"
   },
   "version": "0.0.0",
   "private": true,
@@ -58,6 +59,7 @@
     "eslint": "^9.37.0",
     "eslint-config-next": "16.0.0",
     "esrun": "^3.2.30",
+    "husky": "^9.1.7",
     "prettier": "^3.6.2",
     "tailwindcss": "^4.1.14",
     "typescript": "^5.9.3",
