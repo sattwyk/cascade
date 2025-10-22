@@ -1,6 +1,7 @@
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { ReactNode } from 'react'
+import { ReactNode } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 export function AppModal({
   children,
@@ -9,11 +10,11 @@ export function AppModal({
   submitDisabled,
   submitLabel,
 }: {
-  children: ReactNode
-  title: string
-  submit?: () => void
-  submitDisabled?: boolean
-  submitLabel?: string
+  children: ReactNode;
+  title: string;
+  submit?: () => void;
+  submitDisabled?: boolean;
+  submitLabel?: string;
 }) {
   return (
     <Dialog modal={false}>
@@ -34,5 +35,5 @@ export function AppModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

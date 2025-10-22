@@ -1,6 +1,7 @@
-'use client'
-import CascadeFeature from '@/features/cascade/cascade-feature'
+'use client';
+
+import CascadeFeature from '@/features/cascade/cascade-feature';
 
 export default function Page() {
-  return <CascadeFeature />
+  return <CascadeFeature />;
 }

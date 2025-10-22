@@ -1,4 +1,4 @@
-import { GILL_EXTERNAL_MODULE_MAP } from 'gill'
+import { GILL_EXTERNAL_MODULE_MAP } from 'gill';
 
 export function createCodamaConfig({ idl, clientJs, dependencyMap = GILL_EXTERNAL_MODULE_MAP }) {
   return {
@@ -9,5 +9,5 @@ export function createCodamaConfig({ idl, clientJs, dependencyMap = GILL_EXTERNA
         from: '@codama/renderers-js',
       },
     },
-  }
+  };
 }

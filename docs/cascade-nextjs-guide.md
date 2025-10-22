@@ -52,8 +52,8 @@ This document explains how to extend the Cascade starter dApp under `src/` so it
 Each mutation should:
 
 ```ts
-const signer = useWalletUiSigner({ account })
-const signAndSend = useWalletUiSignAndSend()
+const signer = useWalletUiSigner({ account });
+const signAndSend = useWalletUiSignAndSend();
 
 return useMutation({
   mutationFn: async (input) => {
@@ -64,12 +64,12 @@ return useMutation({
       employerTokenAccount: input.employerTokenAccount,
       hourlyRate: input.hourlyRate,
       totalDeposit: input.totalDeposit,
-    })
-    return await signAndSend(instruction, signer)
+    });
+    return await signAndSend(instruction, signer);
   },
   onSuccess: (signature) => toastTx(signature, 'Stream created'),
   onError: (error) => toast.error(error instanceof Error ? error.message : 'Create stream failed'),
-})
+});
 ```
 
 Use the synchronous `get<Name>Instruction` helpers when you already have the PDA addresses; reach for the `Async` variant when you want Gill to derive them automatically.
@@ -79,24 +79,25 @@ Use the synchronous `get<Name>Instruction` helpers when you already have the PDA
 Create `src/features/cascade/data-access/derive-cascade-pdas.ts` to ensure every hook derives PDAs consistently:
 
 ```ts
-import { getProgramDerivedAddress, getBytesEncoder, getAddressEncoder } from 'gill'
-import { CASCADE_PROGRAM_ADDRESS } from '@project/anchor'
+import { getAddressEncoder, getBytesEncoder, getProgramDerivedAddress } from 'gill';
 
-const streamSeed = getBytesEncoder().encode(new Uint8Array([115, 116, 114, 101, 97, 109])) // "stream"
-const vaultSeed = getBytesEncoder().encode(new Uint8Array([118, 97, 117, 108, 116])) // "vault"
+import { CASCADE_PROGRAM_ADDRESS } from '@project/anchor';
+
+const streamSeed = getBytesEncoder().encode(new Uint8Array([115, 116, 114, 101, 97, 109])); // "stream"
+const vaultSeed = getBytesEncoder().encode(new Uint8Array([118, 97, 117, 108, 116])); // "vault"
 
 export async function derivePaymentStream(employer: string, employee: string) {
   return getProgramDerivedAddress({
     programAddress: CASCADE_PROGRAM_ADDRESS,
     seeds: [streamSeed, getAddressEncoder().encode(employer), getAddressEncoder().encode(employee)],
-  })
+  });
 }
 
 export async function deriveVault(stream: string) {
   return getProgramDerivedAddress({
     programAddress: CASCADE_PROGRAM_ADDRESS,
     seeds: [vaultSeed, getAddressEncoder().encode(stream)],
-  })
+  });
 }
 ```
 
@@ -105,22 +106,25 @@ export async function deriveVault(stream: string) {
 Replace `use-get-program-account-query.ts` with `use-payment-stream-query.ts`:
 
 ```ts
-import { fetchMaybePaymentStream } from '@project/anchor'
-import { useQuery } from '@tanstack/react-query'
-import { useSolana } from '@/components/solana/use-solana'
-import { derivePaymentStream } from './derive-cascade-pdas'
+import { useQuery } from '@tanstack/react-query';
+
+import { fetchMaybePaymentStream } from '@project/anchor';
+
+import { useSolana } from '@/components/solana/use-solana';
+
+import { derivePaymentStream } from './derive-cascade-pdas';
 
 export function usePaymentStreamQuery({ employer, employee }: { employer?: string; employee?: string }) {
-  const { client, cluster } = useSolana()
+  const { client, cluster } = useSolana();
 
   return useQuery({
     enabled: !!employer && !!employee,
     queryKey: ['payment-stream', { cluster, employer, employee }],
     queryFn: async () => {
-      const [streamAddress] = await derivePaymentStream(employer!, employee!)
-      return fetchMaybePaymentStream(client.rpc, streamAddress)
+      const [streamAddress] = await derivePaymentStream(employer!, employee!);
+      return fetchMaybePaymentStream(client.rpc, streamAddress);
     },
-  })
+  });
 }
 ```
 

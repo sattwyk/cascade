@@ -1,12 +1,13 @@
-import { ReactNode } from 'react'
-import { useSolana } from '@/components/solana/use-solana'
-import { WalletDropdown } from '@/components/wallet-dropdown'
+import { ReactNode } from 'react';
+
+import { useSolana } from '@/components/solana/use-solana';
+import { WalletDropdown } from '@/components/wallet-dropdown';
 
 export default function AccountFeatureIndex({ redirect }: { redirect: (path: string) => ReactNode }) {
-  const { account } = useSolana()
+  const { account } = useSolana();
 
   if (account) {
-    return redirect(`/account/${account.address.toString()}`)
+    return redirect(`/account/${account.address.toString()}`);
   }
 
   return (
@@ -15,5 +16,5 @@ export default function AccountFeatureIndex({ redirect }: { redirect: (path: str
         <WalletDropdown />
       </div>
     </div>
-  )
+  );
 }

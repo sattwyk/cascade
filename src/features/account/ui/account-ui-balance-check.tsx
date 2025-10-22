@@ -1,17 +1,19 @@
-import { Address } from 'gill'
-import { useSolana } from '@/components/solana/use-solana'
-import { AppAlert } from '@/components/app-alert'
-import { Button } from '@/components/ui/button'
-import { useRequestAirdropMutation } from '../data-access/use-request-airdrop-mutation'
-import { useGetBalanceQuery } from '../data-access/use-get-balance-query'
+import { Address } from 'gill';
+
+import { AppAlert } from '@/components/app-alert';
+import { useSolana } from '@/components/solana/use-solana';
+import { Button } from '@/components/ui/button';
+
+import { useGetBalanceQuery } from '../data-access/use-get-balance-query';
+import { useRequestAirdropMutation } from '../data-access/use-request-airdrop-mutation';
 
 export function AccountUiBalanceCheck({ address }: { address: Address }) {
-  const { cluster } = useSolana()
-  const mutation = useRequestAirdropMutation({ address })
-  const query = useGetBalanceQuery({ address })
+  const { cluster } = useSolana();
+  const mutation = useRequestAirdropMutation({ address });
+  const query = useGetBalanceQuery({ address });
 
   if (query.isLoading) {
-    return null
+    return null;
   }
   if (query.isError || !query.data?.value) {
     return (
@@ -24,7 +26,7 @@ export function AccountUiBalanceCheck({ address }: { address: Address }) {
       >
         You are connected to <strong>{cluster.label}</strong> but your account is not found on this cluster.
       </AppAlert>
-    )
+    );
   }
-  return null
+  return null;
 }

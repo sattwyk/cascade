@@ -1,5 +1,5 @@
-import { Lamports, lamportsToSol } from 'gill'
+import { Lamports, lamportsToSol } from 'gill';
 
 export function AccountUiBalanceSol({ balance }: { balance: Lamports }) {
-  return <span>{lamportsToSol(balance)}</span>
+  return <span>{lamportsToSol(balance)}</span>;
 }

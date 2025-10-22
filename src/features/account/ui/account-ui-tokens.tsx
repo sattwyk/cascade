@@ -1,21 +1,24 @@
-import { Address } from 'gill'
-import { RefreshCw } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import { Button } from '@/components/ui/button'
-import { ellipsify } from '@/lib/utils'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { AppExplorerLink } from '@/components/app-explorer-link'
-import { useGetTokenAccountsQuery } from '../data-access/use-get-token-accounts-query'
+import { useMemo, useState } from 'react';
+
+import { useQueryClient } from '@tanstack/react-query';
+import { Address } from 'gill';
+import { RefreshCw } from 'lucide-react';
+
+import { AppExplorerLink } from '@/components/app-explorer-link';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ellipsify } from '@/lib/utils';
+
+import { useGetTokenAccountsQuery } from '../data-access/use-get-token-accounts-query';
 
 export function AccountUiTokens({ address }: { address: Address }) {
-  const [showAll, setShowAll] = useState(false)
-  const query = useGetTokenAccountsQuery({ address })
-  const client = useQueryClient()
+  const [showAll, setShowAll] = useState(false);
+  const query = useGetTokenAccountsQuery({ address });
+  const client = useQueryClient();
   const items = useMemo(() => {
-    if (showAll) return query.data
-    return query.data?.slice(0, 5)
-  }, [query.data, showAll])
+    if (showAll) return query.data;
+    return query.data?.slice(0, 5);
+  }, [query.data, showAll]);
 
   return (
     <div className="space-y-2">
@@ -29,10 +32,10 @@ export function AccountUiTokens({ address }: { address: Address }) {
               <Button
                 variant="outline"
                 onClick={async () => {
-                  await query.refetch()
+                  await query.refetch();
                   await client.invalidateQueries({
                     queryKey: ['getTokenAccountBalance'],
-                  })
+                  });
                 }}
               >
                 <RefreshCw size={16} />
@@ -96,5 +99,5 @@ export function AccountUiTokens({ address }: { address: Address }) {
         </div>
       )}
     </div>
-  )
+  );
 }

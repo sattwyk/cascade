@@ -1,20 +1,23 @@
-import { Address } from 'gill'
-import { RefreshCw } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { ellipsify } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { AppExplorerLink } from '@/components/app-explorer-link'
-import { useGetSignaturesQuery } from '../data-access/use-get-signatures-query'
+import { useMemo, useState } from 'react';
+
+import { Address } from 'gill';
+import { RefreshCw } from 'lucide-react';
+
+import { AppExplorerLink } from '@/components/app-explorer-link';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ellipsify } from '@/lib/utils';
+
+import { useGetSignaturesQuery } from '../data-access/use-get-signatures-query';
 
 export function AccountUiTransactions({ address }: { address: Address }) {
-  const query = useGetSignaturesQuery({ address })
-  const [showAll, setShowAll] = useState(false)
+  const query = useGetSignaturesQuery({ address });
+  const [showAll, setShowAll] = useState(false);
 
   const items = useMemo(() => {
-    if (showAll) return query.data
-    return query.data?.slice(0, 5)
-  }, [query.data, showAll])
+    if (showAll) return query.data;
+    return query.data?.slice(0, 5);
+  }, [query.data, showAll]);
 
   return (
     <div className="space-y-2">
@@ -51,7 +54,7 @@ export function AccountUiTransactions({ address }: { address: Address }) {
                     <TableHead className="font-mono">
                       <AppExplorerLink transaction={item.signature} label={ellipsify(item.signature, 8)} />
                     </TableHead>
-                    <TableCell className="font-mono text-right">
+                    <TableCell className="text-right font-mono">
                       <AppExplorerLink block={item.slot.toString()} label={item.slot.toString()} />
                     </TableCell>
                     <TableCell>{new Date(Number(item.blockTime ?? '0') * 1000).toISOString()}</TableCell>
@@ -79,5 +82,5 @@ export function AccountUiTransactions({ address }: { address: Address }) {
         </div>
       )}
     </div>
-  )
+  );
 }

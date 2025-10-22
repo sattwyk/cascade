@@ -1,9 +1,11 @@
-'use client'
+'use client';
 
-import { ThemeProvider } from '@/components/theme-provider'
-import { ReactQueryProvider } from './react-query-provider'
-import { SolanaProvider } from '@/components/solana/solana-provider'
-import React from 'react'
+import React from 'react';
+
+import { SolanaProvider } from '@/components/solana/solana-provider';
+import { ThemeProvider } from '@/components/theme-provider';
+
+import { ReactQueryProvider } from './react-query-provider';
 
 export function AppProviders({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
@@ -12,5 +14,5 @@ export function AppProviders({ children }: Readonly<{ children: React.ReactNode 
         <SolanaProvider>{children}</SolanaProvider>
       </ThemeProvider>
     </ReactQueryProvider>
-  )
+  );
 }

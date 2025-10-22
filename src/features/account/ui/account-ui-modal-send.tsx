@@ -1,18 +1,21 @@
-import { address, Address } from 'gill'
-import { useState } from 'react'
-import { UiWalletAccount } from '@wallet-ui/react'
-import { AppModal } from '@/components/app-modal'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { useTransferSolMutation } from '../data-access/use-transfer-sol-mutation'
+import { useState } from 'react';
+
+import { UiWalletAccount } from '@wallet-ui/react';
+import { Address, address } from 'gill';
+
+import { AppModal } from '@/components/app-modal';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+import { useTransferSolMutation } from '../data-access/use-transfer-sol-mutation';
 
 export function AccountUiModalSend(props: { account: UiWalletAccount; address: Address }) {
-  const mutation = useTransferSolMutation({ account: props.account, address: props.address })
-  const [destination, setDestination] = useState('')
-  const [amount, setAmount] = useState('1')
+  const mutation = useTransferSolMutation({ account: props.account, address: props.address });
+  const [destination, setDestination] = useState('');
+  const [amount, setAmount] = useState('1');
 
   if (!props.address) {
-    return <div>Wallet not connected</div>
+    return <div>Wallet not connected</div>;
   }
 
   return (
@@ -24,7 +27,7 @@ export function AccountUiModalSend(props: { account: UiWalletAccount; address: A
         await mutation.mutateAsync({
           destination: address(destination),
           amount: parseFloat(amount),
-        })
+        });
       }}
     >
       <Label htmlFor="destination">Destination</Label>
@@ -48,5 +51,5 @@ export function AccountUiModalSend(props: { account: UiWalletAccount; address: A
         value={amount}
       />
     </AppModal>
-  )
+  );
 }

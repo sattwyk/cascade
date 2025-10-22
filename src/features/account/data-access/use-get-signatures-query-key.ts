@@ -1,8 +1,9 @@
-import type { Address } from 'gill'
-import { useSolana } from '@/components/solana/use-solana'
+import type { Address } from 'gill';
+
+import { useSolana } from '@/components/solana/use-solana';
 
 export function useGetSignaturesQueryKey({ address }: { address: Address }) {
-  const { cluster } = useSolana()
+  const { cluster } = useSolana();
 
-  return ['get-signatures', { cluster, address }]
+  return ['get-signatures', { cluster, address }];
 }

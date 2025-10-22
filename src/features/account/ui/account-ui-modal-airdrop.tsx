@@ -1,13 +1,16 @@
-import { Address } from 'gill'
-import { useState } from 'react'
-import { AppModal } from '@/components/app-modal'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { useRequestAirdropMutation } from '../data-access/use-request-airdrop-mutation'
+import { useState } from 'react';
+
+import { Address } from 'gill';
+
+import { AppModal } from '@/components/app-modal';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+import { useRequestAirdropMutation } from '../data-access/use-request-airdrop-mutation';
 
 export function AccountUiModalAirdrop({ address }: { address: Address }) {
-  const mutation = useRequestAirdropMutation({ address })
-  const [amount, setAmount] = useState('2')
+  const mutation = useRequestAirdropMutation({ address });
+  const [amount, setAmount] = useState('2');
 
   return (
     <AppModal
@@ -28,5 +31,5 @@ export function AccountUiModalAirdrop({ address }: { address: Address }) {
         value={amount}
       />
     </AppModal>
-  )
+  );
 }

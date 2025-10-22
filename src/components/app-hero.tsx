@@ -1,13 +1,13 @@
-import React from 'react'
+import React from 'react';
 
 export function AppHero({
   children,
   subtitle,
   title,
 }: {
-  children?: React.ReactNode
-  subtitle?: React.ReactNode
-  title?: React.ReactNode
+  children?: React.ReactNode;
+  subtitle?: React.ReactNode;
+  title?: React.ReactNode;
 }) {
   return (
     <div className="flex flex-row justify-center py-[16px] md:py-[64px]">
@@ -19,5 +19,5 @@ export function AppHero({
         </div>
       </div>
     </div>
-  )
+  );
 }

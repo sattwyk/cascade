@@ -1,46 +1,48 @@
-'use client'
+'use client';
 
+import * as React from 'react';
+
+import { ellipsify, UiWallet, useWalletUi, useWalletUiWallet } from '@wallet-ui/react';
+
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import * as React from 'react'
-import { ellipsify, UiWallet, useWalletUi, useWalletUiWallet } from '@wallet-ui/react'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { cn } from '@/lib/utils'
+} from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
 function WalletAvatar({ className, wallet }: { className?: string; wallet: UiWallet }) {
   return (
-    <Avatar className={cn('rounded-md h-6 w-6', className)}>
+    <Avatar className={cn('h-6 w-6 rounded-md', className)}>
       <AvatarImage src={wallet.icon} alt={wallet.name} />
       <AvatarFallback>{wallet.name[0]}</AvatarFallback>
     </Avatar>
-  )
+  );
 }
 
 function WalletDropdownItem({ wallet }: { wallet: UiWallet }) {
-  const { connect } = useWalletUiWallet({ wallet })
+  const { connect } = useWalletUiWallet({ wallet });
 
   return (
     <DropdownMenuItem
       className="cursor-pointer"
       key={wallet.name}
       onClick={() => {
-        return connect()
+        return connect();
       }}
     >
       {wallet.icon ? <WalletAvatar wallet={wallet} /> : null}
       {wallet.name}
     </DropdownMenuItem>
-  )
+  );
 }
 
 function WalletDropdown() {
-  const { account, connected, copy, disconnect, wallet, wallets } = useWalletUi()
+  const { account, connected, copy, disconnect, wallet, wallets } = useWalletUi();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -72,7 +74,7 @@ function WalletDropdown() {
         )}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }
 
-export { WalletDropdown }
+export { WalletDropdown };

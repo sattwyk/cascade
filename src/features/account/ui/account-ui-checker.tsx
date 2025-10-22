@@ -1,11 +1,13 @@
-import { useSolana } from '@/components/solana/use-solana'
-import { address } from 'gill'
-import { AccountUiBalanceCheck } from './account-ui-balance-check'
+import { address } from 'gill';
+
+import { useSolana } from '@/components/solana/use-solana';
+
+import { AccountUiBalanceCheck } from './account-ui-balance-check';
 
 export function AccountUiChecker() {
-  const { account } = useSolana()
+  const { account } = useSolana();
   if (!account) {
-    return null
+    return null;
   }
-  return <AccountUiBalanceCheck address={address(account.address)} />
+  return <AccountUiBalanceCheck address={address(account.address)} />;
 }

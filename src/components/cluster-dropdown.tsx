@@ -1,19 +1,21 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import { SolanaClusterId, useWalletUi, useWalletUiCluster } from '@wallet-ui/react'
-import { Button } from '@/components/ui/button'
+import * as React from 'react';
+
+import { SolanaClusterId, useWalletUi, useWalletUiCluster } from '@wallet-ui/react';
+
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@/components/ui/dropdown-menu';
 
 export function ClusterDropdown() {
-  const { cluster } = useWalletUi()
-  const { clusters, setCluster } = useWalletUiCluster()
+  const { cluster } = useWalletUi();
+  const { clusters, setCluster } = useWalletUiCluster();
 
   return (
     <DropdownMenu>
@@ -27,10 +29,10 @@ export function ClusterDropdown() {
               <DropdownMenuRadioItem key={cluster.id} value={cluster.id}>
                 {cluster.label}
               </DropdownMenuRadioItem>
-            )
+            );
           })}
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

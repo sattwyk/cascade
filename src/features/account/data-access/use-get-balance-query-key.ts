@@ -1,8 +1,9 @@
-import type { Address } from 'gill'
-import { useSolana } from '@/components/solana/use-solana'
+import type { Address } from 'gill';
+
+import { useSolana } from '@/components/solana/use-solana';
 
 export function useGetBalanceQueryKey({ address }: { address: Address }) {
-  const { cluster } = useSolana()
+  const { cluster } = useSolana();
 
-  return ['get-balance', { cluster, address }]
+  return ['get-balance', { cluster, address }];
 }

@@ -1,4 +1,4 @@
-import type { Address, SolanaClient } from 'gill'
+import type { Address, SolanaClient } from 'gill';
 
 export async function getTokenAccountsByOwner(
   rpc: SolanaClient['rpc'],
@@ -7,5 +7,5 @@ export async function getTokenAccountsByOwner(
   return await rpc
     .getTokenAccountsByOwner(address, { programId }, { commitment: 'confirmed', encoding: 'jsonParsed' })
     .send()
-    .then((res) => res.value ?? [])
+    .then((res) => res.value ?? []);
 }
