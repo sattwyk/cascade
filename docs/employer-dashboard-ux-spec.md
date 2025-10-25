@@ -23,10 +23,9 @@
 - Persist wallet status in the header via Wallet UI. If no wallet, prompt to connect immediately.
 - **Sidebar (left column):** Navigation rail with collapsible sections:
   - `Organization` (Overview, Activity Log, Audit Trail).
-  - `Streams` (All Streams, Active, Suspended, Closed, Drafts).
+  - `Streams` (All Streams, Drafts).
   - `Employees` (Directory, Invitations, Archived).
-  - `Tools` (Token Accounts, Templates, Reports).
-  - `Support` (Help, Contact, System Status).
+  - `Reports`
 - Sidebar states:
   - **Collapsed:** icon-only; expands on hover (desktop) or tap (mobile, overlays content).
   - **Expanded:** shows labels and active sub-route highlight.
@@ -198,11 +197,6 @@
 
 ### 9. Alerts & Notifications
 
-- Global alert center (right rail) aggregates:
-  - `Low runway` (less than 3 × hourly rate amount remaining).
-  - `Inactivity approaching` (25+ days) and `Inactivity breach` (30+ days).
-  - `Transaction failed` (mutation error stored in local state with metadata).
-- Each alert links to stream detail and clears automatically after user views or action resolves.
 - Use `toastTx` on success and `toast.error` on failure with human-friendly copy.
 - Notification states:
   - `Unread`: bold with dot indicator; persists until drawer opened.
