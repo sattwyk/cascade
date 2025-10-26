@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -98,9 +99,8 @@ export const LandingPage = () => {
           </div>
 
           <Button
-            variant="outline"
             size="lg"
-            className="flex items-center justify-center gap-2 rounded-full border-border/60 bg-background hover:bg-muted"
+            className="gap-2 rounded-full bg-gradient-to-r from-primary to-primary/80 shadow-md transition-all hover:scale-101 hover:shadow-lg"
             onClick={() => setIsWalletDrawerOpen(true)}
           >
             <Wallet className="h-4 w-4" />
@@ -109,14 +109,14 @@ export const LandingPage = () => {
         </div>
       </nav>
 
-      <section className="relative overflow-hidden pt-32 pb-20">
+      <section className="relative overflow-hidden px-4 pt-32 pb-32">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(45%_35%_at_50%_40%,hsl(var(--primary)/0.05),transparent)]" />
 
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto">
           <div className="mx-auto max-w-4xl text-center">
             <div
               className={cn(
-                'mb-6 transition-all delay-100 duration-500',
+                'mb-6 inline-block transition-all delay-100 duration-500',
                 mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
               )}
             >
@@ -128,44 +128,90 @@ export const LandingPage = () => {
 
             <h1
               className={cn(
-                'mb-6 text-5xl font-bold tracking-tight transition-all delay-200 duration-500 sm:text-6xl md:text-7xl',
+                'mb-6 text-5xl font-bold tracking-tight transition-all delay-200 duration-500 sm:text-6xl md:text-7xl lg:text-8xl',
                 mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
               )}
             >
               Stream payments
               <br />
-              <span className="bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                 hour by hour
               </span>
             </h1>
 
             <p
               className={cn(
-                'mb-10 text-lg text-muted-foreground transition-all delay-300 duration-500 sm:text-xl',
+                'mx-auto mb-10 max-w-2xl text-lg text-muted-foreground transition-all delay-300 duration-500 sm:text-xl',
                 mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
               )}
             >
-              Real-time payroll streaming on Solana. Pay employees by the hour with transparent,
-              <br className="hidden sm:block" />
-              on-chain settlement and zero friction.
+              Real-time payroll streaming on Solana. Pay employees by the hour with transparent, on-chain settlement and
+              zero friction.
             </p>
 
-            <Button
-              asChild
-              size="lg"
+            <div
               className={cn(
-                'group gap-2 rounded-full text-base transition-all duration-500 hover:scale-105',
+                'flex flex-col items-center justify-center gap-4 transition-all delay-[400ms] duration-500 sm:flex-row',
                 mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
               )}
-              style={{ transitionDelay: '400ms' }}
             >
-              <Link href="/dashboard">
-                Start Streaming
-                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </Button>
+              <Button
+                asChild
+                size="lg"
+                className="group gap-2 rounded-full bg-gradient-to-r from-primary to-primary/80 px-8 py-6 text-lg shadow-md transition-all duration-300 hover:scale-103 hover:shadow-lg"
+              >
+                <Link href="/dashboard">
+                  Start Paying
+                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </Link>
+              </Button>
+
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="group gap-2 rounded-full border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5 px-8 py-6 text-lg shadow-md transition-all duration-300 hover:scale-103 hover:from-primary/15 hover:to-primary/10 hover:shadow-lg"
+              >
+                <Link href="/">
+                  Join Your Organization
+                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+
+          <div
+            className={cn(
+              'group relative mx-auto mt-24 max-w-[90rem] transition-all delay-500 duration-1000',
+              mounted ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-12 scale-95 opacity-0',
+            )}
+          >
+            <div className="absolute -inset-4 -z-10 rounded-3xl bg-primary/10 blur-3xl transition-all duration-500 group-hover:bg-primary/25" />
+
+            <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-b from-card/80 to-card/40 shadow-2xl backdrop-blur-xl transition-all duration-500 group-hover:border-primary/40">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-primary/20 via-transparent to-primary/10 transition-all duration-500 group-hover:from-primary/35 group-hover:to-primary/25" />
+
+              <div className="relative overflow-hidden rounded-2xl">
+                <Image
+                  src="/dashboard-preview.png"
+                  alt="Cascade Dashboard Preview"
+                  width={2000}
+                  height={1200}
+                  className="w-full"
+                  priority
+                  draggable={false}
+                />
+              </div>
+            </div>
+
+            <div className="pointer-events-none absolute top-20 -left-20 -z-20 h-96 w-96 rounded-full bg-primary/20 blur-[120px] transition-all duration-500 group-hover:bg-primary/35" />
+            <div className="pointer-events-none absolute -right-20 bottom-0 -z-20 h-96 w-96 rounded-full bg-primary/15 blur-[120px] transition-all duration-500 group-hover:bg-primary/30" />
+
+            <div className="pointer-events-none absolute -bottom-32 left-1/2 -z-20 h-64 w-full max-w-4xl -translate-x-1/2 rounded-full bg-primary/10 blur-[100px] transition-all duration-500 group-hover:bg-primary/20" />
           </div>
         </div>
+
+        <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-32 bg-gradient-to-b from-transparent to-background" />
       </section>
 
       <section className="py-20">
@@ -173,12 +219,14 @@ export const LandingPage = () => {
           <div className="mx-auto max-w-6xl">
             <div
               className={cn(
-                'mb-16 text-center transition-all delay-500 duration-500',
+                'mb-16 text-center transition-all delay-100 duration-500',
                 mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
               )}
             >
-              <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">Built for modern payroll</h2>
-              <p className="text-lg text-muted-foreground">
+              <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
+                Built for modern payroll
+              </h2>
+              <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
                 Everything you need to manage hourly compensation on-chain
               </p>
             </div>
@@ -192,7 +240,7 @@ export const LandingPage = () => {
                     mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0',
                   )}
                   style={{
-                    transitionDelay: `${600 + index * 50}ms`,
+                    transitionDelay: `${200 + index * 50}ms`,
                   }}
                 >
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -216,7 +264,7 @@ export const LandingPage = () => {
                 mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
               )}
             >
-              <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">Why Cascade?</h2>
+              <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">Why Cascade?</h2>
             </div>
 
             <div className="grid gap-8 md:grid-cols-2">
@@ -247,14 +295,13 @@ export const LandingPage = () => {
 
       <Drawer open={isWalletDrawerOpen} onOpenChange={setIsWalletDrawerOpen} direction="top">
         <DrawerContent className="mx-auto w-full max-w-lg rounded-b-3xl border-b border-border bg-card">
-          <DrawerHeader className="pb-0">
-            <div className="mx-auto mb-2 h-1 w-12 rounded-full bg-muted-foreground/40" />
+          <DrawerHeader className="pb-4">
             <DrawerTitle className="text-center text-base font-semibold">
               {connected && account ? 'Wallet Connected' : 'Connect a Wallet'}
             </DrawerTitle>
           </DrawerHeader>
 
-          <div className="space-y-4 px-4 pt-2 pb-6">
+          <div className="space-y-4 px-4 pb-6">
             {connected && account ? (
               <div className="rounded-lg border border-border/60 bg-muted/30 p-4">
                 <p className="text-sm font-medium text-muted-foreground">Active wallet</p>
@@ -315,6 +362,8 @@ export const LandingPage = () => {
                 )}
               </div>
             )}
+
+            <div className="mx-auto mt-4 h-1 w-12 rounded-full bg-muted-foreground/40" />
           </div>
         </DrawerContent>
       </Drawer>
