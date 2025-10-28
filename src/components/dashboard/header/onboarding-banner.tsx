@@ -1,20 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
-import { ChevronRight, Rocket, X } from 'lucide-react';
+import { ChevronRight, Rocket } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { AccountState } from '@/lib/enums';
 
 import { useDashboard } from '../dashboard-context';
 
 export function OnboardingBanner() {
-  const { accountState, resumeOnboardingWizard, hasDismissedOnboarding, isOnboardingWizardOpen } = useDashboard();
-  const [isHidden, setIsHidden] = useState(false);
+  const { isOnboardingRequired } = useDashboard();
+  const pathname = usePathname();
 
-  const isEligibleState = accountState === AccountState.NEW_ACCOUNT || accountState === AccountState.ONBOARDING;
-  const shouldShow = isEligibleState && hasDismissedOnboarding && !isOnboardingWizardOpen && !isHidden;
+  const shouldShow = isOnboardingRequired && pathname !== '/onboarding';
 
   if (!shouldShow) return null;
 
@@ -35,21 +34,11 @@ export function OnboardingBanner() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            onClick={resumeOnboardingWizard}
-            className="gap-2 bg-orange-600 text-white hover:bg-orange-700"
-          >
-            Resume Setup
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setIsHidden(true)}
-            className="text-orange-700 hover:bg-orange-100 hover:text-orange-900 dark:text-orange-300 dark:hover:bg-orange-900/40 dark:hover:text-orange-100"
-          >
-            <X className="h-4 w-4" />
+          <Button size="sm" className="gap-2 bg-orange-600 text-white hover:bg-orange-700" asChild>
+            <Link href="/onboarding">
+              Continue Setup
+              <ChevronRight className="h-4 w-4" />
+            </Link>
           </Button>
         </div>
       </div>

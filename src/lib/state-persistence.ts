@@ -2,7 +2,6 @@ import { AccountState } from '@/lib/enums';
 
 const ACCOUNT_STATE_KEY = 'cascade_account_state';
 const DEMO_MODE_KEY = 'cascade_demo_mode';
-const ONBOARDING_WIZARD_KEY = 'cascade_onboarding_dismissed';
 
 /**
  * Get the saved account state from localStorage
@@ -72,39 +71,6 @@ export function setDemoMode(enabled: boolean): void {
 }
 
 /**
- * Check if the onboarding wizard has been dismissed
- */
-export function isOnboardingWizardDismissed(): boolean {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  try {
-    return localStorage.getItem(ONBOARDING_WIZARD_KEY) === 'true';
-  } catch (error) {
-    console.error('Failed to read onboarding wizard state from localStorage:', error);
-    return false;
-  }
-}
-
-/**
- * Persist onboarding wizard dismissal state
- */
-export function setOnboardingWizardDismissed(dismissed: boolean): void {
-  if (typeof window === 'undefined') return;
-
-  try {
-    if (dismissed) {
-      localStorage.setItem(ONBOARDING_WIZARD_KEY, 'true');
-    } else {
-      localStorage.removeItem(ONBOARDING_WIZARD_KEY);
-    }
-  } catch (error) {
-    console.error('Failed to save onboarding wizard state to localStorage:', error);
-  }
-}
-
-/**
  * Reset all saved state (useful for testing)
  */
 export function resetAllState(): void {
@@ -113,7 +79,6 @@ export function resetAllState(): void {
   try {
     localStorage.removeItem(ACCOUNT_STATE_KEY);
     localStorage.removeItem(DEMO_MODE_KEY);
-    localStorage.removeItem(ONBOARDING_WIZARD_KEY);
   } catch (error) {
     console.error('Failed to reset state:', error);
   }

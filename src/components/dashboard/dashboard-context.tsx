@@ -1,17 +1,10 @@
 'use client';
 
 import type React from 'react';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
-import { getAccountStateConfig } from '@/lib/config/account-states';
 import { AccountState } from '@/lib/enums';
-import {
-  getSavedAccountState,
-  isOnboardingWizardDismissed,
-  saveAccountState,
-  setDemoMode,
-  setOnboardingWizardDismissed,
-} from '@/lib/state-persistence';
+import { getSavedAccountState, saveAccountState, setDemoMode } from '@/lib/state-persistence';
 
 interface DashboardContextType {
   selectedStreamId: string | null;
@@ -38,11 +31,7 @@ interface DashboardContextType {
   setSelectedEmployeeId: (id: string | null) => void;
   accountState: AccountState;
   setAccountState: (state: AccountState) => void;
-  isOnboardingWizardOpen: boolean;
-  hasDismissedOnboarding: boolean;
-  resumeOnboardingWizard: () => void;
-  dismissOnboardingWizard: () => void;
-  completeOnboardingWizard: () => void;
+  isOnboardingRequired: boolean;
   resetAllModals: () => void;
 }
 
@@ -62,54 +51,17 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
 
   const [accountState, setAccountStateInternal] = useState<AccountState>(() => getSavedAccountState());
-  const [hasDismissedOnboarding, setHasDismissedOnboarding] = useState<boolean>(() => isOnboardingWizardDismissed());
-  const [isOnboardingWizardOpen, setIsOnboardingWizardOpen] = useState<boolean>(() => {
-    const initialState = getSavedAccountState();
-    const dismissed = isOnboardingWizardDismissed();
-    const config = getAccountStateConfig(initialState);
-    return config.showOnboarding && !dismissed;
-  });
 
   useEffect(() => {
     setDemoMode(true);
   }, []);
 
-  const setAccountState = (state: AccountState) => {
+  const setAccountState = useCallback((state: AccountState) => {
     setAccountStateInternal(state);
     saveAccountState(state);
-    if (state === AccountState.NEW_ACCOUNT || state === AccountState.ONBOARDING) {
-      setHasDismissedOnboarding(false);
-      setOnboardingWizardDismissed(false);
-      const config = getAccountStateConfig(state);
-      if (config.showOnboarding) {
-        setIsOnboardingWizardOpen(true);
-      }
-    } else {
-      setIsOnboardingWizardOpen(false);
-    }
-  };
+  }, []);
 
-  const resumeOnboardingWizard = () => {
-    setHasDismissedOnboarding(false);
-    setOnboardingWizardDismissed(false);
-    setIsOnboardingWizardOpen(true);
-    if (accountState !== AccountState.ONBOARDING) {
-      setAccountState(AccountState.ONBOARDING);
-    }
-  };
-
-  const dismissOnboardingWizard = () => {
-    setIsOnboardingWizardOpen(false);
-    setHasDismissedOnboarding(true);
-    setOnboardingWizardDismissed(true);
-  };
-
-  const completeOnboardingWizard = () => {
-    setIsOnboardingWizardOpen(false);
-    setHasDismissedOnboarding(false);
-    setOnboardingWizardDismissed(false);
-    setAccountState(AccountState.WALLET_CONNECTED);
-  };
+  const isOnboardingRequired = accountState === AccountState.NEW_ACCOUNT || accountState === AccountState.ONBOARDING;
 
   const resetAllModals = () => {
     setIsCreateStreamModalOpen(false);
@@ -150,11 +102,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         setSelectedEmployeeId,
         accountState,
         setAccountState,
-        isOnboardingWizardOpen,
-        hasDismissedOnboarding,
-        resumeOnboardingWizard,
-        dismissOnboardingWizard,
-        completeOnboardingWizard,
+        isOnboardingRequired,
         resetAllModals,
       }}
     >

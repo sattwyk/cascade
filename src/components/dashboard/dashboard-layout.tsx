@@ -1,6 +1,9 @@
 'use client';
 
 import type React from 'react';
+import { useEffect } from 'react';
+
+import { usePathname, useRouter } from 'next/navigation';
 
 import { AppSidebar } from '@/components/dashboard/app-sidebar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
@@ -17,7 +20,6 @@ import { EmergencyWithdrawModal } from './modals/emergency-withdraw-modal';
 import { TopUpAccountModal } from './modals/top-up-account-modal';
 import { TopUpStreamModal } from './modals/top-up-stream-modal';
 import { ViewStreamsModal } from './modals/view-streams-modal';
-import { OnboardingWizard } from './onboarding/onboarding-wizard';
 import { DashboardRightRail } from './right-rail/dashboard-right-rail';
 
 interface DashboardLayoutProps {
@@ -25,6 +27,8 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const isMobile = useIsMobile();
 
   const {
@@ -45,10 +49,23 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     isArchiveEmployeeModalOpen,
     setIsArchiveEmployeeModalOpen,
     selectedEmployeeId,
-    isOnboardingWizardOpen,
-    dismissOnboardingWizard,
-    completeOnboardingWizard,
+    isOnboardingRequired,
   } = useDashboard();
+
+  const isRedirectingToOnboarding = isOnboardingRequired && pathname !== '/onboarding';
+  const isRedirectingToDashboard = !isOnboardingRequired && pathname === '/onboarding';
+
+  useEffect(() => {
+    if (isRedirectingToOnboarding) {
+      router.replace('/onboarding');
+    } else if (isRedirectingToDashboard) {
+      router.replace('/dashboard');
+    }
+  }, [isRedirectingToDashboard, isRedirectingToOnboarding, router]);
+
+  if (isRedirectingToOnboarding || isRedirectingToDashboard) {
+    return null;
+  }
 
   return (
     <SidebarProvider defaultOpen>
@@ -97,12 +114,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         onClose={() => setIsArchiveEmployeeModalOpen(false)}
         employeeId={selectedEmployeeId || ''}
         employeeName={selectedEmployeeId ? 'Alice Johnson' : ''}
-      />
-
-      <OnboardingWizard
-        isOpen={isOnboardingWizardOpen}
-        onDismiss={dismissOnboardingWizard}
-        onComplete={completeOnboardingWizard}
       />
     </SidebarProvider>
   );
