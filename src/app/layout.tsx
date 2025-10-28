@@ -9,6 +9,7 @@ import './globals.css';
 import { Geist, Geist_Mono, Source_Serif_4 } from 'next/font/google';
 
 import { AppProviders } from '@/components/app-providers';
+import { ReactScan } from '@/components/react-scan';
 import { Toaster } from '@/components/ui/sonner';
 
 // Initialize fonts
@@ -39,6 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="light" style={{ colorScheme: 'light' }}>
+      <ReactScan />
       <body className={`font-sans antialiased`}>
         <AppProviders>
           {children}
