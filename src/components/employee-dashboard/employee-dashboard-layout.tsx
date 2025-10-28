@@ -29,6 +29,10 @@ export function EmployeeDashboardLayout({ children }: EmployeeDashboardLayoutPro
   const organizationName = 'Acme Corp';
 
   const activityInfo = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
     const mockLastActivityDate = new Date('2025-10-08'); // 20 days ago
     const now = new Date();
     const daysSinceActivity = Math.floor((now.getTime() - mockLastActivityDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -137,7 +141,7 @@ export function EmployeeDashboardLayout({ children }: EmployeeDashboardLayoutPro
       <main className="flex-1">
         <div className="mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
           {/* Activity Warning Banner - only show when wallet is connected */}
-          {connected && activityInfo.daysUntilWithdrawal <= 7 && (
+          {connected && activityInfo && activityInfo.daysUntilWithdrawal <= 7 && (
             <div className="mb-6">
               <ActivityWarningBanner
                 lastActivityDate={activityInfo.lastActivityDate}

@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, Suspense } from 'react';
 
 import { DashboardProvider } from '@/components/dashboard/dashboard-context';
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
@@ -9,8 +9,10 @@ import { EmployeeDashboardLayout } from '@/components/employee-dashboard/employe
 
 // TODO: Implement actual role detection
 function getUserRole(): 'employer' | 'employee' {
-  return 'employee';
+  return 'employer';
 }
+
+const dashboardFallback = <div className="p-6 text-sm text-muted-foreground">Loading dashboard...</div>;
 
 export default function DashboardLayoutWrapper({
   children,
@@ -26,14 +28,22 @@ export default function DashboardLayoutWrapper({
   if (role === 'employee') {
     return (
       <EmployeeDashboardProvider>
-        <EmployeeDashboardLayout>{employee || children}</EmployeeDashboardLayout>
+        <Suspense fallback={dashboardFallback}>
+          <EmployeeDashboardLayout>
+            <Suspense fallback={dashboardFallback}>{employee || children}</Suspense>
+          </EmployeeDashboardLayout>
+        </Suspense>
       </EmployeeDashboardProvider>
     );
   }
 
   return (
     <DashboardProvider>
-      <DashboardLayout>{employer || children}</DashboardLayout>
+      <Suspense fallback={dashboardFallback}>
+        <DashboardLayout>
+          <Suspense fallback={dashboardFallback}>{employer || children}</Suspense>
+        </DashboardLayout>
+      </Suspense>
     </DashboardProvider>
   );
 }
