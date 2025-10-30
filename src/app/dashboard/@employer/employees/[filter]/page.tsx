@@ -1,3 +1,4 @@
+import { getEmployeesForDashboard } from '@/app/dashboard/data/employees';
 import { EmployeesTab } from '@/components/dashboard/tabs/employees-tab';
 
 const EMPLOYEE_FILTER_MAP: Record<string, string> = {
@@ -14,5 +15,7 @@ export default async function DashboardEmployeesFilterPage({ params }: { params:
   const rawFilter = filter?.toLowerCase();
   const resolvedFilter = EMPLOYEE_FILTER_MAP[rawFilter] ?? 'directory';
 
-  return <EmployeesTab filterState={resolvedFilter} />;
+  const employees = await getEmployeesForDashboard();
+
+  return <EmployeesTab filterState={resolvedFilter} employees={employees} />;
 }
