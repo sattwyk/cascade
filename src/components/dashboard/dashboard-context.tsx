@@ -95,6 +95,9 @@ interface DashboardContextType {
   setSelectedEmployeeId: (id: string | null) => void;
   selectedEmployee: EmployeeSummary | null;
   setSelectedEmployee: (employee: EmployeeSummary | null) => void;
+  employees: EmployeeSummary[];
+  setEmployees: React.Dispatch<React.SetStateAction<EmployeeSummary[]>>;
+  addEmployee: (employee: EmployeeSummary) => void;
   accountState: AccountState;
   setAccountState: (state: AccountState) => void;
   isOnboardingRequired: boolean;
@@ -122,6 +125,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [isArchiveEmployeeModalOpen, setIsArchiveEmployeeModalOpen] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeSummary | null>(null);
+  const [employees, setEmployees] = useState<EmployeeSummary[]>([]);
 
   const [accountState, setAccountStateInternal] = useState<AccountState>(initialAccountState);
   const [setupProgress, setSetupProgress] = useState<SetupProgress>(initialSetupProgress);
@@ -256,6 +260,18 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   const isOnboardingRequired = accountState === AccountState.NEW_ACCOUNT || accountState === AccountState.ONBOARDING;
 
+  const addEmployee = useCallback((employee: EmployeeSummary) => {
+    setEmployees((prev) => {
+      const existingIndex = prev.findIndex((existing) => existing.id === employee.id);
+      if (existingIndex !== -1) {
+        const next = [...prev];
+        next[existingIndex] = employee;
+        return next;
+      }
+      return [employee, ...prev];
+    });
+  }, []);
+
   const resetAllModals = () => {
     setIsCreateStreamModalOpen(false);
     setIsAddEmployeeModalOpen(false);
@@ -297,6 +313,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         setSelectedEmployeeId,
         selectedEmployee,
         setSelectedEmployee,
+        employees,
+        setEmployees,
+        addEmployee,
         accountState,
         setAccountState,
         isOnboardingRequired,

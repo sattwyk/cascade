@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -55,11 +55,24 @@ export function EmployeesTab({ filterState, employees }: EmployeesTabProps) {
     setIsTopUpAccountModalOpen,
     setSelectedEmployee,
     setSelectedEmployeeId: setDashboardSelectedEmployeeId,
+    employees: dashboardEmployees,
+    setEmployees: setDashboardEmployees,
   } = useDashboard();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [optimisticPageKey, setOptimisticPageKey] = useState(filterState);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setDashboardEmployees(employees);
+  }, [employees, setDashboardEmployees]);
+
+  const displayedEmployees = useMemo(() => {
+    if (dashboardEmployees.length > 0 || employees.length === 0) {
+      return dashboardEmployees;
+    }
+    return employees;
+  }, [dashboardEmployees, employees]);
 
   useEffect(() => {
     setOptimisticPageKey(filterState);
@@ -83,10 +96,10 @@ export function EmployeesTab({ filterState, employees }: EmployeesTabProps) {
     });
   };
 
-  const hasEmployees = useMemo(() => employees.length > 0, [employees]);
+  const hasEmployees = useMemo(() => displayedEmployees.length > 0, [displayedEmployees]);
   const selectedEmployee = useMemo(
-    () => employees.find((employee) => employee.id === selectedEmployeeId) ?? null,
-    [employees, selectedEmployeeId],
+    () => displayedEmployees.find((employee) => employee.id === selectedEmployeeId) ?? null,
+    [displayedEmployees, selectedEmployeeId],
   );
 
   useEffect(() => {
@@ -161,7 +174,7 @@ export function EmployeesTab({ filterState, employees }: EmployeesTabProps) {
             onFilterChange={handleFilterChange}
             onSelectEmployee={handleSelectEmployee}
             selectedEmployeeId={selectedEmployeeId}
-            employees={employees}
+            employees={displayedEmployees}
             onInviteEmployee={() => setIsAddEmployeeModalOpen(true)}
           />
         </div>
