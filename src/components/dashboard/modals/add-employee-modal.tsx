@@ -2,6 +2,8 @@
 
 import { useCallback, useMemo, useState } from 'react';
 
+import { useRouter } from 'next/navigation';
+
 import { CheckCircle2, ChevronRight, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -14,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { employmentTypeEnum } from '@/db/schema';
+import type { EmployeeSummary } from '@/types/employee';
 
 import { useDashboard } from '../dashboard-context';
 
@@ -41,7 +44,8 @@ interface AddEmployeeModalProps {
 
 export function AddEmployeeModal({ isOpen, onClose }: AddEmployeeModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>('profile');
-  const { completeSetupStep } = useDashboard();
+  const { completeSetupStep, addEmployee } = useDashboard();
+  const router = useRouter();
 
   // Profile step
   const [name, setName] = useState('');
@@ -125,6 +129,28 @@ export function AddEmployeeModal({ isOpen, onClose }: AddEmployeeModalProps) {
 
       setInviteResult(response.data);
       completeSetupStep('employeeAdded');
+      const now = new Date().toISOString();
+      const parsedTags = tags
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0);
+      const optimisticEmployee: EmployeeSummary = {
+        id: response.data.inviteToken ?? `invite-${Date.now()}`,
+        name,
+        email,
+        status: 'invited',
+        department: department || null,
+        location: location || null,
+        employmentType,
+        primaryWallet: null,
+        hourlyRateUsd: hourlyWage ? Number.parseFloat(hourlyWage) : null,
+        linkedStreams: 0,
+        invitedAt: now,
+        createdAt: now,
+        tags: parsedTags,
+      };
+      addEmployee(optimisticEmployee);
+      router.refresh();
       toast.success('Invitation sent', {
         description: `${email} can now join Cascade.`,
       });

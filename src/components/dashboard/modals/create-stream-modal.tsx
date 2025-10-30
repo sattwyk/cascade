@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { toast } from 'sonner';
 
@@ -28,13 +28,21 @@ export function CreateStreamModal({ isOpen, onClose }: CreateStreamModalProps) {
   const [hourlyRate, setHourlyRate] = useState('');
   const [initialDeposit, setInitialDeposit] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { completeSetupStep, setAccountState } = useDashboard();
+  const { completeSetupStep, setAccountState, employees: dashboardEmployees } = useDashboard();
+  const employees = dashboardEmployees;
 
-  const employees = [
-    { id: '1', name: 'Alice Johnson', address: '7xL...abc' },
-    { id: '2', name: 'Bob Smith', address: '7xL...def' },
-    { id: '3', name: 'Carol Davis', address: '7xL...ghi' },
-  ];
+  useEffect(() => {
+    if (!selectedEmployee) return;
+    const isStillAvailable = employees.some((employee) => employee.id === selectedEmployee);
+    if (!isStillAvailable) {
+      setSelectedEmployee('');
+    }
+  }, [employees, selectedEmployee]);
+
+  const selectedEmployeeRecord = useMemo(
+    () => employees.find((employee) => employee.id === selectedEmployee) ?? null,
+    [employees, selectedEmployee],
+  );
 
   const mints = [
     { id: 'USDC', name: 'USDC', balance: 8200 },
@@ -76,7 +84,7 @@ export function CreateStreamModal({ isOpen, onClose }: CreateStreamModalProps) {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 2000));
       toast.success('Stream created successfully!', {
-        description: `Payment stream for ${employees.find((e) => e.id === selectedEmployee)?.name} has been created.`,
+        description: `Payment stream for ${selectedEmployeeRecord?.name ?? 'the selected employee'} has been created.`,
       });
       setAccountState(AccountState.FIRST_STREAM_CREATED);
       completeSetupStep('streamCreated');
@@ -145,20 +153,31 @@ export function CreateStreamModal({ isOpen, onClose }: CreateStreamModalProps) {
                 <p className="text-sm text-muted-foreground">Choose an employee or paste their wallet address</p>
               </div>
 
-              <div className="space-y-2">
-                {employees.map((emp) => (
-                  <button
-                    key={emp.id}
-                    onClick={() => setSelectedEmployee(emp.id)}
-                    className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                      selectedEmployee === emp.id ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
-                    }`}
-                  >
-                    <p className="font-medium">{emp.name}</p>
-                    <code className="text-xs text-muted-foreground">{emp.address}</code>
-                  </button>
-                ))}
-              </div>
+              {employees.length === 0 ? (
+                <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+                  Invite an employee to your directory before creating a payment stream.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {employees.map((emp) => (
+                    <button
+                      key={emp.id}
+                      onClick={() => setSelectedEmployee(emp.id)}
+                      className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                        selectedEmployee === emp.id ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
+                      }`}
+                      disabled={isSubmitting}
+                    >
+                      <p className="font-medium">{emp.name}</p>
+                      {emp.email ? (
+                        <p className="text-xs text-muted-foreground">{emp.email}</p>
+                      ) : emp.primaryWallet ? (
+                        <code className="text-xs text-muted-foreground">{emp.primaryWallet}</code>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -227,7 +246,7 @@ export function CreateStreamModal({ isOpen, onClose }: CreateStreamModalProps) {
                     <CardTitle>Employee</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p>{employees.find((e) => e.id === selectedEmployee)?.name}</p>
+                    <p>{selectedEmployeeRecord?.name}</p>
                   </CardContent>
                 </Card>
 
