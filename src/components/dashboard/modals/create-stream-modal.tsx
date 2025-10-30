@@ -162,6 +162,9 @@ export function CreateStreamModal({ isOpen, onClose }: CreateStreamModalProps) {
 
   useEffect(() => {
     if (!isOpen) return;
+    // Wait for employees query to finish loading before checking if employee exists
+    if (employeesQuery.isLoading || employeesQuery.isFetching) return;
+
     if (selectedEmployee?.id) {
       const existsInOptions = employeeOptions.some((employee) => employee.id === selectedEmployee.id);
       if (existsInOptions) {
@@ -172,7 +175,7 @@ export function CreateStreamModal({ isOpen, onClose }: CreateStreamModalProps) {
         setEmployeeAddressOverride(selectedEmployee.primaryWallet);
       }
     }
-  }, [employeeOptions, isOpen, selectedEmployee]);
+  }, [employeeOptions, employeesQuery.isLoading, employeesQuery.isFetching, isOpen, selectedEmployee]);
 
   useEffect(() => {
     if (!isOpen) return;
