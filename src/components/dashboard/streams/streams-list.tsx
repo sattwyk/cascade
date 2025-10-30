@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
+import { formatDistanceToNow } from 'date-fns';
 import { Filter, Plus, Search } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -14,100 +15,79 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import type { DashboardStream } from '@/types/stream';
 
 import { EmptyState } from '../empty-state';
 
-interface Stream {
-  id: string;
-  employeeName: string;
-  employeeAddress: string;
-  mint: string;
-  hourlyRate: number;
-  vaultBalance: number;
-  availableToWithdraw: number;
-  status: 'active' | 'suspended' | 'closed' | 'draft';
-  lastActivity: string;
-}
-
-// Mock data
-const MOCK_STREAMS: Stream[] = [
-  {
-    id: '1',
-    employeeName: 'Alice Johnson',
-    employeeAddress: '7xL...abc',
-    mint: 'USDC',
-    hourlyRate: 50,
-    vaultBalance: 2400,
-    availableToWithdraw: 1200,
-    status: 'active',
-    lastActivity: '2 hours ago',
-  },
-  {
-    id: '2',
-    employeeName: 'Bob Smith',
-    employeeAddress: '7xL...def',
-    mint: 'USDC',
-    hourlyRate: 45,
-    vaultBalance: 1800,
-    availableToWithdraw: 900,
-    status: 'active',
-    lastActivity: '5 hours ago',
-  },
-  {
-    id: '3',
-    employeeName: 'Carol Davis',
-    employeeAddress: '7xL...ghi',
-    mint: 'USDC',
-    hourlyRate: 55,
-    vaultBalance: 500,
-    availableToWithdraw: 250,
-    status: 'active',
-    lastActivity: '1 day ago',
-  },
-  {
-    id: '4',
-    employeeName: 'David Wilson',
-    employeeAddress: '7xL...jkl',
-    mint: 'USDC',
-    hourlyRate: 40,
-    vaultBalance: 0,
-    availableToWithdraw: 0,
-    status: 'suspended',
-    lastActivity: '30 days ago',
-  },
-];
+type StreamStatus = DashboardStream['status'];
 
 interface StreamsListProps {
   filterStatus: 'all' | 'active' | 'inactive' | 'closed' | 'draft' | 'needs-attention';
   onFilterChange: (status: 'all' | 'active' | 'inactive' | 'closed' | 'draft' | 'needs-attention') => void;
   onSelectStream: (streamId: string) => void;
   selectedStreamId: string | null;
+  streams: ReadonlyArray<DashboardStream>;
 }
 
-export function StreamsList({ filterStatus, onFilterChange, onSelectStream, selectedStreamId }: StreamsListProps) {
+const CURRENCY_FORMATTER = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function formatLastActivity(lastActivityAt: string | null) {
+  if (!lastActivityAt) return 'No activity recorded';
+  const parsed = new Date(lastActivityAt);
+  if (Number.isNaN(parsed.getTime())) return 'No activity recorded';
+  return `Updated ${formatDistanceToNow(parsed, { addSuffix: true })}`;
+}
+
+function matchesStatus(
+  streamStatus: StreamStatus,
+  filterStatus: StreamsListProps['filterStatus'],
+  stream: StreamsListProps['streams'][number],
+) {
+  switch (filterStatus) {
+    case 'active':
+      return streamStatus === 'active';
+    case 'inactive':
+      return streamStatus === 'suspended';
+    case 'closed':
+      return streamStatus === 'closed';
+    case 'draft':
+      return streamStatus === 'draft';
+    case 'needs-attention':
+      return streamStatus === 'suspended' || stream.availableToWithdraw <= 0;
+    case 'all':
+    default:
+      return true;
+  }
+}
+
+export function StreamsList({
+  filterStatus,
+  onFilterChange,
+  onSelectStream,
+  selectedStreamId,
+  streams,
+}: StreamsListProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredStreams = MOCK_STREAMS.filter((stream) => {
-    // Filter by status
-    if (filterStatus === 'active' && stream.status !== 'active') return false;
-    if (filterStatus === 'inactive' && stream.status === 'active') return false;
-    if (filterStatus === 'closed' && stream.status !== 'closed') return false;
-    if (filterStatus === 'draft' && stream.status !== 'draft') return false;
-    if (filterStatus === 'needs-attention' && stream.vaultBalance > 1000) return false;
+  const filteredStreams = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return streams.filter((stream) => {
+      if (!matchesStatus(stream.status, filterStatus, stream)) return false;
 
-    // Filter by search
-    if (
-      searchQuery &&
-      !stream.employeeName.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      !stream.employeeAddress.toLowerCase().includes(searchQuery.toLowerCase())
-    ) {
-      return false;
-    }
+      if (!query) return true;
 
-    return true;
-  });
+      const haystacks = [stream.employeeName, stream.employeeWallet ?? '', stream.mintLabel].join(' ').toLowerCase();
 
-  const getStatusColor = (status: string) => {
+      return haystacks.includes(query);
+    });
+  }, [filterStatus, searchQuery, streams]);
+
+  const getStatusColor = (status: StreamStatus) => {
     switch (status) {
       case 'active':
         return 'bg-green-500/10 text-green-700';
@@ -204,26 +184,34 @@ export function StreamsList({ filterStatus, onFilterChange, onSelectStream, sele
                         {stream.status}
                       </Badge>
                     </div>
-                    <p className="mb-3 text-sm text-muted-foreground">{stream.employeeAddress}</p>
+                    <p className="mb-3 text-sm text-muted-foreground">
+                      {stream.employeeWallet ? stream.employeeWallet : 'No wallet on file'}
+                    </p>
                     <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
                       <div>
                         <p className="text-xs text-muted-foreground">Hourly Rate</p>
-                        <p className="font-semibold">${stream.hourlyRate}</p>
+                        <p className="font-semibold">{CURRENCY_FORMATTER.format(stream.hourlyRate)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">Vault Balance</p>
-                        <p className="font-semibold">${stream.vaultBalance}</p>
+                        <p className="font-semibold">{CURRENCY_FORMATTER.format(stream.vaultBalance)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">Available</p>
-                        <p className="font-semibold">${stream.availableToWithdraw}</p>
+                        <p className="font-semibold">{CURRENCY_FORMATTER.format(stream.availableToWithdraw)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">Last Activity</p>
-                        <p className="text-xs font-semibold">{stream.lastActivity}</p>
+                        <p className="text-xs font-semibold">
+                          {formatLastActivity(stream.lastActivityAt ?? stream.createdAt)}
+                        </p>
                       </div>
                     </div>
                   </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <Badge variant="outline">{stream.mintLabel}</Badge>
                 </div>
               </button>
             ))}

@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { getCreateStreamInstructionAsync } from '@project/anchor';
 
 import { toastTx } from '@/components/toast-tx';
+import { useInvalidateDashboardStreamsQuery } from '@/features/dashboard/data-access/use-invalidate-dashboard-streams-query';
 
 import { getErrorMessage, toBigInt } from './derive-cascade-pdas';
 import { useInvalidatePaymentStreamQuery } from './use-invalidate-payment-stream-query';
@@ -23,6 +24,7 @@ export function useCreateStreamMutation({ account }: { account: UiWalletAccount 
   const signer = useWalletUiSigner({ account });
   const signAndSend = useWalletUiSignAndSend();
   const invalidatePaymentStreamQuery = useInvalidatePaymentStreamQuery();
+  const invalidateDashboardStreamsQuery = useInvalidateDashboardStreamsQuery();
 
   return useMutation({
     mutationFn: async (input: CreateStreamInput) => {
@@ -42,6 +44,7 @@ export function useCreateStreamMutation({ account }: { account: UiWalletAccount 
       // Wait for transaction confirmation before invalidating cache
       setTimeout(() => {
         invalidatePaymentStreamQuery();
+        invalidateDashboardStreamsQuery();
       }, 1500);
     },
     onError: (error: unknown) => {

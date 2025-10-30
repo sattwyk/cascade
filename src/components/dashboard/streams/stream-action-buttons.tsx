@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 interface StreamActionButtonsProps {
   streamId: string;
-  status: 'active' | 'suspended' | 'closed';
+  status: 'active' | 'suspended' | 'closed' | 'draft';
 }
 
 export function StreamActionButtons({ streamId, status }: StreamActionButtonsProps) {
@@ -55,6 +55,12 @@ export function StreamActionButtons({ streamId, status }: StreamActionButtonsPro
           {status === 'closed' && (
             <p className="py-4 text-center text-sm text-muted-foreground">
               This stream is closed and cannot be modified
+            </p>
+          )}
+
+          {status === 'draft' && (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              Finalize and activate this stream from the creation flow to manage funds.
             </p>
           )}
         </div>

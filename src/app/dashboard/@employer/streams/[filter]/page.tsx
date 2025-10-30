@@ -1,3 +1,4 @@
+import { getStreamsForDashboard } from '@/app/dashboard/data/streams';
 import { StreamsTab } from '@/components/dashboard/tabs/streams-tab';
 
 const STREAM_FILTER_MAP: Record<string, string> = {
@@ -16,6 +17,7 @@ export default async function DashboardStreamsFilterPage({ params }: { params: P
   const { filter } = await params;
   const rawFilter = filter?.toLowerCase();
   const resolvedFilter = STREAM_FILTER_MAP[rawFilter] ?? 'all-streams';
+  const streams = await getStreamsForDashboard();
 
-  return <StreamsTab filterState={resolvedFilter} />;
+  return <StreamsTab filterState={resolvedFilter} streams={streams} />;
 }
