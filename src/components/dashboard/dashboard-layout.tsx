@@ -106,6 +106,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         isOpen={isViewStreamsModalOpen}
         onClose={() => setIsViewStreamsModalOpen(false)}
         employeeName={selectedEmployee?.name ?? ''}
+        employeeId={selectedEmployeeId}
       />
       <EditEmployeeModal
         isOpen={isEditEmployeeModalOpen}
