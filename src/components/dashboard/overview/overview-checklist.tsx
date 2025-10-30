@@ -3,49 +3,32 @@
 import { Check } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
-interface ChecklistItem {
+type ChecklistAction = {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+};
+
+export type OverviewChecklistStep = {
   id: string;
   title: string;
   description: string;
   completed: boolean;
-  step: number;
+  stepNumber: number;
+  action?: ChecklistAction;
+};
+
+interface OverviewChecklistProps {
+  steps: OverviewChecklistStep[];
 }
 
-const CHECKLIST_ITEMS: ChecklistItem[] = [
-  {
-    id: 'wallet',
-    title: 'Connect employer wallet',
-    description: 'Verify your Solana wallet is connected and funded',
-    completed: true,
-    step: 1,
-  },
-  {
-    id: 'token-account',
-    title: 'Verify token account funded',
-    description: 'Ensure your token account has sufficient balance',
-    completed: false,
-    step: 2,
-  },
-  {
-    id: 'employee',
-    title: 'Add first employee profile',
-    description: 'Create an employee record with wallet address',
-    completed: false,
-    step: 3,
-  },
-  {
-    id: 'stream',
-    title: 'Create payment stream',
-    description: 'Set up your first hourly payment stream',
-    completed: false,
-    step: 4,
-  },
-];
-
-export function OverviewChecklist() {
-  const completedCount = CHECKLIST_ITEMS.filter((item) => item.completed).length;
+export function OverviewChecklist({ steps }: OverviewChecklistProps) {
+  const completedCount = steps.filter((item) => item.completed).length;
+  const nextIncomplete = steps.find((item) => !item.completed);
 
   return (
     <Card>
@@ -53,36 +36,57 @@ export function OverviewChecklist() {
         <div className="flex items-center justify-between">
           <CardTitle>Setup Checklist</CardTitle>
           <Badge variant="secondary">
-            {completedCount}/{CHECKLIST_ITEMS.length}
+            {completedCount}/{steps.length}
           </Badge>
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {CHECKLIST_ITEMS.map((item) => (
-            <div
-              key={item.id}
-              className="flex gap-4 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
-            >
-              <div className="mt-1 shrink-0">
-                {item.completed ? (
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500">
-                    <Check className="h-4 w-4 text-white" />
-                  </div>
-                ) : (
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-muted-foreground text-xs font-semibold text-muted-foreground">
-                    {item.step}
-                  </div>
+          {steps.map((item) => {
+            const isCurrent = nextIncomplete?.id === item.id;
+
+            return (
+              <div
+                key={item.id}
+                className={cn(
+                  'flex items-center gap-4 rounded-lg border p-3 transition-colors',
+                  item.completed
+                    ? 'border-emerald-500/40 bg-emerald-500/10'
+                    : isCurrent
+                      ? 'border-primary/50 bg-primary/5'
+                      : 'border-border hover:bg-muted/50',
                 )}
+              >
+                <div className="mt-1 shrink-0">
+                  {item.completed ? (
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white">
+                      <Check className="h-4 w-4" />
+                    </div>
+                  ) : (
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-muted-foreground text-xs font-semibold text-muted-foreground">
+                      {item.stepNumber}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p
+                    className={cn(
+                      'font-medium',
+                      item.completed ? 'text-muted-foreground line-through' : 'text-foreground',
+                    )}
+                  >
+                    {item.title}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{item.description}</p>
+                </div>
+                {!item.completed && item.action ? (
+                  <Button size="sm" onClick={item.action.onClick} disabled={item.action.disabled}>
+                    {item.action.label}
+                  </Button>
+                ) : null}
               </div>
-              <div className="flex-1">
-                <p className={`font-medium ${item.completed ? 'text-muted-foreground line-through' : ''}`}>
-                  {item.title}
-                </p>
-                <p className="text-sm text-muted-foreground">{item.description}</p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>

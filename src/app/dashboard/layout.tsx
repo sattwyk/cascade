@@ -1,49 +1,30 @@
-'use client';
-
 import { ReactNode, Suspense } from 'react';
 
-import { DashboardProvider } from '@/components/dashboard/dashboard-context';
-import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
-import { EmployeeDashboardProvider } from '@/components/employee-dashboard/employee-dashboard-context';
-import { EmployeeDashboardLayout } from '@/components/employee-dashboard/employee-dashboard-layout';
+import { RoleProvider } from '@/components/dashboard/role-context';
+import { getUserRole } from '@/lib/auth/user-role';
 
-// TODO: Implement actual role detection
-function getUserRole(): 'employer' | 'employee' {
-  return 'employer';
-}
+import { DashboardLayoutClient } from './layout.client';
 
-const dashboardFallback = <div className="p-6 text-sm text-muted-foreground">Loading dashboard...</div>;
-
-export default function DashboardLayoutWrapper({
-  children,
-  employer,
-  employee,
-}: {
+type DashboardLayoutWrapperProps = {
   children: ReactNode;
   employer: ReactNode;
   employee: ReactNode;
-}) {
-  const role = getUserRole();
+};
 
-  if (role === 'employee') {
-    return (
-      <EmployeeDashboardProvider>
-        <Suspense fallback={dashboardFallback}>
-          <EmployeeDashboardLayout>
-            <Suspense fallback={dashboardFallback}>{employee || children}</Suspense>
-          </EmployeeDashboardLayout>
-        </Suspense>
-      </EmployeeDashboardProvider>
-    );
-  }
-
+async function RoleResolver(props: DashboardLayoutWrapperProps) {
+  const role = await getUserRole();
   return (
-    <DashboardProvider>
-      <Suspense fallback={dashboardFallback}>
-        <DashboardLayout>
-          <Suspense fallback={dashboardFallback}>{employer || children}</Suspense>
-        </DashboardLayout>
-      </Suspense>
-    </DashboardProvider>
+    <RoleProvider initialRole={role}>
+      <DashboardLayoutClient {...props} />
+    </RoleProvider>
+  );
+}
+
+export default function DashboardLayoutWrapper(props: DashboardLayoutWrapperProps) {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
+      {/* With Cache Components, dynamic content (cookies/headers) must be wrapped in Suspense */}
+      <RoleResolver {...props} />
+    </Suspense>
   );
 }

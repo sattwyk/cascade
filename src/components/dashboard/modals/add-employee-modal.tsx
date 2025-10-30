@@ -1,18 +1,38 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
-import { ChevronRight } from 'lucide-react';
+import { CheckCircle2, ChevronRight, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { inviteEmployee } from '@/app/dashboard/actions/employees';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { employmentTypeEnum } from '@/db/schema';
 
-type Step = 'profile' | 'wallet' | 'settings' | 'review';
+import { useDashboard } from '../dashboard-context';
+
+type Step = 'profile' | 'settings' | 'review';
+
+type InviteResult = {
+  inviteUrl: string;
+  inviteToken: string;
+  expiresAt: string;
+};
+
+type EmploymentTypeValue = (typeof employmentTypeEnum.enumValues)[number];
+
+const EMPLOYMENT_TYPE_OPTIONS: Array<{ value: EmploymentTypeValue; label: string }> = employmentTypeEnum.enumValues.map(
+  (value) => ({
+    value,
+    label: value.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
+  }),
+);
 
 interface AddEmployeeModalProps {
   isOpen: boolean;
@@ -21,23 +41,38 @@ interface AddEmployeeModalProps {
 
 export function AddEmployeeModal({ isOpen, onClose }: AddEmployeeModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>('profile');
+  const { completeSetupStep } = useDashboard();
 
   // Profile step
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [department, setDepartment] = useState('');
   const [location, setLocation] = useState('');
-  const [employmentType, setEmploymentType] = useState('Full-time');
-
-  // Wallet step
-  const [primaryWallet, setPrimaryWallet] = useState('');
-  const [backupWallet, setBackupWallet] = useState('');
+  const [employmentType, setEmploymentType] = useState<EmploymentTypeValue>('full_time');
 
   // Settings step
   const [hourlyWage, setHourlyWage] = useState('');
   const [tags, setTags] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [inviteResult, setInviteResult] = useState<InviteResult | null>(null);
+
+  const inviteExpiresAt = useMemo(() => (inviteResult ? new Date(inviteResult.expiresAt) : null), [inviteResult]);
+  const formattedExpiration = useMemo(() => {
+    if (!inviteExpiresAt || Number.isNaN(inviteExpiresAt.getTime())) {
+      return null;
+    }
+    try {
+      return new Intl.DateTimeFormat(undefined, {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      }).format(inviteExpiresAt);
+    } catch {
+      return inviteExpiresAt.toLocaleString();
+    }
+  }, [inviteExpiresAt]);
 
   const resetForm = () => {
     setCurrentStep('profile');
@@ -45,15 +80,14 @@ export function AddEmployeeModal({ isOpen, onClose }: AddEmployeeModalProps) {
     setEmail('');
     setDepartment('');
     setLocation('');
-    setEmploymentType('Full-time');
-    setPrimaryWallet('');
-    setBackupWallet('');
+    setEmploymentType('full_time');
     setHourlyWage('');
     setTags('');
+    setInviteResult(null);
   };
 
   const handleNext = () => {
-    const steps: Step[] = ['profile', 'wallet', 'settings', 'review'];
+    const steps: Step[] = ['profile', 'settings', 'review'];
     const currentIndex = steps.indexOf(currentStep);
     if (currentIndex < steps.length - 1) {
       setCurrentStep(steps[currentIndex + 1]);
@@ -61,7 +95,7 @@ export function AddEmployeeModal({ isOpen, onClose }: AddEmployeeModalProps) {
   };
 
   const handleBack = () => {
-    const steps: Step[] = ['profile', 'wallet', 'settings', 'review'];
+    const steps: Step[] = ['profile', 'settings', 'review'];
     const currentIndex = steps.indexOf(currentStep);
     if (currentIndex > 0) {
       setCurrentStep(steps[currentIndex - 1]);
@@ -69,18 +103,35 @@ export function AddEmployeeModal({ isOpen, onClose }: AddEmployeeModalProps) {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      toast.success('Employee added successfully!', {
-        description: `${name} has been added to your team.`,
+      const response = await inviteEmployee({
+        fullName: name,
+        email,
+        department,
+        location,
+        employmentType,
+        hourlyRate: hourlyWage,
+        tags,
       });
-      resetForm();
-      onClose();
+
+      if (!response.ok) {
+        toast.error('Failed to send invitation', {
+          description: response.error,
+        });
+        return;
+      }
+
+      setInviteResult(response.data);
+      completeSetupStep('employeeAdded');
+      toast.success('Invitation sent', {
+        description: `${email} can now join Cascade.`,
+      });
     } catch (error) {
-      console.error('Failed to add employee', error);
-      toast.error('Failed to add employee', {
-        description: 'Please check your information and try again.',
+      console.error('Failed to invite employee', error);
+      toast.error('Failed to invite employee', {
+        description: error instanceof Error ? error.message : 'Please check your information and try again.',
       });
     } finally {
       setIsSubmitting(false);
@@ -88,7 +139,7 @@ export function AddEmployeeModal({ isOpen, onClose }: AddEmployeeModalProps) {
   };
 
   const handleClose = () => {
-    if (currentStep !== 'profile' || name) {
+    if (!inviteResult && (currentStep !== 'profile' || name)) {
       toast.info('Employee creation cancelled', {
         description: 'Your progress has been discarded.',
       });
@@ -97,12 +148,23 @@ export function AddEmployeeModal({ isOpen, onClose }: AddEmployeeModalProps) {
     onClose();
   };
 
+  const handleCopyInvite = useCallback(async () => {
+    if (!inviteResult) return;
+    try {
+      await navigator.clipboard.writeText(inviteResult.inviteUrl);
+      toast.success('Invite link copied to clipboard');
+    } catch (error) {
+      console.error('Failed to copy invite link', error);
+      toast.error('Unable to copy invite link automatically', {
+        description: 'Copy the link manually from the field below.',
+      });
+    }
+  }, [inviteResult]);
+
   const isStepValid = () => {
     switch (currentStep) {
       case 'profile':
         return name && email && department && location && employmentType;
-      case 'wallet':
-        return primaryWallet;
       case 'settings':
         return hourlyWage;
       case 'review':
@@ -122,11 +184,11 @@ export function AddEmployeeModal({ isOpen, onClose }: AddEmployeeModalProps) {
         <div className="space-y-6">
           {/* Progress indicator */}
           <div className="flex gap-2">
-            {['profile', 'wallet', 'settings', 'review'].map((step, index) => (
+            {['profile', 'settings', 'review'].map((step, index) => (
               <div
                 key={step}
                 className={`h-1 flex-1 rounded-full ${
-                  ['profile', 'wallet', 'settings', 'review'].indexOf(currentStep) >= index ? 'bg-primary' : 'bg-muted'
+                  ['profile', 'settings', 'review'].indexOf(currentStep) >= index ? 'bg-primary' : 'bg-muted'
                 }`}
               />
             ))}
@@ -180,51 +242,28 @@ export function AddEmployeeModal({ isOpen, onClose }: AddEmployeeModalProps) {
 
                   <div className="col-span-2 space-y-2">
                     <Label htmlFor="employment-type">Employment Type</Label>
-                    <Input
-                      id="employment-type"
+                    <Select
                       value={employmentType}
-                      onChange={(e) => setEmploymentType(e.target.value)}
-                      placeholder="Full-time"
-                    />
+                      onValueChange={(value: EmploymentTypeValue) => setEmploymentType(value)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select employment type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {EMPLOYMENT_TYPE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Step 2: Wallet */}
-          {currentStep === 'wallet' && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="mb-2 font-semibold">Wallet Information</h3>
-                <p className="text-sm text-muted-foreground">Employee&apos;s Solana wallet address</p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="primary-wallet">Primary Wallet Address</Label>
-                  <Input
-                    id="primary-wallet"
-                    value={primaryWallet}
-                    onChange={(e) => setPrimaryWallet(e.target.value)}
-                    placeholder="7xL..."
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="backup-wallet">Backup Wallet (Optional)</Label>
-                  <Input
-                    id="backup-wallet"
-                    value={backupWallet}
-                    onChange={(e) => setBackupWallet(e.target.value)}
-                    placeholder="7xL..."
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Settings */}
+          {/* Step 2: Settings */}
           {currentStep === 'settings' && (
             <div className="space-y-4">
               <div>
@@ -269,50 +308,111 @@ export function AddEmployeeModal({ isOpen, onClose }: AddEmployeeModalProps) {
                 <CardContent className="space-y-3 pt-6">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Name</span>
-                    <span className="font-medium">{name}</span>
+                    <span className="font-medium">{name || '—'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Email</span>
-                    <span className="font-medium">{email}</span>
+                    <span className="font-medium">{email || '—'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Department</span>
-                    <span className="font-medium">{department}</span>
+                    <span className="font-medium">{department || '—'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Employment Type</span>
-                    <span className="font-medium">{employmentType}</span>
+                    <span className="font-medium">
+                      {EMPLOYMENT_TYPE_OPTIONS.find((option) => option.value === employmentType)?.label ?? '—'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Location</span>
+                    <span className="font-medium">{location || '—'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Hourly Wage</span>
-                    <span className="font-medium">${hourlyWage}</span>
+                    <span className="font-medium">{hourlyWage ? `$${hourlyWage}` : 'Not specified'}</span>
                   </div>
-                  <div className="flex justify-between border-t border-border pt-3">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Tags</span>
+                    <span className="font-medium">{tags || '—'}</span>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-border pt-3">
                     <span className="text-muted-foreground">Status</span>
-                    <Badge>Ready</Badge>
+                    <Badge
+                      className={
+                        inviteResult
+                          ? 'border-blue-200 bg-blue-100 text-blue-700'
+                          : 'border-emerald-200 bg-emerald-100 text-emerald-700'
+                      }
+                    >
+                      {inviteResult ? 'Invited' : 'Ready to invite'}
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>
+
+              {inviteResult && (
+                <Card>
+                  <CardContent className="space-y-4 pt-6">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />
+                      <div>
+                        <p className="font-semibold text-foreground">Invitation sent</p>
+                        <p className="text-sm text-muted-foreground">
+                          We emailed <span className="font-medium text-foreground">{email}</span>. The link expires{' '}
+                          {formattedExpiration ?? 'soon'}.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Input
+                        value={inviteResult.inviteUrl}
+                        readOnly
+                        className="font-mono text-xs sm:flex-1"
+                        aria-label="Invitation link"
+                      />
+                      <Button type="button" variant="outline" onClick={handleCopyInvite} className="sm:w-auto">
+                        <Copy className="mr-2 h-4 w-4" />
+                        Copy link
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
 
           {/* Action buttons */}
           <div className="flex gap-3 border-t border-border pt-6">
-            <Button
-              variant="outline"
-              onClick={currentStep === 'profile' ? handleClose : handleBack}
-              className="flex-1 bg-transparent"
-            >
-              {currentStep === 'profile' ? 'Cancel' : 'Back'}
-            </Button>
-            <Button
-              onClick={currentStep === 'review' ? handleSubmit : handleNext}
-              disabled={!isStepValid() || isSubmitting}
-              className="flex-1 gap-2"
-            >
-              {isSubmitting ? 'Adding...' : currentStep === 'review' ? 'Add Employee' : 'Next'}
-              {!isSubmitting && currentStep !== 'review' && <ChevronRight className="h-4 w-4" />}
-            </Button>
+            {inviteResult ? (
+              <>
+                <Button variant="outline" onClick={handleClose} className="flex-1 bg-transparent">
+                  Close
+                </Button>
+                <Button type="button" onClick={resetForm} className="flex-1 gap-2">
+                  Invite another
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={currentStep === 'profile' ? handleClose : handleBack}
+                  className="flex-1 bg-transparent"
+                  disabled={isSubmitting}
+                >
+                  {currentStep === 'profile' ? 'Cancel' : 'Back'}
+                </Button>
+                <Button
+                  onClick={currentStep === 'review' ? handleSubmit : handleNext}
+                  disabled={!isStepValid() || isSubmitting}
+                  className="flex-1 gap-2"
+                >
+                  {isSubmitting ? 'Sending...' : currentStep === 'review' ? 'Send invite' : 'Next'}
+                  {!isSubmitting && currentStep !== 'review' && <ChevronRight className="h-4 w-4" />}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </DialogContent>

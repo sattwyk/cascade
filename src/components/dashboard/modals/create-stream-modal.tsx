@@ -10,6 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AccountState } from '@/lib/enums';
+
+import { useDashboard } from '../dashboard-context';
 
 type Step = 'employee' | 'token' | 'economics' | 'review';
 
@@ -25,6 +28,7 @@ export function CreateStreamModal({ isOpen, onClose }: CreateStreamModalProps) {
   const [hourlyRate, setHourlyRate] = useState('');
   const [initialDeposit, setInitialDeposit] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { completeSetupStep, setAccountState } = useDashboard();
 
   const employees = [
     { id: '1', name: 'Alice Johnson', address: '7xL...abc' },
@@ -74,6 +78,8 @@ export function CreateStreamModal({ isOpen, onClose }: CreateStreamModalProps) {
       toast.success('Stream created successfully!', {
         description: `Payment stream for ${employees.find((e) => e.id === selectedEmployee)?.name} has been created.`,
       });
+      setAccountState(AccountState.FIRST_STREAM_CREATED);
+      completeSetupStep('streamCreated');
       resetForm();
       onClose();
     } catch (error) {

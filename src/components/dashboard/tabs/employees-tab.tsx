@@ -1,21 +1,24 @@
 'use client';
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { Plus } from 'lucide-react';
+import { PiggyBank, Plus, UserPlus, Wallet } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import type { EmployeeSummary } from '@/types/employee';
 
 import { useDashboard } from '../dashboard-context';
 import { EmployeeDetailPanel } from '../employees/employee-detail-panel';
 import { EmployeeDirectory } from '../employees/employee-directory';
+import { EmptyState } from '../empty-state';
 
 type EmployeeFilterStatus = 'all' | 'ready' | 'draft' | 'invited' | 'archived';
 
 interface EmployeesTabProps {
   filterState?: string;
+  employees: EmployeeSummary[];
 }
 
 const employeeStatusToPath: Record<EmployeeFilterStatus, string> = {
@@ -45,8 +48,14 @@ function deriveEmployeeStatus(pageKey?: string): EmployeeFilterStatus {
   }
 }
 
-export function EmployeesTab({ filterState }: EmployeesTabProps) {
-  const { setIsAddEmployeeModalOpen } = useDashboard();
+export function EmployeesTab({ filterState, employees }: EmployeesTabProps) {
+  const {
+    setIsAddEmployeeModalOpen,
+    setupProgress,
+    setIsTopUpAccountModalOpen,
+    setSelectedEmployee,
+    setSelectedEmployeeId: setDashboardSelectedEmployeeId,
+  } = useDashboard();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [optimisticPageKey, setOptimisticPageKey] = useState(filterState);
@@ -63,6 +72,8 @@ export function EmployeesTab({ filterState }: EmployeesTabProps) {
 
   const handleFilterChange = (status: EmployeeFilterStatus) => {
     setSelectedEmployeeId(null);
+    setDashboardSelectedEmployeeId(null);
+    setSelectedEmployee(null);
 
     const nextPageKey = employeeStatusToPageKey[status];
     setOptimisticPageKey(nextPageKey);
@@ -72,6 +83,34 @@ export function EmployeesTab({ filterState }: EmployeesTabProps) {
     });
   };
 
+  const hasEmployees = useMemo(() => employees.length > 0, [employees]);
+  const selectedEmployee = useMemo(
+    () => employees.find((employee) => employee.id === selectedEmployeeId) ?? null,
+    [employees, selectedEmployeeId],
+  );
+
+  useEffect(() => {
+    if (!selectedEmployee) {
+      setDashboardSelectedEmployeeId(null);
+      setSelectedEmployee(null);
+      return;
+    }
+    setDashboardSelectedEmployeeId(selectedEmployee.id);
+    setSelectedEmployee(selectedEmployee);
+  }, [selectedEmployee, setDashboardSelectedEmployeeId, setSelectedEmployee]);
+
+  const handleSelectEmployee = (employee: EmployeeSummary) => {
+    setSelectedEmployeeId(employee.id);
+    setDashboardSelectedEmployeeId(employee.id);
+    setSelectedEmployee(employee);
+  };
+
+  const handleCloseDetail = () => {
+    setSelectedEmployeeId(null);
+    setDashboardSelectedEmployeeId(null);
+    setSelectedEmployee(null);
+  };
+
   return (
     <div className="space-y-6" aria-busy={isPending}>
       <div className="flex items-center justify-between">
@@ -79,27 +118,57 @@ export function EmployeesTab({ filterState }: EmployeesTabProps) {
           <h1 className="text-3xl font-bold">Employees</h1>
           <p className="text-muted-foreground">Manage your employee directory</p>
         </div>
-        <Button onClick={() => setIsAddEmployeeModalOpen(true)} className="gap-2">
+        <Button
+          onClick={() => setIsAddEmployeeModalOpen(true)}
+          className="gap-2"
+          disabled={!setupProgress.walletConnected || !setupProgress.tokenAccountFunded}
+        >
           <Plus className="h-4 w-4" />
           Invite Employee
         </Button>
       </div>
 
-      <div>
-        <EmployeeDirectory
-          filterStatus={filterStatus}
-          onFilterChange={handleFilterChange}
-          onSelectEmployee={setSelectedEmployeeId}
-          selectedEmployeeId={selectedEmployeeId}
+      {!setupProgress.walletConnected ? (
+        <EmptyState
+          icon={<Wallet className="h-12 w-12 text-muted-foreground" />}
+          title="Connect your employer wallet"
+          description="Link a treasury wallet before inviting or managing employees."
         />
-      </div>
+      ) : !setupProgress.tokenAccountFunded ? (
+        <EmptyState
+          icon={<PiggyBank className="h-12 w-12 text-muted-foreground" />}
+          title="Fund your default token account"
+          description="Top up the payroll token account to unlock employee invitations."
+          action={{
+            label: 'Top Up Account',
+            onClick: () => setIsTopUpAccountModalOpen(true),
+          }}
+        />
+      ) : !hasEmployees ? (
+        <EmptyState
+          icon={<UserPlus className="h-12 w-12 text-muted-foreground" />}
+          title="Invite your first employee"
+          description="Create a profile or send an invitation so you can spin up a stream."
+          action={{
+            label: 'Add Employee',
+            onClick: () => setIsAddEmployeeModalOpen(true),
+          }}
+        />
+      ) : (
+        <div>
+          <EmployeeDirectory
+            filterStatus={filterStatus}
+            onFilterChange={handleFilterChange}
+            onSelectEmployee={handleSelectEmployee}
+            selectedEmployeeId={selectedEmployeeId}
+            employees={employees}
+            onInviteEmployee={() => setIsAddEmployeeModalOpen(true)}
+          />
+        </div>
+      )}
 
-      {selectedEmployeeId && (
-        <EmployeeDetailPanel
-          employeeId={selectedEmployeeId}
-          onClose={() => setSelectedEmployeeId(null)}
-          isOpen={!!selectedEmployeeId}
-        />
+      {selectedEmployee && (
+        <EmployeeDetailPanel employee={selectedEmployee} onClose={handleCloseDetail} isOpen={!!selectedEmployee} />
       )}
     </div>
   );

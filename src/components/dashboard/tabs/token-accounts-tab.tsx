@@ -1,6 +1,6 @@
 'use client';
 
-import { Copy, ExternalLink, Plus } from 'lucide-react';
+import { Copy, ExternalLink, PiggyBank, Plus, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
@@ -56,7 +56,7 @@ const MOCK_TOKEN_ACCOUNTS: TokenAccount[] = [
 ];
 
 export function TokenAccountsTab() {
-  const { accountState } = useDashboard();
+  const { accountState, setupProgress, setIsTopUpAccountModalOpen } = useDashboard();
   const config = getAccountStateConfig(accountState);
 
   const copyToClipboard = (text: string, id: string) => {
@@ -65,6 +65,42 @@ export function TokenAccountsTab() {
       description: `${id.replace(/^mint-/, 'Mint ')} address copied.`,
     });
   };
+
+  if (!setupProgress.walletConnected) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Token Accounts</h1>
+          <p className="text-muted-foreground">Manage your Solana token accounts</p>
+        </div>
+        <EmptyState
+          icon={<Wallet className="h-12 w-12 text-muted-foreground" />}
+          title="Connect your wallet to continue"
+          description="Link the employer treasury wallet to review or create token accounts."
+        />
+      </div>
+    );
+  }
+
+  if (!setupProgress.tokenAccountFunded) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Token Accounts</h1>
+          <p className="text-muted-foreground">Manage your Solana token accounts</p>
+        </div>
+        <EmptyState
+          icon={<PiggyBank className="h-12 w-12 text-muted-foreground" />}
+          title="Fund your primary token account"
+          description="Top up the account that will power upcoming payroll streams."
+          action={{
+            label: 'Top Up Account',
+            onClick: () => setIsTopUpAccountModalOpen(true),
+          }}
+        />
+      </div>
+    );
+  }
 
   if (!config.showTokenAccountsTab) {
     return (

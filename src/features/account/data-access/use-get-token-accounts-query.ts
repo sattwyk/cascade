@@ -6,7 +6,7 @@ import { useSolana } from '@/components/solana/use-solana';
 
 import { getTokenAccountsByOwner } from './get-token-accounts-by-owner';
 
-export function useGetTokenAccountsQuery({ address }: { address: Address }) {
+export function useGetTokenAccountsQuery({ address, enabled = true }: { address: Address; enabled?: boolean }) {
   const { client, cluster } = useSolana();
 
   return useQuery({
@@ -16,5 +16,6 @@ export function useGetTokenAccountsQuery({ address }: { address: Address }) {
         getTokenAccountsByOwner(client.rpc, { address, programId: TOKEN_PROGRAM_ADDRESS }),
         getTokenAccountsByOwner(client.rpc, { address, programId: TOKEN_2022_PROGRAM_ADDRESS }),
       ]).then(([tokenAccounts, token2022Accounts]) => [...tokenAccounts, ...token2022Accounts]),
+    enabled,
   });
 }

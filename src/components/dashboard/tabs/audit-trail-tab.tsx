@@ -76,7 +76,7 @@ const actionColors = {
 
 export function AuditTrailTab() {
   const [searchQuery, setSearchQuery] = useState('');
-  const { accountState } = useDashboard();
+  const { accountState, setupProgress, setIsCreateStreamModalOpen } = useDashboard();
   const config = getAccountStateConfig(accountState);
 
   const filteredAudit = MOCK_AUDIT.filter((entry) => {
@@ -98,6 +98,26 @@ export function AuditTrailTab() {
           icon={<Search className="h-12 w-12 text-muted-foreground" />}
           title="Audit Trail Coming Soon"
           description="Complete your wallet setup to start tracking system changes"
+        />
+      </div>
+    );
+  }
+
+  if (!setupProgress.streamCreated) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Audit Trail</h1>
+          <p className="text-muted-foreground">Complete record of all system changes and modifications</p>
+        </div>
+        <EmptyState
+          icon={<Search className="h-12 w-12 text-muted-foreground" />}
+          title="No changes recorded yet"
+          description="We’ll start capturing a full audit trail as soon as payroll activity begins."
+          action={{
+            label: 'Create Stream',
+            onClick: () => setIsCreateStreamModalOpen(true),
+          }}
         />
       </div>
     );

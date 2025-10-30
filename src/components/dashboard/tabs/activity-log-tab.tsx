@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { Download, Search } from 'lucide-react';
 
@@ -13,82 +13,46 @@ import { getAccountStateConfig } from '@/lib/config/account-states';
 import { useDashboard } from '../dashboard-context';
 import { EmptyState } from '../empty-state';
 
-interface ActivityEvent {
+export type ActivityEvent = {
   id: string;
   timestamp: string;
   type: 'funding' | 'employee' | 'stream' | 'system';
-  action: string;
-  description: string;
+  title: string;
+  description: string | null;
   actor: string;
   status: 'success' | 'pending' | 'failed';
-}
+  metadata?: Record<string, unknown>;
+};
 
-const MOCK_ACTIVITY: ActivityEvent[] = [
-  {
-    id: '1',
-    timestamp: '2024-10-23T14:32:00Z',
-    type: 'funding',
-    action: 'Deposit',
-    description: 'Deposited 1000 USDC to vault',
-    actor: 'admin@cascade.com',
-    status: 'success',
-  },
-  {
-    id: '2',
-    timestamp: '2024-10-23T13:15:00Z',
-    type: 'stream',
-    action: 'Stream Created',
-    description: 'Created payment stream for John Doe',
-    actor: 'admin@cascade.com',
-    status: 'success',
-  },
-  {
-    id: '3',
-    timestamp: '2024-10-23T12:00:00Z',
-    type: 'employee',
-    action: 'Employee Invited',
-    description: 'Invited jane@example.com to join',
-    actor: 'admin@cascade.com',
-    status: 'pending',
-  },
-  {
-    id: '4',
-    timestamp: '2024-10-22T16:45:00Z',
-    type: 'system',
-    action: 'Settings Updated',
-    description: 'Updated notification preferences',
-    actor: 'admin@cascade.com',
-    status: 'success',
-  },
-];
-
-const typeColors = {
+const typeColors: Record<ActivityEvent['type'], string> = {
   funding: 'bg-blue-100 text-blue-800',
   employee: 'bg-purple-100 text-purple-800',
   stream: 'bg-green-100 text-green-800',
   system: 'bg-gray-100 text-gray-800',
 };
 
-const statusColors = {
+const statusColors: Record<ActivityEvent['status'], string> = {
   success: 'bg-green-100 text-green-800',
   pending: 'bg-yellow-100 text-yellow-800',
   failed: 'bg-red-100 text-red-800',
 };
 
-export function ActivityLogTab() {
+export function ActivityLogTab({ activity }: { activity: ActivityEvent[] }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'funding' | 'employee' | 'stream' | 'system'>('all');
-  const { accountState } = useDashboard();
+  const [filterType, setFilterType] = useState<'all' | ActivityEvent['type']>('all');
+  const { accountState, setupProgress, setIsCreateStreamModalOpen } = useDashboard();
   const config = getAccountStateConfig(accountState);
 
-  const filteredActivity = MOCK_ACTIVITY.filter((event) => {
-    const matchesSearch =
-      event.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.actor.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = filterType === 'all' || event.type === filterType;
-    return matchesSearch && matchesType;
-  });
+  const filteredActivity = useMemo(() => {
+    return activity.filter((event) => {
+      const matchesSearch =
+        event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (event.description ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.actor.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesType = filterType === 'all' || event.type === filterType;
+      return matchesSearch && matchesType;
+    });
+  }, [activity, filterType, searchQuery]);
 
   if (!config.showActivityLogTab) {
     return (
@@ -106,9 +70,29 @@ export function ActivityLogTab() {
     );
   }
 
+  if (activity.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Activity Log</h1>
+          <p className="text-muted-foreground">View all organization activities and events</p>
+        </div>
+        <EmptyState
+          icon={<Search className="h-12 w-12 text-muted-foreground" />}
+          title="No activity yet"
+          description="Once changes are made to your treasury or streams, they'll appear here."
+          action={{
+            label: 'Create Stream',
+            onClick: () => setIsCreateStreamModalOpen(true),
+            disabled: !setupProgress.walletConnected,
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Activity Log</h1>
@@ -120,7 +104,6 @@ export function ActivityLogTab() {
         </Button>
       </div>
 
-      {/* Filters */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4 md:flex-row">
@@ -150,7 +133,6 @@ export function ActivityLogTab() {
         </CardContent>
       </Card>
 
-      {/* Activity list */}
       <Card>
         <CardHeader>
           <CardTitle>Recent Activities</CardTitle>
@@ -170,8 +152,8 @@ export function ActivityLogTab() {
                         {event.status}
                       </Badge>
                     </div>
-                    <h3 className="font-semibold">{event.action}</h3>
-                    <p className="text-sm text-muted-foreground">{event.description}</p>
+                    <h3 className="font-semibold">{event.title}</h3>
+                    {event.description ? <p className="text-sm text-muted-foreground">{event.description}</p> : null}
                     <p className="mt-1 text-xs text-muted-foreground">
                       By {event.actor} • {new Date(event.timestamp).toLocaleString()}
                     </p>

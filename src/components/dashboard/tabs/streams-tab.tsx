@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { Plus } from 'lucide-react';
+import { PiggyBank, Plus, UserPlus, Wallet } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
 import { useDashboard } from '../dashboard-context';
+import { EmptyState } from '../empty-state';
 import { StreamDetailDrawer } from '../streams/stream-detail-drawer';
 import { StreamsList } from '../streams/streams-list';
 
@@ -54,7 +55,14 @@ function deriveStatusFromPageKey(pageKey?: string): StreamFilterStatus {
 }
 
 export function StreamsTab({ filterState }: StreamsTabProps) {
-  const { selectedStreamId, setSelectedStreamId, setIsCreateStreamModalOpen } = useDashboard();
+  const {
+    selectedStreamId,
+    setSelectedStreamId,
+    setIsCreateStreamModalOpen,
+    setIsAddEmployeeModalOpen,
+    setIsTopUpAccountModalOpen,
+    setupProgress,
+  } = useDashboard();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [optimisticPageKey, setOptimisticPageKey] = useState(filterState);
@@ -88,25 +96,69 @@ export function StreamsTab({ filterState }: StreamsTabProps) {
           <h1 className="text-3xl font-bold">Streams</h1>
           <p className="text-muted-foreground">Manage your payment streams</p>
         </div>
-        <Button onClick={() => setIsCreateStreamModalOpen(true)} className="gap-2">
+        <Button
+          onClick={() => setIsCreateStreamModalOpen(true)}
+          className="gap-2"
+          disabled={!setupProgress.employeeAdded || !setupProgress.tokenAccountFunded}
+        >
           <Plus className="h-4 w-4" />
           New Stream
         </Button>
       </div>
 
-      <StreamsList
-        filterStatus={filterStatus}
-        onFilterChange={handleFilterChange}
-        onSelectStream={setSelectedStreamId}
-        selectedStreamId={selectedStreamId}
-      />
-
-      {selectedStreamId && (
-        <StreamDetailDrawer
-          streamId={selectedStreamId}
-          onClose={() => setSelectedStreamId(null)}
-          isOpen={!!selectedStreamId}
+      {!setupProgress.walletConnected ? (
+        <EmptyState
+          icon={<Wallet className="h-12 w-12 text-muted-foreground" />}
+          title="Connect your treasury wallet"
+          description="Link the employer wallet to view, fund, or create payment streams."
         />
+      ) : !setupProgress.tokenAccountFunded ? (
+        <EmptyState
+          icon={<PiggyBank className="h-12 w-12 text-muted-foreground" />}
+          title="Fund your primary token account"
+          description="Top up the default token account before creating a payment stream."
+          action={{
+            label: 'Top Up Account',
+            onClick: () => setIsTopUpAccountModalOpen(true),
+          }}
+        />
+      ) : !setupProgress.employeeAdded ? (
+        <EmptyState
+          icon={<UserPlus className="h-12 w-12 text-muted-foreground" />}
+          title="Add an employee to get started"
+          description="Invite or create an employee profile, then assign a payment stream."
+          action={{
+            label: 'Add Employee',
+            onClick: () => setIsAddEmployeeModalOpen(true),
+          }}
+        />
+      ) : !setupProgress.streamCreated ? (
+        <EmptyState
+          icon={<Plus className="h-12 w-12 text-muted-foreground" />}
+          title="Create your first stream"
+          description="Launch a live payment stream once your account is funded and an employee is ready."
+          action={{
+            label: 'Create Stream',
+            onClick: () => setIsCreateStreamModalOpen(true),
+          }}
+        />
+      ) : (
+        <>
+          <StreamsList
+            filterStatus={filterStatus}
+            onFilterChange={handleFilterChange}
+            onSelectStream={setSelectedStreamId}
+            selectedStreamId={selectedStreamId}
+          />
+
+          {selectedStreamId && (
+            <StreamDetailDrawer
+              streamId={selectedStreamId}
+              onClose={() => setSelectedStreamId(null)}
+              isOpen={!!selectedStreamId}
+            />
+          )}
+        </>
       )}
     </div>
   );

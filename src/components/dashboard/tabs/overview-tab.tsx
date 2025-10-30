@@ -1,5 +1,7 @@
 'use client';
 
+import { useMemo } from 'react';
+
 import { AlertCircle, TrendingDown, Users, Zap } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -10,14 +12,107 @@ import { useDashboard } from '../dashboard-context';
 import { EmptyState } from '../empty-state';
 import { OverviewActivityTimeline } from '../overview/overview-activity-timeline';
 import { OverviewAlerts } from '../overview/overview-alerts';
-import { OverviewChecklist } from '../overview/overview-checklist';
+import { OverviewChecklist, type OverviewChecklistStep } from '../overview/overview-checklist';
 import { OverviewMetrics } from '../overview/overview-metrics';
 
 export function OverviewTab() {
-  const { accountState, setIsCreateStreamModalOpen } = useDashboard();
+  const {
+    accountState,
+    setIsCreateStreamModalOpen,
+    setIsAddEmployeeModalOpen,
+    setIsTopUpAccountModalOpen,
+    setupProgress,
+  } = useDashboard();
 
   const config = getAccountStateConfig(accountState);
   const hasStreams = config.hasStreams;
+  const showSetupPhase = !config.setupComplete;
+
+  const checklistSteps = useMemo<OverviewChecklistStep[]>(
+    () => [
+      {
+        id: 'wallet',
+        title: 'Connect employer wallet',
+        description: 'Link the treasury wallet used to fund ongoing payroll streams.',
+        completed: setupProgress.walletConnected,
+        stepNumber: 1,
+      },
+      {
+        id: 'token-account',
+        title: 'Verify token account funding',
+        description: 'Confirm your default token account has enough balance for upcoming payroll.',
+        completed: setupProgress.tokenAccountFunded,
+        stepNumber: 2,
+        action: setupProgress.tokenAccountFunded
+          ? undefined
+          : {
+              label: 'Top Up Account',
+              onClick: () => setIsTopUpAccountModalOpen(true),
+            },
+      },
+      {
+        id: 'employee',
+        title: 'Add first employee',
+        description: 'Invite or create an employee profile with a wallet address.',
+        completed: setupProgress.employeeAdded,
+        stepNumber: 3,
+        action: setupProgress.employeeAdded
+          ? undefined
+          : {
+              label: 'Add Employee',
+              onClick: () => setIsAddEmployeeModalOpen(true),
+            },
+      },
+      {
+        id: 'stream',
+        title: 'Create payment stream',
+        description: 'Launch the first live payment stream for your team member.',
+        completed: setupProgress.streamCreated,
+        stepNumber: 4,
+        action: setupProgress.streamCreated
+          ? undefined
+          : {
+              label: 'Create Stream',
+              onClick: () => setIsCreateStreamModalOpen(true),
+              disabled: !setupProgress.employeeAdded || !setupProgress.tokenAccountFunded,
+            },
+      },
+    ],
+    [
+      setIsAddEmployeeModalOpen,
+      setIsCreateStreamModalOpen,
+      setIsTopUpAccountModalOpen,
+      setupProgress.employeeAdded,
+      setupProgress.streamCreated,
+      setupProgress.tokenAccountFunded,
+      setupProgress.walletConnected,
+    ],
+  );
+
+  const primaryCta = useMemo(() => {
+    if (!setupProgress.walletConnected) return null;
+    if (!setupProgress.employeeAdded) {
+      return {
+        label: 'Add Employee',
+        onClick: () => setIsAddEmployeeModalOpen(true),
+      };
+    }
+    if (!setupProgress.streamCreated) {
+      return {
+        label: 'Create Stream',
+        onClick: () => setIsCreateStreamModalOpen(true),
+        disabled: !setupProgress.tokenAccountFunded,
+      };
+    }
+    return null;
+  }, [
+    setIsAddEmployeeModalOpen,
+    setIsCreateStreamModalOpen,
+    setupProgress.employeeAdded,
+    setupProgress.streamCreated,
+    setupProgress.tokenAccountFunded,
+    setupProgress.walletConnected,
+  ]);
 
   return (
     <div className="space-y-4 sm:space-y-5 md:space-y-6">
@@ -28,7 +123,7 @@ export function OverviewTab() {
       </div>
 
       {/* Empty state with setup checklist */}
-      {config.showOnboarding && (
+      {showSetupPhase && (
         <div className="space-y-4 sm:space-y-5 md:space-y-6">
           <Card className="border-2 border-dashed">
             <CardContent className="pt-6 sm:pt-8">
@@ -46,18 +141,23 @@ export function OverviewTab() {
             </CardContent>
           </Card>
 
-          <OverviewChecklist />
+          <OverviewChecklist steps={checklistSteps} />
 
-          <div className="flex justify-center gap-3">
-            <Button size="lg" onClick={() => setIsCreateStreamModalOpen(true)}>
-              Add Employee
-            </Button>
-          </div>
+          {primaryCta ? (
+            <div className="flex flex-col items-center gap-2">
+              <Button size="lg" onClick={primaryCta.onClick} disabled={primaryCta.disabled}>
+                {primaryCta.label}
+              </Button>
+              {primaryCta.disabled ? (
+                <p className="text-xs text-muted-foreground">Fund your token account to enable stream creation.</p>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       )}
 
       {/* Wallet connected but no streams yet */}
-      {!config.showOnboarding && !hasStreams && (
+      {!showSetupPhase && !hasStreams && (
         <div className="space-y-4 sm:space-y-5 md:space-y-6">
           <EmptyState
             icon={<Zap className="h-10 w-10 text-muted-foreground sm:h-12 sm:w-12" />}
@@ -72,7 +172,7 @@ export function OverviewTab() {
       )}
 
       {/* Active state with metrics and alerts */}
-      {!config.showOnboarding && hasStreams && (
+      {!showSetupPhase && hasStreams && (
         <div className="space-y-4 sm:space-y-5 md:space-y-6">
           {/* KPI Row */}
           {config.showMetrics && <OverviewMetrics />}

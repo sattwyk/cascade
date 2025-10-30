@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
+import { formatDistanceToNow } from 'date-fns';
 import { Filter, Plus, Search } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -14,79 +15,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import type { EmployeeSummary } from '@/types/employee';
 
 import { EmptyState } from '../empty-state';
-
-interface Employee {
-  id: string;
-  name: string;
-  email: string;
-  walletAddress: string;
-  department: string;
-  location: string;
-  employmentType: string;
-  status: 'ready' | 'draft' | 'invited' | 'archived';
-  hourlyWage: number;
-  linkedStreams: number;
-}
-
-// Mock data
-const MOCK_EMPLOYEES: Employee[] = [
-  {
-    id: '1',
-    name: 'Alice Johnson',
-    email: 'alice@example.com',
-    walletAddress: '7xL...abc',
-    department: 'Engineering',
-    location: 'San Francisco, CA',
-    employmentType: 'Full-time',
-    status: 'ready',
-    hourlyWage: 50,
-    linkedStreams: 1,
-  },
-  {
-    id: '2',
-    name: 'Bob Smith',
-    email: 'bob@example.com',
-    walletAddress: '7xL...def',
-    department: 'Design',
-    location: 'New York, NY',
-    employmentType: 'Full-time',
-    status: 'ready',
-    hourlyWage: 45,
-    linkedStreams: 1,
-  },
-  {
-    id: '3',
-    name: 'Carol Davis',
-    email: 'carol@example.com',
-    walletAddress: '',
-    department: 'Marketing',
-    location: 'Austin, TX',
-    employmentType: 'Part-time',
-    status: 'draft',
-    hourlyWage: 35,
-    linkedStreams: 0,
-  },
-  {
-    id: '4',
-    name: 'David Wilson',
-    email: 'david@example.com',
-    walletAddress: '7xL...jkl',
-    department: 'Sales',
-    location: 'Chicago, IL',
-    employmentType: 'Full-time',
-    status: 'invited',
-    hourlyWage: 40,
-    linkedStreams: 0,
-  },
-];
 
 interface EmployeeDirectoryProps {
   filterStatus: 'all' | 'ready' | 'draft' | 'invited' | 'archived';
   onFilterChange: (status: 'all' | 'ready' | 'draft' | 'invited' | 'archived') => void;
-  onSelectEmployee: (employeeId: string) => void;
+  onSelectEmployee: (employee: EmployeeSummary) => void;
   selectedEmployeeId: string | null;
+  employees: EmployeeSummary[];
+  onInviteEmployee: () => void;
 }
 
 export function EmployeeDirectory({
@@ -94,32 +33,39 @@ export function EmployeeDirectory({
   onFilterChange,
   onSelectEmployee,
   selectedEmployeeId,
+  employees,
+  onInviteEmployee,
 }: EmployeeDirectoryProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredEmployees = MOCK_EMPLOYEES.filter((employee) => {
-    // Filter by status
-    if (filterStatus !== 'all' && employee.status !== filterStatus) return false;
+  const filteredEmployees = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    return employees.filter((employee) => {
+      if (filterStatus !== 'all' && employee.status !== filterStatus) return false;
 
-    // Filter by search
-    if (
-      searchQuery &&
-      !employee.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      !employee.email.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      !employee.walletAddress.toLowerCase().includes(searchQuery.toLowerCase())
-    ) {
-      return false;
-    }
+      if (!normalizedQuery) return true;
 
-    return true;
-  });
+      const haystacks = [
+        employee.name,
+        employee.email,
+        employee.primaryWallet,
+        employee.department,
+        employee.location,
+        employee.employmentType,
+      ]
+        .filter(Boolean)
+        .map((value) => value!.toLowerCase());
 
-  const getStatusColor = (status: string) => {
+      return haystacks.some((haystack) => haystack.includes(normalizedQuery));
+    });
+  }, [employees, filterStatus, searchQuery]);
+
+  const getStatusColor = (status: EmployeeSummary['status']) => {
     switch (status) {
       case 'ready':
-        return 'bg-green-500/10 text-green-700';
+        return 'bg-emerald-500/10 text-emerald-700';
       case 'draft':
-        return 'bg-yellow-500/10 text-yellow-700';
+        return 'bg-amber-500/10 text-amber-700';
       case 'invited':
         return 'bg-blue-500/10 text-blue-700';
       case 'archived':
@@ -127,6 +73,29 @@ export function EmployeeDirectory({
       default:
         return 'bg-gray-500/10 text-gray-700';
     }
+  };
+
+  const getStatusLabel = (status: EmployeeSummary['status']) => {
+    switch (status) {
+      case 'ready':
+        return 'Ready';
+      case 'draft':
+        return 'Draft';
+      case 'invited':
+        return 'Invited';
+      case 'archived':
+        return 'Archived';
+      default:
+        return status;
+    }
+  };
+
+  const getEmploymentTypeLabel = (employmentType: EmployeeSummary['employmentType']) => {
+    if (!employmentType) return '—';
+    return employmentType
+      .split('_')
+      .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+      .join(' ');
   };
 
   return (
@@ -185,7 +154,7 @@ export function EmployeeDirectory({
               filterStatus === 'all'
                 ? {
                     label: 'Invite Employee',
-                    onClick: () => console.log('Invite employee'),
+                    onClick: onInviteEmployee,
                   }
                 : undefined
             }
@@ -195,7 +164,7 @@ export function EmployeeDirectory({
             {filteredEmployees.map((employee) => (
               <button
                 key={employee.id}
-                onClick={() => onSelectEmployee(employee.id)}
+                onClick={() => onSelectEmployee(employee)}
                 className={`w-full rounded-lg border p-4 text-left transition-colors ${
                   selectedEmployeeId === employee.id ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
                 }`}
@@ -205,26 +174,37 @@ export function EmployeeDirectory({
                     <div className="mb-2 flex items-center gap-2">
                       <h3 className="truncate font-semibold">{employee.name}</h3>
                       <Badge className={getStatusColor(employee.status)} variant="secondary">
-                        {employee.status}
+                        {getStatusLabel(employee.status)}
                       </Badge>
+                      {employee.status === 'invited' && employee.invitedAt ? (
+                        <span className="text-xs text-muted-foreground">
+                          Invited {formatDistanceToNow(new Date(employee.invitedAt), { addSuffix: true })}
+                        </span>
+                      ) : null}
                     </div>
-                    <p className="mb-3 text-sm text-muted-foreground">{employee.email}</p>
+                    <p className="mb-3 text-sm text-muted-foreground">{employee.email ?? 'No email on file'}</p>
                     <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
                       <div>
                         <p className="text-xs text-muted-foreground">Department</p>
-                        <p className="font-medium">{employee.department}</p>
+                        <p className="font-medium">{employee.department ?? '—'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">Location</p>
-                        <p className="font-medium">{employee.location}</p>
+                        <p className="font-medium">{employee.location ?? '—'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">Hourly Wage</p>
-                        <p className="font-medium">${employee.hourlyWage}</p>
+                        <p className="font-medium">
+                          {employee.hourlyRateUsd != null ? `$${employee.hourlyRateUsd.toFixed(2)}` : '—'}
+                        </p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">Linked Streams</p>
                         <p className="font-medium">{employee.linkedStreams}</p>
+                      </div>
+                      <div className="md:col-span-4 lg:col-span-1">
+                        <p className="text-xs text-muted-foreground">Employment Type</p>
+                        <p className="font-medium">{getEmploymentTypeLabel(employee.employmentType)}</p>
                       </div>
                     </div>
                   </div>

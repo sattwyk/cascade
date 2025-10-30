@@ -1,7 +1,32 @@
 import { AccountState } from '@/lib/enums';
 
 const ACCOUNT_STATE_KEY = 'cascade_account_state';
-const DEMO_MODE_KEY = 'cascade_demo_mode';
+const SETUP_PROGRESS_KEY = 'cascade_setup_progress';
+
+export type SetupProgress = {
+  walletConnected: boolean;
+  tokenAccountFunded: boolean;
+  employeeAdded: boolean;
+  streamCreated: boolean;
+};
+
+export const DEFAULT_SETUP_PROGRESS: SetupProgress = {
+  walletConnected: false,
+  tokenAccountFunded: false,
+  employeeAdded: false,
+  streamCreated: false,
+};
+
+function isSetupProgress(value: unknown): value is SetupProgress {
+  if (!value || typeof value !== 'object') return false;
+  const progress = value as Partial<SetupProgress>;
+  return (
+    typeof progress.walletConnected === 'boolean' &&
+    typeof progress.tokenAccountFunded === 'boolean' &&
+    typeof progress.employeeAdded === 'boolean' &&
+    typeof progress.streamCreated === 'boolean'
+  );
+}
 
 /**
  * Get the saved account state from localStorage
@@ -37,36 +62,32 @@ export function saveAccountState(state: AccountState): void {
   }
 }
 
-/**
- * Check if demo mode is enabled
- */
-export function isDemoModeEnabled(): boolean {
+export function getSavedSetupProgress(): SetupProgress {
   if (typeof window === 'undefined') {
-    return false;
+    return { ...DEFAULT_SETUP_PROGRESS };
   }
 
   try {
-    return localStorage.getItem(DEMO_MODE_KEY) === 'true';
+    const saved = localStorage.getItem(SETUP_PROGRESS_KEY);
+    if (!saved) return { ...DEFAULT_SETUP_PROGRESS };
+    const parsed = JSON.parse(saved);
+    if (isSetupProgress(parsed)) {
+      return parsed;
+    }
   } catch (error) {
-    console.error('Failed to read demo mode from localStorage:', error);
-    return false;
+    console.error('Failed to read setup progress from localStorage:', error);
   }
+
+  return { ...DEFAULT_SETUP_PROGRESS };
 }
 
-/**
- * Enable or disable demo mode
- */
-export function setDemoMode(enabled: boolean): void {
+export function saveSetupProgress(progress: SetupProgress): void {
   if (typeof window === 'undefined') return;
 
   try {
-    if (enabled) {
-      localStorage.setItem(DEMO_MODE_KEY, 'true');
-    } else {
-      localStorage.removeItem(DEMO_MODE_KEY);
-    }
+    localStorage.setItem(SETUP_PROGRESS_KEY, JSON.stringify(progress));
   } catch (error) {
-    console.error('Failed to save demo mode to localStorage:', error);
+    console.error('Failed to save setup progress to localStorage:', error);
   }
 }
 
@@ -78,7 +99,7 @@ export function resetAllState(): void {
 
   try {
     localStorage.removeItem(ACCOUNT_STATE_KEY);
-    localStorage.removeItem(DEMO_MODE_KEY);
+    localStorage.removeItem(SETUP_PROGRESS_KEY);
   } catch (error) {
     console.error('Failed to reset state:', error);
   }

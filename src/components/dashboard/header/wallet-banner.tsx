@@ -1,44 +1,39 @@
 'use client';
 
+import { useCallback } from 'react';
+
 import { Wallet } from 'lucide-react';
+import { toast } from 'sonner';
 
-import { Badge } from '@/components/ui/badge';
+import { useSolana } from '@/components/solana/use-solana';
 import { Button } from '@/components/ui/button';
-import { getAccountStateConfig } from '@/lib/config/account-states';
-import { AccountState } from '@/lib/enums';
-
-import { useDashboard } from '../dashboard-context';
+import { ellipsify } from '@/lib/utils';
 
 export function WalletBanner() {
-  const { accountState } = useDashboard();
-  const config = getAccountStateConfig(accountState);
+  const { account, connected, disconnect } = useSolana();
+  const walletAddress = account?.address;
+  const displayAddress = walletAddress ? ellipsify(walletAddress, 6) : 'No wallet connected';
 
-  const isConnected = config.state !== AccountState.NEW_ACCOUNT && config.state !== AccountState.ONBOARDING;
-  const walletAddress = '7xL...abc123';
-  const cluster = 'devnet';
-  const selectedMint = 'USDC';
+  const handleDisconnect = useCallback(async () => {
+    if (!connected) return;
+    try {
+      await Promise.resolve(disconnect());
+      toast.success('Wallet disconnected');
+    } catch (error) {
+      console.error('Failed to disconnect wallet', error);
+      toast.error('Failed to disconnect wallet');
+    }
+  }, [connected, disconnect]);
 
   return (
     <div className="border-b border-border bg-muted/50 px-6 py-3 md:px-8">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Wallet className="h-4 w-4 text-muted-foreground" />
-          {isConnected ? (
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{walletAddress}</span>
-              <Badge variant="secondary" className="text-xs">
-                {cluster}
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                {selectedMint}
-              </Badge>
-            </div>
-          ) : (
-            <span className="text-sm text-muted-foreground">Connect your wallet to get started</span>
-          )}
+          <span className="text-sm font-medium">{displayAddress}</span>
         </div>
-        <Button size="sm" variant={isConnected ? 'outline' : 'default'}>
-          {isConnected ? 'Switch Wallet' : 'Connect Wallet'}
+        <Button size="sm" variant="outline" onClick={handleDisconnect} disabled={!connected}>
+          Disconnect
         </Button>
       </div>
     </div>

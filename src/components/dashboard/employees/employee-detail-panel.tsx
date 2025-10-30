@@ -1,92 +1,100 @@
 'use client';
 
+import { formatDistanceToNow } from 'date-fns';
 import { Mail, MapPin, SirenIcon as StreamIcon, Tag, X } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { useIsMobile } from '@/hooks/use-mobile';
+import type { EmployeeStatus, EmployeeSummary } from '@/types/employee';
 
 import { useDashboard } from '../dashboard-context';
 
 interface EmployeeDetailPanelProps {
-  employeeId: string;
+  employee: EmployeeSummary | null;
   onClose: () => void;
   isOpen: boolean;
 }
 
-// Mock employee detail
-const MOCK_EMPLOYEE_DETAIL = {
-  id: '1',
-  name: 'Alice Johnson',
-  email: 'alice@example.com',
-  walletAddress: '7xL...abc',
-  backupWallet: '7xL...backup',
-  department: 'Engineering',
-  location: 'San Francisco, CA',
-  employmentType: 'Full-time',
-  status: 'ready',
-  hourlyWage: 50,
-  linkedStreams: 1,
-  tags: ['Senior', 'Backend'],
-  notificationPreferences: {
-    email: true,
-    sms: false,
-    webhook: true,
-  },
-};
+function getStatusColor(status: EmployeeStatus) {
+  switch (status) {
+    case 'ready':
+      return 'bg-emerald-500/10 text-emerald-700';
+    case 'draft':
+      return 'bg-amber-500/10 text-amber-700';
+    case 'invited':
+      return 'bg-blue-500/10 text-blue-700';
+    case 'archived':
+      return 'bg-gray-500/10 text-gray-700';
+    default:
+      return 'bg-gray-500/10 text-gray-700';
+  }
+}
 
-export function EmployeeDetailPanel({ employeeId, onClose, isOpen }: EmployeeDetailPanelProps) {
-  const employee = { ...MOCK_EMPLOYEE_DETAIL, id: employeeId };
+function formatStatusLabel(status: EmployeeStatus) {
+  switch (status) {
+    case 'ready':
+      return 'Ready';
+    case 'draft':
+      return 'Draft';
+    case 'invited':
+      return 'Invited';
+    case 'archived':
+      return 'Archived';
+    default:
+      return status;
+  }
+}
+
+function formatEmploymentType(value: string | null) {
+  if (!value) return '—';
+  return value
+    .split('_')
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ');
+}
+
+export function EmployeeDetailPanel({ employee, onClose, isOpen }: EmployeeDetailPanelProps) {
   const isMobile = useIsMobile();
   const {
     setIsViewStreamsModalOpen,
     setIsEditEmployeeModalOpen,
     setIsArchiveEmployeeModalOpen,
+    setIsCreateStreamModalOpen,
     setSelectedEmployeeId,
+    setSelectedEmployee,
   } = useDashboard();
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ready':
-        return 'bg-green-500/10 text-green-700';
-      case 'draft':
-        return 'bg-yellow-500/10 text-yellow-700';
-      case 'invited':
-        return 'bg-blue-500/10 text-blue-700';
-      case 'archived':
-        return 'bg-gray-500/10 text-gray-700';
-      default:
-        return 'bg-gray-500/10 text-gray-700';
+  const formattedStatus = employee ? getStatusColor(employee.status) : '';
+  let invitedLabel: string | null = null;
+  if (employee?.invitedAt) {
+    try {
+      invitedLabel = formatDistanceToNow(new Date(employee.invitedAt), { addSuffix: true });
+    } catch {
+      invitedLabel = null;
     }
+  }
+
+  const handleSelectForAction = (action: () => void) => {
+    if (!employee) return;
+    setSelectedEmployeeId(employee.id);
+    setSelectedEmployee(employee);
+    action();
   };
 
-  const handleViewStreams = () => {
-    setSelectedEmployeeId(employee.id);
-    setIsViewStreamsModalOpen(true);
-  };
-
-  const handleEditEmployee = () => {
-    setSelectedEmployeeId(employee.id);
-    setIsEditEmployeeModalOpen(true);
-  };
-
-  const handleArchiveEmployee = () => {
-    setSelectedEmployeeId(employee.id);
-    setIsArchiveEmployeeModalOpen(true);
-  };
-
-  const handleCreateStream = () => {
-    setSelectedEmployeeId(employee.id);
-    setIsEditEmployeeModalOpen(true);
-  };
+  if (!employee) {
+    return null;
+  }
 
   return (
     <Drawer
       direction={isMobile ? undefined : 'right'}
       modal={false}
       open={isOpen}
-      onOpenChange={(open) => !open && onClose()}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
     >
       <DrawerContent
         className={`max-h-full ${isMobile ? '' : 'fixed top-0 right-0 bottom-0 w-96 rounded-none border-l'}`}
@@ -98,23 +106,22 @@ export function EmployeeDetailPanel({ employeeId, onClose, isOpen }: EmployeeDet
           </Button>
         </div>
 
-        {/* Content */}
         <div className={`overflow-y-auto ${isMobile ? 'px-4 pt-12 pb-6' : 'px-6 pt-12 pb-6'}`}>
           <div className="space-y-4">
-            {/* Header */}
             <div>
               <DrawerTitle className="text-lg font-bold">{employee.name}</DrawerTitle>
-              <p className="mt-1 text-xs text-muted-foreground">{employee.email}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{employee.email ?? '—'}</p>
             </div>
 
-            {/* Status badge */}
-            <div className="flex items-center gap-2">
-              <Badge className={getStatusColor(employee.status)} variant="secondary">
-                {employee.status}
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className={formattedStatus} variant="secondary">
+                {formatStatusLabel(employee.status)}
               </Badge>
+              {invitedLabel && employee.status === 'invited' ? (
+                <span className="text-xs text-muted-foreground">Invited {invitedLabel}</span>
+              ) : null}
             </div>
 
-            {/* Contact Information Card */}
             <div className="space-y-3 rounded-lg bg-muted/50 p-4">
               <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Contact Information</p>
               <div className="space-y-2">
@@ -122,60 +129,51 @@ export function EmployeeDetailPanel({ employeeId, onClose, isOpen }: EmployeeDet
                   <Mail className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs text-muted-foreground">Email</p>
-                    <p className="truncate text-sm font-medium">{employee.email}</p>
+                    <p className="truncate text-sm font-medium">{employee.email ?? '—'}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs text-muted-foreground">Location</p>
-                    <p className="text-sm font-medium">{employee.location}</p>
+                    <p className="text-sm font-medium">{employee.location ?? '—'}</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Employment Details Card */}
             <div className="space-y-3 rounded-lg bg-muted/50 p-4">
               <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Employment Details</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <p className="text-xs text-muted-foreground">Department</p>
-                  <p className="text-sm font-medium">{employee.department}</p>
+                  <p className="text-sm font-medium">{employee.department ?? '—'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Type</p>
-                  <p className="text-sm font-medium">{employee.employmentType}</p>
+                  <p className="text-sm font-medium">{formatEmploymentType(employee.employmentType)}</p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-xs text-muted-foreground">Hourly Rate</p>
-                  <p className="text-lg font-bold">${employee.hourlyWage}/hr</p>
+                  <p className="text-lg font-bold">
+                    {employee.hourlyRateUsd != null ? `$${employee.hourlyRateUsd.toFixed(2)}/hr` : '—'}
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* Wallet Information Card */}
             <div className="space-y-3 rounded-lg bg-muted/50 p-4">
               <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Wallet Information</p>
               <div className="space-y-2">
                 <div>
                   <p className="mb-1 text-xs text-muted-foreground">Primary Wallet</p>
                   <code className="block truncate rounded border bg-background p-2 font-mono text-xs">
-                    {employee.walletAddress}
+                    {employee.primaryWallet ?? '—'}
                   </code>
                 </div>
-                {employee.backupWallet && (
-                  <div>
-                    <p className="mb-1 text-xs text-muted-foreground">Backup Wallet</p>
-                    <code className="block truncate rounded border bg-background p-2 font-mono text-xs">
-                      {employee.backupWallet}
-                    </code>
-                  </div>
-                )}
               </div>
             </div>
 
-            {/* Tags Card */}
             {employee.tags.length > 0 && (
               <div className="space-y-3 rounded-lg bg-muted/50 p-4">
                 <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Tags</p>
@@ -190,35 +188,44 @@ export function EmployeeDetailPanel({ employeeId, onClose, isOpen }: EmployeeDet
               </div>
             )}
 
-            {/* Linked Streams Card */}
             <div className="space-y-3 rounded-lg bg-muted/50 p-4">
               <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Linked Streams</p>
               <div className="flex items-center gap-2">
                 <StreamIcon className="h-4 w-4 text-muted-foreground" />
                 <p className="text-sm font-medium">
-                  {employee.linkedStreams > 0 ? (
-                    <span>{employee.linkedStreams} active stream(s)</span>
-                  ) : (
-                    <span className="text-muted-foreground">No active streams</span>
-                  )}
+                  {employee.linkedStreams > 0 ? `${employee.linkedStreams} active stream(s)` : 'No active streams yet'}
                 </p>
               </div>
-            </div>
-
-            {/* Action buttons */}
-            <div className="grid grid-cols-2 gap-2 pt-2">
-              <Button size="sm" onClick={handleEditEmployee} className="w-full">
-                Edit
-              </Button>
-              <Button size="sm" variant="outline" onClick={handleViewStreams} className="w-full bg-transparent">
-                Streams
-              </Button>
-              <Button size="sm" variant="outline" onClick={handleCreateStream} className="w-full bg-transparent">
-                Create
-              </Button>
-              <Button size="sm" variant="outline" onClick={handleArchiveEmployee} className="w-full bg-transparent">
-                Archive
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSelectForAction(() => setIsViewStreamsModalOpen(true))}
+                >
+                  View Streams
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSelectForAction(() => setIsEditEmployeeModalOpen(true))}
+                >
+                  Edit Details
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSelectForAction(() => setIsCreateStreamModalOpen(true))}
+                >
+                  Create Stream
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleSelectForAction(() => setIsArchiveEmployeeModalOpen(true))}
+                >
+                  Archive Employee
+                </Button>
+              </div>
             </div>
           </div>
         </div>

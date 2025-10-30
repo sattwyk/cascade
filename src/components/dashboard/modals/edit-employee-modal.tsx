@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
@@ -10,63 +10,86 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import type { EmployeeSummary } from '@/types/employee';
 
-type Step = 'profile' | 'wallet' | 'settings' | 'review';
+type Step = 'profile' | 'settings' | 'review';
 
 interface EditEmployeeModalProps {
   isOpen: boolean;
   onClose: () => void;
   employeeId: string;
+  employee: EmployeeSummary | null;
 }
 
-// Mock employee data
-const MOCK_EMPLOYEE = {
-  id: '1',
-  name: 'Alice Johnson',
-  email: 'alice@example.com',
-  department: 'Engineering',
-  location: 'San Francisco, CA',
-  employmentType: 'Full-time',
-  primaryWallet: '7xL...abc',
-  backupWallet: '7xL...backup',
-  hourlyWage: '50',
-  tags: 'Senior, Backend',
-};
-
-export function EditEmployeeModal({ isOpen, onClose, employeeId }: EditEmployeeModalProps) {
+export function EditEmployeeModal({ isOpen, onClose, employeeId, employee }: EditEmployeeModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>('profile');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Profile step
-  const [name, setName] = useState(MOCK_EMPLOYEE.name);
-  const [email, setEmail] = useState(MOCK_EMPLOYEE.email);
-  const [department, setDepartment] = useState(MOCK_EMPLOYEE.department);
-  const [location, setLocation] = useState(MOCK_EMPLOYEE.location);
-  const [employmentType, setEmploymentType] = useState(MOCK_EMPLOYEE.employmentType);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [department, setDepartment] = useState('');
+  const [location, setLocation] = useState('');
+  const [employmentType, setEmploymentType] = useState('');
+  const [primaryWallet, setPrimaryWallet] = useState('');
+  const [hourlyWage, setHourlyWage] = useState('');
+  const [tags, setTags] = useState('');
 
-  // Wallet step
-  const [primaryWallet, setPrimaryWallet] = useState(MOCK_EMPLOYEE.primaryWallet);
-  const [backupWallet, setBackupWallet] = useState(MOCK_EMPLOYEE.backupWallet);
+  const hydrateFromEmployee = (source: EmployeeSummary | null) => {
+    if (!source) {
+      setName('');
+      setEmail('');
+      setDepartment('');
+      setLocation('');
+      setEmploymentType('');
+      setPrimaryWallet('');
+      setHourlyWage('');
+      setTags('');
+      return;
+    }
 
-  // Settings step
-  const [hourlyWage, setHourlyWage] = useState(MOCK_EMPLOYEE.hourlyWage);
-  const [tags, setTags] = useState(MOCK_EMPLOYEE.tags);
+    setName(source.name ?? '');
+    setEmail(source.email ?? '');
+    setDepartment(source.department ?? '');
+    setLocation(source.location ?? '');
+    setEmploymentType(
+      source.employmentType
+        ? source.employmentType
+            .split('_')
+            .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+            .join(' ')
+        : '',
+    );
+    setPrimaryWallet(source.primaryWallet ?? '');
+    setHourlyWage(source.hourlyRateUsd != null ? source.hourlyRateUsd.toString() : '');
+    setTags(source.tags.join(', '));
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    hydrateFromEmployee(employee);
+    setCurrentStep('profile');
+  }, [employee, isOpen]);
+
+  if (!employee) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Employee</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">Select an employee from the directory to edit their details.</p>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const resetForm = () => {
+    hydrateFromEmployee(employee);
     setCurrentStep('profile');
-    setName(MOCK_EMPLOYEE.name);
-    setEmail(MOCK_EMPLOYEE.email);
-    setDepartment(MOCK_EMPLOYEE.department);
-    setLocation(MOCK_EMPLOYEE.location);
-    setEmploymentType(MOCK_EMPLOYEE.employmentType);
-    setPrimaryWallet(MOCK_EMPLOYEE.primaryWallet);
-    setBackupWallet(MOCK_EMPLOYEE.backupWallet);
-    setHourlyWage(MOCK_EMPLOYEE.hourlyWage);
-    setTags(MOCK_EMPLOYEE.tags);
   };
 
   const handleNext = () => {
-    const steps: Step[] = ['profile', 'wallet', 'settings', 'review'];
+    const steps: Step[] = ['profile', 'settings', 'review'];
     const currentIndex = steps.indexOf(currentStep);
     if (currentIndex < steps.length - 1) {
       setCurrentStep(steps[currentIndex + 1]);
@@ -74,7 +97,7 @@ export function EditEmployeeModal({ isOpen, onClose, employeeId }: EditEmployeeM
   };
 
   const handleBack = () => {
-    const steps: Step[] = ['profile', 'wallet', 'settings', 'review'];
+    const steps: Step[] = ['profile', 'settings', 'review'];
     const currentIndex = steps.indexOf(currentStep);
     if (currentIndex > 0) {
       setCurrentStep(steps[currentIndex - 1]);
@@ -82,7 +105,7 @@ export function EditEmployeeModal({ isOpen, onClose, employeeId }: EditEmployeeM
   };
 
   const handleSubmit = async () => {
-    if (!name || !email || !department || !location || !primaryWallet || !hourlyWage) {
+    if (!name || !email || !department || !location || !hourlyWage) {
       toast.error('Missing required fields', {
         description: 'Please fill in all required fields.',
       });
@@ -93,7 +116,7 @@ export function EditEmployeeModal({ isOpen, onClose, employeeId }: EditEmployeeM
     try {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       toast.success('Employee updated successfully!', {
-        description: `${name}'s profile (ID: ${employeeId}) has been updated with all changes.`,
+        description: `${name || employee?.name || 'Employee'} (ID: ${employeeId}) has been updated.`,
       });
       resetForm();
       onClose();
@@ -108,7 +131,7 @@ export function EditEmployeeModal({ isOpen, onClose, employeeId }: EditEmployeeM
   };
 
   const handleClose = () => {
-    if (currentStep !== 'profile' || name !== MOCK_EMPLOYEE.name) {
+    if (currentStep !== 'profile') {
       toast.info('Edit cancelled', {
         description: 'Your changes have been discarded.',
       });
@@ -121,10 +144,8 @@ export function EditEmployeeModal({ isOpen, onClose, employeeId }: EditEmployeeM
     switch (currentStep) {
       case 'profile':
         return name && email && department && location && employmentType;
-      case 'wallet':
-        return primaryWallet;
       case 'settings':
-        return hourlyWage;
+        return hourlyWage && primaryWallet;
       case 'review':
         return true;
       default:
@@ -142,11 +163,11 @@ export function EditEmployeeModal({ isOpen, onClose, employeeId }: EditEmployeeM
         <div className="space-y-6">
           {/* Progress indicator */}
           <div className="flex gap-2">
-            {['profile', 'wallet', 'settings', 'review'].map((step, index) => (
+            {['profile', 'settings', 'review'].map((step, index) => (
               <div
                 key={step}
                 className={`h-1 flex-1 rounded-full ${
-                  ['profile', 'wallet', 'settings', 'review'].indexOf(currentStep) >= index ? 'bg-primary' : 'bg-muted'
+                  ['profile', 'settings', 'review'].indexOf(currentStep) >= index ? 'bg-primary' : 'bg-muted'
                 }`}
               />
             ))}
@@ -195,29 +216,7 @@ export function EditEmployeeModal({ isOpen, onClose, employeeId }: EditEmployeeM
             </div>
           )}
 
-          {/* Step 2: Wallet */}
-          {currentStep === 'wallet' && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="mb-2 font-semibold">Wallet Information</h3>
-                <p className="text-sm text-muted-foreground">Update wallet addresses</p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="primary-wallet">Primary Wallet Address</Label>
-                  <Input id="primary-wallet" value={primaryWallet} onChange={(e) => setPrimaryWallet(e.target.value)} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="backup-wallet">Backup Wallet (Optional)</Label>
-                  <Input id="backup-wallet" value={backupWallet} onChange={(e) => setBackupWallet(e.target.value)} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Settings */}
+          {/* Step 2: Settings */}
           {currentStep === 'settings' && (
             <div className="space-y-4">
               <div>
@@ -233,6 +232,16 @@ export function EditEmployeeModal({ isOpen, onClose, employeeId }: EditEmployeeM
                     type="number"
                     value={hourlyWage}
                     onChange={(e) => setHourlyWage(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="primary-wallet">Primary Wallet</Label>
+                  <Input
+                    id="primary-wallet"
+                    value={primaryWallet}
+                    onChange={(e) => setPrimaryWallet(e.target.value)}
+                    placeholder="Employee payout wallet"
                   />
                 </div>
 
@@ -271,8 +280,12 @@ export function EditEmployeeModal({ isOpen, onClose, employeeId }: EditEmployeeM
                     <span className="font-medium">{employmentType}</span>
                   </div>
                   <div className="flex justify-between">
+                    <span className="text-muted-foreground">Primary Wallet</span>
+                    <span className="font-mono text-xs">{primaryWallet || '—'}</span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-muted-foreground">Hourly Wage</span>
-                    <span className="font-medium">${hourlyWage}</span>
+                    <span className="font-medium">{hourlyWage ? `$${hourlyWage}` : '—'}</span>
                   </div>
                 </CardContent>
               </Card>

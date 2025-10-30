@@ -62,6 +62,8 @@ export const streamStateEnum = pgEnum('stream_state', ['draft', 'active', 'suspe
 
 export const walletRoleEnum = pgEnum('wallet_role', ['treasury', 'operator', 'viewer']);
 
+export const organizationUserRoleEnum = pgEnum('organization_user_role', ['employer', 'employee']);
+
 export const alertSeverityEnum = pgEnum('alert_severity', ['low', 'medium', 'high', 'critical']);
 
 export const alertStatusEnum = pgEnum('alert_status', ['open', 'acknowledged', 'resolved', 'dismissed']);
@@ -116,7 +118,6 @@ export const organizations = pgTable(
     activityPolicyAcknowledgedAt: timestamp('activity_policy_acknowledged_at', { withTimezone: true }),
     emergencyPolicyAcknowledgedAt: timestamp('emergency_policy_acknowledged_at', { withTimezone: true }),
     onboardingCompletedAt: timestamp('onboarding_completed_at', { withTimezone: true }),
-    demoMode: boolean('demo_mode').default(false).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
@@ -218,6 +219,32 @@ export const employees = pgTable(
     uniqueIndex('employees_org_email_key').on(table.organizationId, table.email),
     index('employees_primary_wallet_idx').on(table.organizationId, table.primaryWallet),
     index('employees_status_idx').on(table.organizationId, table.status),
+  ],
+);
+
+export const organizationUsers = pgTable(
+  'organization_users',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .references(() => organizations.id, { onDelete: 'cascade' })
+      .notNull(),
+    employeeId: uuid('employee_id').references(() => employees.id, { onDelete: 'set null' }),
+    email: varchar('email', { length: 255 }).notNull(),
+    displayName: varchar('display_name', { length: 128 }).notNull(),
+    walletAddress: varchar('wallet_address', { length: 64 }),
+    role: organizationUserRoleEnum('role').default('employee').notNull(),
+    isPrimary: boolean('is_primary').default(false).notNull(),
+    invitedAt: timestamp('invited_at', { withTimezone: true }),
+    joinedAt: timestamp('joined_at', { withTimezone: true }),
+    metadata: jsonb('metadata').$type<Record<string, unknown>>().default({}).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('organization_user_unique_email').on(table.organizationId, table.email),
+    index('organization_user_wallet_idx').on(table.walletAddress),
+    index('organization_user_employee_idx').on(table.employeeId),
   ],
 );
 

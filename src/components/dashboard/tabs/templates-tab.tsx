@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { Copy, Plus, Trash2 } from 'lucide-react';
+import { Copy, Plus, Trash2, Zap } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -58,7 +58,7 @@ const MOCK_TEMPLATES: StreamTemplate[] = [
 
 export function TemplatesTab() {
   const [templates, setTemplates] = useState(MOCK_TEMPLATES);
-  const { accountState } = useDashboard();
+  const { accountState, setupProgress, setIsCreateStreamModalOpen } = useDashboard();
   const config = getAccountStateConfig(accountState);
 
   const deleteTemplate = (id: string) => {
@@ -76,6 +76,26 @@ export function TemplatesTab() {
           icon={<Plus className="h-12 w-12 text-muted-foreground" />}
           title="Templates Coming Soon"
           description="Create your first payment stream to unlock stream templates"
+        />
+      </div>
+    );
+  }
+
+  if (!setupProgress.streamCreated) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Stream Templates</h1>
+          <p className="text-muted-foreground">Create reusable payment stream configurations</p>
+        </div>
+        <EmptyState
+          icon={<Zap className="h-12 w-12 text-muted-foreground" />}
+          title="Templates unlock after your first stream"
+          description="Launch a live payment stream to start saving configurations as reusable templates."
+          action={{
+            label: 'Create Stream',
+            onClick: () => setIsCreateStreamModalOpen(true),
+          }}
         />
       </div>
     );

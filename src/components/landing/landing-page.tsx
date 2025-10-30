@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+// TODO: Fix the wallet connect drawer persistance issue
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 import { UiWallet, useWalletUi, useWalletUiWallet } from '@wallet-ui/react';
-import { ArrowRight, Check, Wallet, Zap } from 'lucide-react';
+import { ArrowRight, Check, Loader2, Wallet, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -15,15 +16,24 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { AccountState } from '@/lib/enums';
 import { cn } from '@/lib/utils';
 
-function WalletOptionButton({ wallet, onConnected }: { wallet: UiWallet; onConnected: () => void }) {
+function persistAccountState(state: AccountState) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('cascade_account_state', state);
+}
+
+type FlowType = 'employer' | 'employee';
+
+function WalletOptionButton({ wallet, onConnected }: { wallet: UiWallet; onConnected?: () => void }) {
   const { connect, isConnecting } = useWalletUiWallet({ wallet });
 
   const handleSelect = async () => {
     try {
       await connect();
-      onConnected();
+      onConnected?.();
+      toast.success(`${wallet.name} connected`);
     } catch (error) {
       console.error('Failed to connect wallet', error);
       toast.error('Failed to connect wallet');
@@ -49,12 +59,30 @@ function WalletOptionButton({ wallet, onConnected }: { wallet: UiWallet; onConne
   );
 }
 
+type WalletResolution = {
+  found: boolean;
+  role: FlowType;
+  dbUnavailable: boolean;
+};
+
 export const LandingPage = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isWalletDrawerOpen, setIsWalletDrawerOpen] = useState(false);
+  const [walletResolution, setWalletResolution] = useState<WalletResolution | null>(null);
+  const [walletError, setWalletError] = useState<string | null>(null);
+  const [isCheckingWallet, setIsCheckingWallet] = useState(false);
+  const lastResolvedAddress = useRef<string | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
+  const [pendingCTA, setPendingCTA] = useState<FlowType | null>(null);
   const { account, connected, disconnect, wallets } = useWalletUi();
+  const accountAddress = useMemo(() => account?.address ?? null, [account]);
+  const autoNavigatedFor = useRef<string | null>(null);
+  useEffect(() => {
+    persistAccountState(AccountState.NEW_ACCOUNT);
+  }, []);
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => setMounted(true));
@@ -67,6 +95,171 @@ export const LandingPage = () => {
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
+
+  useEffect(() => {
+    if (pathname !== '/') {
+      setIsWalletDrawerOpen(false);
+    }
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!isPending) {
+      setPendingCTA((current) => (current ? null : current));
+    }
+  }, [isPending]);
+
+  const resolveWalletRole = useCallback(async (walletAddress: string, intendedRole: FlowType = 'employer') => {
+    setIsCheckingWallet(true);
+    setWalletError(null);
+    try {
+      const persistedOrgId =
+        typeof window !== 'undefined' ? (localStorage.getItem('cascade-organization-id') ?? undefined) : undefined;
+
+      const response = await fetch('/api/auth/resolve-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress,
+          intendedRole,
+          organizationId: persistedOrgId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to resolve wallet role: ${response.statusText}`);
+      }
+
+      const payload: {
+        found: boolean;
+        role: FlowType;
+        organizationId?: string | null;
+        dbUnavailable?: boolean;
+        reason?: string;
+      } = await response.json();
+
+      if (typeof window !== 'undefined') {
+        if (payload.organizationId) {
+          localStorage.setItem('cascade-organization-id', payload.organizationId);
+        } else {
+          localStorage.removeItem('cascade-organization-id');
+        }
+      }
+
+      setWalletResolution({
+        found: payload.found,
+        role: payload.role,
+        dbUnavailable: Boolean(payload.dbUnavailable),
+      });
+
+      if (payload.dbUnavailable) {
+        setWalletError(
+          'We could not confirm your account right now. You can start employer onboarding or try again shortly.',
+        );
+      } else if (!payload.found && payload.role === 'employee') {
+        setWalletError('We could not find an employee record for this wallet. Use your invite link to continue.');
+      } else if (!payload.found) {
+        setWalletError(null);
+      } else {
+        setWalletError(null);
+      }
+    } catch (error) {
+      console.error('Unable to resolve wallet role', error);
+      setWalletResolution(null);
+      setWalletError('Unable to verify your wallet. Please try again.');
+    } finally {
+      setIsCheckingWallet(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!connected || !accountAddress) {
+      setWalletResolution(null);
+      setWalletError(null);
+      lastResolvedAddress.current = null;
+      autoNavigatedFor.current = null;
+      persistAccountState(AccountState.NEW_ACCOUNT);
+      return;
+    }
+
+    if (lastResolvedAddress.current === accountAddress) return;
+    lastResolvedAddress.current = accountAddress;
+    void resolveWalletRole(accountAddress, 'employer');
+  }, [accountAddress, connected, resolveWalletRole]);
+
+  const handleEmployerCta = useCallback(() => {
+    setPendingCTA('employer');
+    setIsWalletDrawerOpen(false);
+    persistAccountState(AccountState.ONBOARDING);
+    startTransition(() => {
+      router.push('/onboarding');
+    });
+  }, [router, setIsWalletDrawerOpen, startTransition]);
+
+  const handleEmployeeCta = useCallback(() => {
+    setPendingCTA('employee');
+    startTransition(() => {
+      router.push('/onboarding/employee');
+    });
+  }, [router, startTransition]);
+
+  const handleWalletConnectClick = useCallback(() => {
+    setIsWalletDrawerOpen(true);
+  }, []);
+
+  const handleDisconnect = useCallback(async () => {
+    try {
+      await Promise.resolve(disconnect());
+      setWalletResolution(null);
+      setWalletError(null);
+      lastResolvedAddress.current = null;
+      autoNavigatedFor.current = null;
+      persistAccountState(AccountState.NEW_ACCOUNT);
+      toast.success('Wallet disconnected');
+    } catch (error) {
+      console.error('Failed to disconnect wallet', error);
+      toast.error('Failed to disconnect wallet');
+    }
+  }, [disconnect]);
+
+  const openDestination = useCallback(
+    (role: FlowType) => {
+      setIsWalletDrawerOpen(false);
+      toast.success(role === 'employee' ? 'Opening employee dashboard' : 'Opening employer dashboard');
+      // Small delay to allow drawer to start closing animation
+      setTimeout(() => {
+        startTransition(() => {
+          router.push('/dashboard');
+        });
+      }, 150);
+    },
+    [router, startTransition],
+  );
+
+  useEffect(() => {
+    if (!connected || !accountAddress || !walletResolution || isCheckingWallet) return;
+    if (walletResolution.dbUnavailable) return;
+    if (autoNavigatedFor.current === accountAddress) return;
+
+    autoNavigatedFor.current = accountAddress;
+
+    if (walletResolution.found) {
+      persistAccountState(AccountState.WALLET_CONNECTED);
+      toast.success(
+        walletResolution.role === 'employee'
+          ? 'Wallet recognized. Redirecting to your employee dashboard.'
+          : 'Welcome back. Redirecting to your employer dashboard.',
+      );
+      setIsWalletDrawerOpen(false);
+      setTimeout(() => {
+        startTransition(() => {
+          router.push('/dashboard');
+        });
+      }, 150);
+      return;
+    }
+
+    toast.success("Let's finish setting up your employer workspace.");
+  }, [accountAddress, connected, isCheckingWallet, router, walletResolution, startTransition]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -100,8 +293,8 @@ export const LandingPage = () => {
 
           <Button
             size="lg"
-            className="gap-2 rounded-full bg-gradient-to-r from-primary to-primary/80 shadow-md transition-all hover:scale-101 hover:shadow-lg"
-            onClick={() => setIsWalletDrawerOpen(true)}
+            className="gap-2 rounded-full bg-linear-to-r from-primary to-primary/80 shadow-md transition-all hover:scale-101 hover:shadow-lg"
+            onClick={handleWalletConnectClick}
           >
             <Wallet className="h-4 w-4" />
             <span>{connected && account ? 'Manage Wallet' : 'Connect Wallet'}</span>
@@ -134,7 +327,7 @@ export const LandingPage = () => {
             >
               Stream payments
               <br />
-              <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              <span className="bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                 hour by hour
               </span>
             </h1>
@@ -156,40 +349,66 @@ export const LandingPage = () => {
               )}
             >
               <Button
-                asChild
                 size="lg"
-                className="group gap-2 rounded-full bg-gradient-to-r from-primary to-primary/80 px-8 py-6 text-lg shadow-md transition-all duration-300 hover:scale-103 hover:shadow-lg"
+                className="group gap-2 rounded-full bg-linear-to-r from-primary to-primary/80 px-8 py-6 text-lg shadow-md transition-all duration-300 hover:scale-103 hover:shadow-lg"
+                onClick={handleEmployerCta}
+                disabled={pendingCTA === 'employer'}
               >
-                <Link href="/dashboard">
-                  Start Paying
-                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-                </Link>
+                {pendingCTA === 'employer' ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Starting…
+                  </span>
+                ) : (
+                  <>
+                    <span>Start Employer Onboarding</span>
+                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                  </>
+                )}
               </Button>
 
               <Button
-                asChild
                 size="lg"
                 variant="outline"
-                className="group gap-2 rounded-full border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5 px-8 py-6 text-lg shadow-md transition-all duration-300 hover:scale-103 hover:from-primary/15 hover:to-primary/10 hover:shadow-lg"
+                className="group gap-2 rounded-full border-primary/20 bg-linear-to-r from-primary/10 to-primary/5 px-8 py-6 text-lg shadow-md transition-all duration-300 hover:scale-103 hover:from-primary/15 hover:to-primary/10 hover:shadow-lg"
+                onClick={handleEmployeeCta}
+                disabled={pendingCTA === 'employee'}
               >
-                <Link href="/">
-                  Join Your Organization
-                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-                </Link>
+                {pendingCTA === 'employee' ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Opening…
+                  </span>
+                ) : (
+                  <>
+                    <span>Employee Sign In</span>
+                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                  </>
+                )}
               </Button>
             </div>
+
+            <p
+              className={cn(
+                'mt-6 text-sm text-muted-foreground transition-all delay-[450ms] duration-500',
+                mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
+              )}
+            >
+              New employers can onboard directly. Employees should use the invite link sent to their inbox to access
+              their workspace.
+            </p>
           </div>
 
           <div
             className={cn(
-              'group relative mx-auto mt-24 max-w-[90rem] transition-all delay-500 duration-1000',
+              'group relative mx-auto mt-24 max-w-360 transition-all delay-500 duration-1000',
               mounted ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-12 scale-95 opacity-0',
             )}
           >
             <div className="absolute -inset-4 -z-10 rounded-3xl bg-primary/10 blur-3xl transition-all duration-500 group-hover:bg-primary/25" />
 
-            <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-b from-card/80 to-card/40 shadow-2xl backdrop-blur-xl transition-all duration-500 group-hover:border-primary/40">
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-primary/20 via-transparent to-primary/10 transition-all duration-500 group-hover:from-primary/35 group-hover:to-primary/25" />
+            <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-linear-to-b from-card/80 to-card/40 shadow-2xl backdrop-blur-xl transition-all duration-500 group-hover:border-primary/40">
+              <div className="absolute inset-0 rounded-2xl bg-linear-to-tr from-primary/20 via-transparent to-primary/10 transition-all duration-500 group-hover:from-primary/35 group-hover:to-primary/25" />
 
               <div className="relative overflow-hidden rounded-2xl">
                 <Image
@@ -211,7 +430,7 @@ export const LandingPage = () => {
           </div>
         </div>
 
-        <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-32 bg-gradient-to-b from-transparent to-background" />
+        <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-32 bg-linear-to-b from-transparent to-background" />
       </section>
 
       <section className="py-20">
@@ -306,44 +525,86 @@ export const LandingPage = () => {
               <div className="rounded-lg border border-border/60 bg-muted/30 p-4">
                 <p className="text-sm font-medium text-muted-foreground">Active wallet</p>
                 <p className="mt-1 font-mono text-sm">{account.address}</p>
-                <Button
-                  className="mt-4 w-full"
-                  onClick={() => {
-                    setIsWalletDrawerOpen(false);
-                    router.push('/dashboard');
-                  }}
-                >
-                  Open Dashboard
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="mt-2 w-full"
-                  onClick={async () => {
-                    try {
-                      await disconnect();
-                      toast.success('Wallet disconnected');
-                    } catch (error) {
-                      console.error('Failed to disconnect wallet', error);
-                      toast.error('Failed to disconnect wallet');
-                    }
-                  }}
-                >
+                {isCheckingWallet ? (
+                  <Button className="mt-4 w-full" disabled>
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Checking access…
+                    </span>
+                  </Button>
+                ) : walletResolution?.found ? (
+                  <Button
+                    className="mt-4 w-full"
+                    onClick={() => openDestination(walletResolution.role)}
+                    disabled={isPending}
+                  >
+                    {isPending ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Opening…
+                      </span>
+                    ) : (
+                      `Open ${walletResolution.role === 'employee' ? 'Employee Dashboard' : 'Employer Dashboard'}`
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    className="mt-4 w-full"
+                    onClick={() => {
+                      setIsWalletDrawerOpen(false);
+                      // Small delay to allow drawer to start closing animation
+                      setTimeout(() => {
+                        startTransition(() => {
+                          router.push('/onboarding');
+                        });
+                      }, 150);
+                    }}
+                    disabled={isPending}
+                  >
+                    {isPending ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Starting…
+                      </span>
+                    ) : (
+                      'Start Employer Onboarding'
+                    )}
+                  </Button>
+                )}
+
+                {walletError ? (
+                  <div className="mt-3 rounded border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                    {walletError}
+                  </div>
+                ) : null}
+
+                {!isCheckingWallet && walletResolution && !walletResolution.found ? (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    This wallet is not registered yet. Employers can begin onboarding above. Employees need to open the
+                    invite link that was emailed to them.
+                  </p>
+                ) : null}
+
+                {accountAddress && (walletError || walletResolution?.dbUnavailable) ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 w-full"
+                    onClick={() => resolveWalletRole(accountAddress)}
+                    disabled={isCheckingWallet}
+                  >
+                    Retry Lookup
+                  </Button>
+                ) : null}
+
+                <Button variant="ghost" className="mt-2 w-full" onClick={handleDisconnect}>
                   Disconnect
                 </Button>
               </div>
             ) : (
               <div className="space-y-3">
                 {wallets.length ? (
-                  wallets.map((wallet) => (
-                    <WalletOptionButton
-                      key={wallet.name}
-                      wallet={wallet}
-                      onConnected={() => {
-                        setIsWalletDrawerOpen(false);
-                        router.push('/dashboard');
-                      }}
-                    />
-                  ))
+                  wallets.map((wallet) => <WalletOptionButton key={wallet.name} wallet={wallet} />)
                 ) : (
                   <div className="rounded-lg border border-dashed border-border/60 p-4 text-center">
                     <p className="text-sm text-muted-foreground">

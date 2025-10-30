@@ -38,6 +38,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     setIsAddEmployeeModalOpen,
     isTopUpModalOpen,
     setIsTopUpModalOpen,
+    isTopUpAccountModalOpen,
+    setIsTopUpAccountModalOpen,
     isEmergencyWithdrawModalOpen,
     setIsEmergencyWithdrawModalOpen,
     isCloseStreamModalOpen,
@@ -49,6 +51,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     isArchiveEmployeeModalOpen,
     setIsArchiveEmployeeModalOpen,
     selectedEmployeeId,
+    selectedEmployee,
     isOnboardingRequired,
   } = useDashboard();
 
@@ -91,8 +94,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
       <CreateStreamModal isOpen={isCreateStreamModalOpen} onClose={() => setIsCreateStreamModalOpen(false)} />
       <AddEmployeeModal isOpen={isAddEmployeeModalOpen} onClose={() => setIsAddEmployeeModalOpen(false)} />
-      <TopUpAccountModal isOpen={isTopUpModalOpen} onClose={() => setIsTopUpModalOpen(false)} />
-      <TopUpStreamModal isOpen={isEmergencyWithdrawModalOpen} onClose={() => setIsEmergencyWithdrawModalOpen(false)} />
+      <TopUpAccountModal isOpen={isTopUpAccountModalOpen} onClose={() => setIsTopUpAccountModalOpen(false)} />
+      <TopUpStreamModal isOpen={isTopUpModalOpen} onClose={() => setIsTopUpModalOpen(false)} />
       <EmergencyWithdrawModal
         isOpen={isEmergencyWithdrawModalOpen}
         onClose={() => setIsEmergencyWithdrawModalOpen(false)}
@@ -102,18 +105,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <ViewStreamsModal
         isOpen={isViewStreamsModalOpen}
         onClose={() => setIsViewStreamsModalOpen(false)}
-        employeeName={selectedEmployeeId ? 'Alice Johnson' : ''}
+        employeeName={selectedEmployee?.name ?? ''}
       />
       <EditEmployeeModal
         isOpen={isEditEmployeeModalOpen}
         onClose={() => setIsEditEmployeeModalOpen(false)}
         employeeId={selectedEmployeeId || ''}
+        employee={selectedEmployee ?? null}
       />
       <ArchiveEmployeeModal
         isOpen={isArchiveEmployeeModalOpen}
         onClose={() => setIsArchiveEmployeeModalOpen(false)}
         employeeId={selectedEmployeeId || ''}
-        employeeName={selectedEmployeeId ? 'Alice Johnson' : ''}
+        employeeName={selectedEmployee?.name ?? ''}
       />
     </SidebarProvider>
   );

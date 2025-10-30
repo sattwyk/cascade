@@ -3,7 +3,6 @@
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-import { DemoModeBanner } from '../demo-mode-banner';
 import { OnboardingBanner } from './onboarding-banner';
 import { StateSwitcher } from './state-switcher';
 import { WalletBanner } from './wallet-banner';
@@ -15,7 +14,6 @@ export function DashboardHeader() {
 
   return (
     <header className="border-b border-border bg-card">
-      <DemoModeBanner />
       <OnboardingBanner />
 
       <WalletBanner />

@@ -14,6 +14,7 @@ import { getAccountStateConfig, getAllAccountStates } from '@/lib/config/account
 import { useDashboard } from '../dashboard-context';
 
 export function StateSwitcher() {
+  return null;
   const { accountState, setAccountState } = useDashboard();
   const currentConfig = getAccountStateConfig(accountState);
   const allStates = getAllAccountStates();
