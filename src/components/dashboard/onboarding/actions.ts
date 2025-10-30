@@ -1,5 +1,7 @@
 'use server';
 
+import { cookies } from 'next/headers';
+
 import { start } from 'workflow/api';
 import { z } from 'zod';
 
@@ -46,7 +48,8 @@ type VerifyResult = {
 
 type CompleteResult = {
   organizationId: string;
-  employeeId: string;
+  organizationUserId: string;
+  role: 'employer' | 'employee';
 };
 
 function extractVerificationError(error: unknown, fallback: string): string {
@@ -138,7 +141,36 @@ export async function completeEmployerOnboarding(input: unknown): Promise<Action
 
   try {
     const run = await start(employerOnboardingWorkflow, [payload]);
-    const result = await run.returnValue;
+    const result = (await run.returnValue) as CompleteResult;
+
+    const cookieStore = await cookies();
+    const normalizedEmail = payload.organizationMail.trim().toLowerCase();
+    if (normalizedEmail) {
+      cookieStore.set({
+        name: 'cascade-user-email',
+        value: normalizedEmail,
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+      });
+    }
+    if (payload.confirmedWalletAddress) {
+      cookieStore.set({
+        name: 'cascade-wallet',
+        value: payload.confirmedWalletAddress,
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+      });
+    }
+    cookieStore.set({
+      name: 'cascade-user-role',
+      value: result.role,
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+    });
+
     return { ok: true, data: result };
   } catch (error) {
     console.error('[onboarding] Failed to complete employer onboarding', error);

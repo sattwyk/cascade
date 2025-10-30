@@ -1,12 +1,11 @@
 'use client';
 
-// TODO: Sync the checklist state with rest of the ui
 import React, { memo, useCallback, useMemo, useTransition } from 'react';
 
 import { usePathname, useRouter } from 'next/navigation';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ellipsify, UiWallet, useWalletUi, useWalletUiWallet } from '@wallet-ui/react';
+import { ellipsify, useWalletUi } from '@wallet-ui/react';
 import { formatInTimeZone } from 'date-fns-tz';
 import { Check, ChevronsUpDown, Circle, type LucideProps } from 'lucide-react';
 import {
@@ -23,12 +22,11 @@ import { z } from 'zod';
 
 import { useDashboard } from '@/components/dashboard/dashboard-context';
 import { SolanaIcon, USDCIcon, USDTIcon } from '@/components/icons';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { WalletDrawer } from '@/components/onboarding/shared/wallet-picker';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Label } from '@/components/ui/label';
@@ -190,54 +188,6 @@ const TimezoneSelect = memo(function TimezoneSelect({ options }: { options: Time
         </div>
       )}
     />
-  );
-});
-
-const WalletOptionButton = memo(function WalletOptionButton({
-  wallet,
-  isActive,
-  onConnected,
-}: {
-  wallet: UiWallet;
-  isActive: boolean;
-  onConnected: () => void;
-}) {
-  const { connect, isConnecting } = useWalletUiWallet({ wallet });
-
-  const handleSelect = useCallback(async () => {
-    if (isActive) return;
-    try {
-      await connect();
-      onConnected();
-    } catch (err) {
-      console.error('Failed to connect wallet', err);
-      toast.error('Failed to connect wallet');
-    }
-  }, [connect, isActive, onConnected]);
-
-  return (
-    <Button
-      type="button"
-      variant={isActive ? 'secondary' : 'outline'}
-      className={cn(
-        'w-full justify-center gap-3 bg-card text-center hover:bg-muted',
-        isActive && 'border-primary bg-primary/10 text-primary hover:bg-primary/10',
-      )}
-      onClick={handleSelect}
-      disabled={isConnecting || isActive}
-    >
-      <Avatar className="h-8 w-8 shrink-0 rounded-md p-1">
-        <AvatarImage src={wallet.icon} alt={wallet.name} />
-        <AvatarFallback>{wallet.name[0]}</AvatarFallback>
-      </Avatar>
-      <div className="flex flex-col items-start text-left">
-        <span className="text-sm font-medium">
-          {wallet.name}
-          {isActive ? <span className="ml-2 text-xs font-semibold text-primary">(Currently connected)</span> : null}
-        </span>
-        {!isActive && isConnecting ? <span className="text-xs text-muted-foreground">Connecting…</span> : null}
-      </div>
-    </Button>
   );
 });
 
@@ -422,6 +372,7 @@ const OrgStep = memo(function OrgStep({
             control={control}
             render={({ field, fieldState }) => (
               <>
+                {/* TODO: fix organization mail input causing a lot of re-renders */}
                 <Input
                   id="organization-mail"
                   type="email"
@@ -987,73 +938,3 @@ export function OnboardingPage() {
     </FormProvider>
   );
 }
-
-const WalletDrawer = memo(function WalletDrawer({
-  open,
-  onOpenChange,
-  wallets,
-  activeWalletName,
-  onConnected,
-  onDisconnect,
-  accountAddress,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  wallets: UiWallet[];
-  activeWalletName: string | null;
-  onConnected: () => void;
-  onDisconnect: () => void;
-  accountAddress: string | null;
-}) {
-  return (
-    <Drawer open={open} onOpenChange={onOpenChange} direction="top">
-      <DrawerContent className="mx-auto w-full max-w-lg rounded-b-3xl border-b border-border bg-card">
-        <DrawerHeader className="pb-4">
-          <DrawerTitle className="text-center text-base font-semibold">
-            {accountAddress ? 'Select a wallet' : 'Connect a wallet'}
-          </DrawerTitle>
-        </DrawerHeader>
-        <div className="space-y-4 px-4 pb-6">
-          {accountAddress ? (
-            <div className="rounded-lg border border-border/60 bg-muted/30 p-4">
-              <p className="text-sm font-medium text-muted-foreground">Current wallet</p>
-              <p className="mt-1 font-mono text-sm">{accountAddress}</p>
-              <Button type="button" variant="ghost" className="mt-4 w-full" onClick={onDisconnect}>
-                Disconnect
-              </Button>
-            </div>
-          ) : null}
-
-          <div className="space-y-3">
-            {wallets.length ? (
-              wallets.map((w) => (
-                <WalletOptionButton
-                  key={w.name}
-                  wallet={w}
-                  isActive={Boolean(activeWalletName && activeWalletName === w.name)}
-                  onConnected={onConnected}
-                />
-              ))
-            ) : (
-              <div className="rounded-lg border border-dashed border-border/60 p-4 text-center">
-                <p className="text-sm text-muted-foreground">
-                  No wallets detected.{' '}
-                  <a
-                    className="text-primary underline"
-                    href="https://solana.com/solana-wallets"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Get a Solana wallet
-                  </a>{' '}
-                  to continue.
-                </p>
-              </div>
-            )}
-          </div>
-          <div className="mx-auto mt-4 h-1 w-12 rounded-full bg-muted-foreground/40" />
-        </div>
-      </DrawerContent>
-    </Drawer>
-  );
-});

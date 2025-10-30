@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { FatalError } from 'workflow';
 
 import { drizzleClientHttp } from '@/db';
-import { employees, onboardingEmailVerifications, organizations, organizationWallets } from '@/db/schema';
+import { onboardingEmailVerifications, organizations, organizationUsers, organizationWallets } from '@/db/schema';
 
 const OTP_TTL_MINUTES = 10;
 const MAX_VERIFICATION_ATTEMPTS = 5;
@@ -81,7 +81,7 @@ export async function employerOnboardingWorkflow(input: CompleteOnboardingInput)
     emergencyAcknowledged: input.emergencyAcknowledged,
   });
 
-  const employee = await seedInitialEmployee({
+  const adminUser = await registerOrganizationAdmin({
     organizationId: organization.id,
     contactEmail: verification.email,
     organizationName: organization.name,
@@ -95,24 +95,27 @@ export async function employerOnboardingWorkflow(input: CompleteOnboardingInput)
 
   return {
     organizationId: organization.id,
-    employeeId: employee.id,
+    organizationUserId: adminUser.id,
+    role: adminUser.role,
   };
 }
 
 async function issueVerificationCode(input: SendVerificationInput): Promise<VerificationRecord> {
   'use step';
 
-  const db = drizzleClientHttp;
   const normalizedEmail = input.email.trim().toLowerCase();
+  const organizationName = input.organizationName?.trim() ?? null;
   const code = generateOtpCode();
   const codeHash = await hashOtpCode(code);
   const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60_000);
+
+  const db = drizzleClientHttp;
 
   const [record] = await db
     .insert(onboardingEmailVerifications)
     .values({
       email: normalizedEmail,
-      organizationName: input.organizationName?.trim() ?? null,
+      organizationName,
       codeHash,
       expiresAt,
       lastSentAt: new Date(),
@@ -162,16 +165,6 @@ async function dispatchVerificationEmail({
 
   const subject = 'Your Cascade verification code';
   const name = organizationName ?? 'there';
-  const html = `
-    <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-      <p>Hello ${name},</p>
-      <p>Use the verification code below to continue setting up your Cascade employer account:</p>
-      <p style="font-size: 26px; font-weight: 600; letter-spacing: 4px;">${code}</p>
-      <p>This code expires in ${OTP_TTL_MINUTES} minutes.</p>
-      <p>If you did not request this code, you can ignore this message.</p>
-      <p>— The Cascade Team</p>
-    </div>
-  `;
 
   const apiKey = process.env.RESEND_API_KEY;
 
@@ -181,6 +174,7 @@ async function dispatchVerificationEmail({
   }
 
   const { Resend } = await import('resend');
+  const { OnboardingEmailTemplate } = await import('../email/onboarding-email');
   const resend = new Resend(apiKey);
 
   try {
@@ -188,7 +182,7 @@ async function dispatchVerificationEmail({
       from: 'Cascade Onboarding <onboarding@cascade.sattwyk.com>',
       to: email,
       subject,
-      html,
+      react: OnboardingEmailTemplate({ name, code, otpTtlMinutes: OTP_TTL_MINUTES }),
     });
 
     if (response.error) {
@@ -205,8 +199,9 @@ async function dispatchVerificationEmail({
 async function verifyCode(input: VerifyVerificationInput) {
   'use step';
 
-  const db = drizzleClientHttp;
   const normalizedEmail = input.email.trim().toLowerCase();
+
+  const db = drizzleClientHttp;
   const [record] = await db
     .select()
     .from(onboardingEmailVerifications)
@@ -261,8 +256,9 @@ async function verifyCode(input: VerifyVerificationInput) {
 async function ensureVerifiedEmail(input: { email: string; sessionId: string }) {
   'use step';
 
-  const db = drizzleClientHttp;
   const normalizedEmail = input.email.trim().toLowerCase();
+
+  const db = drizzleClientHttp;
 
   const [record] = await db
     .select()
@@ -342,7 +338,7 @@ async function createOrganization({
   return organization;
 }
 
-async function seedInitialEmployee({
+async function registerOrganizationAdmin({
   organizationId,
   contactEmail,
   organizationName,
@@ -355,43 +351,52 @@ async function seedInitialEmployee({
 }) {
   'use step';
 
-  const db = drizzleClientHttp;
-  const derivedName = deriveNameFromEmail(contactEmail) ?? `${organizationName} Admin`;
+  const normalizedEmail = contactEmail.trim().toLowerCase();
+  const derivedName = deriveNameFromEmail(normalizedEmail) ?? `${organizationName} Admin`;
   const now = new Date();
 
-  const [employee] = await db
-    .insert(employees)
+  const db = drizzleClientHttp;
+
+  const [user] = await db
+    .insert(organizationUsers)
     .values({
       organizationId,
-      fullName: derivedName,
-      email: contactEmail,
-      status: 'ready',
-      primaryWallet: walletAddress,
+      email: normalizedEmail,
+      displayName: derivedName,
+      walletAddress,
+      role: 'employer',
+      isPrimary: true,
       metadata: {
         source: 'onboarding_workflow',
+        lastConfirmed: now.toISOString(),
       },
       invitedAt: now,
+      joinedAt: now,
       createdAt: now,
       updatedAt: now,
     })
-    .onConflictDoNothing({
-      target: [employees.organizationId, employees.email],
+    .onConflictDoUpdate({
+      target: [organizationUsers.organizationId, organizationUsers.email],
+      set: {
+        displayName: derivedName,
+        walletAddress,
+        role: 'employer',
+        isPrimary: true,
+        joinedAt: now,
+        metadata: {
+          source: 'onboarding_workflow',
+          lastConfirmed: now.toISOString(),
+        },
+        updatedAt: now,
+      },
     })
     .returning();
 
-  if (employee) return employee;
-
-  const [existing] = await db
-    .select()
-    .from(employees)
-    .where(and(eq(employees.organizationId, organizationId), eq(employees.email, contactEmail)))
-    .limit(1);
-
-  if (!existing) {
-    throw new Error('Failed to seed initial employee record.');
+  if (!user) {
+    throw new Error('Failed to register organization admin user.');
   }
 
-  return existing;
+  return user;
 }
 
 async function markVerificationClaimed({ sessionId, organizationId }: { sessionId: string; organizationId: string }) {
@@ -434,11 +439,11 @@ async function hashOtpCode(code: string): Promise<string> {
 }
 
 async function generateUniqueSlug(name: string): Promise<string> {
-  const db = drizzleClientHttp;
   const base = slugify(name);
   let candidate = base;
   let counter = 1;
 
+  const db = drizzleClientHttp;
   while (true) {
     const [existing] = await db
       .select({ id: organizations.id })
