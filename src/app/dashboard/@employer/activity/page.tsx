@@ -18,6 +18,12 @@ function toActivityEvent(entry: Awaited<ReturnType<typeof getActivityLog>>[numbe
       : 'system';
   const actor = entry.actorAddress ?? entry.actorType ?? 'system';
 
+  // Extract status from metadata, default to 'success'
+  const status =
+    entry.metadata && typeof entry.metadata === 'object' && 'status' in entry.metadata
+      ? (entry.metadata.status as ActivityEvent['status'])
+      : 'success';
+
   return {
     id: entry.id,
     timestamp: entry.occurredAt,
@@ -25,7 +31,7 @@ function toActivityEvent(entry: Awaited<ReturnType<typeof getActivityLog>>[numbe
     title: entry.title,
     description: entry.description,
     actor,
-    status: 'success',
+    status,
     metadata: entry.metadata,
   };
 }
