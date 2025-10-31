@@ -18,11 +18,19 @@ export default function EmployeeStreamsPage() {
   const [selectedStream, setSelectedStream] = useState<{
     id: string;
     employerName: string;
+    employerAddress: string;
+    employerWallet: string | null;
+    streamAddress: string;
+    vaultAddress: string;
+    mintAddress: string | null;
     availableBalance: number;
   } | null>(null);
 
-  const handleWithdrawClick = (stream: { id: string; employerName: string; availableBalance: number }) => {
-    setSelectedStream(stream);
+  const handleWithdrawClick = (stream: (typeof streams)[number]) => {
+    setSelectedStream({
+      ...stream,
+      employerWallet: stream.employerAddress,
+    });
     setWithdrawModalOpen(true);
   };
 
@@ -50,6 +58,9 @@ export default function EmployeeStreamsPage() {
       id: '1',
       employerName: 'Acme Corp',
       employerAddress: '7xKXtg2vJ8kxKFGH3qK9pL2mN5oP7rQ8sT9uV1wX2yZ3',
+      streamAddress: '7xKXtg2vJ8kxKFGH3qK9pL2mN5oP7rQ8sT9uV1wX2yZ3',
+      vaultAddress: '9yHKdg4xL0mzMHIJ5sM1rN4oP7qR9tS0uV1wX3yZ4aB5',
+      mintAddress: 'Mint111111111111111111111111111111111111',
       status: 'active' as const,
       hourlyRate: 25.0,
       availableBalance: 850.25,
@@ -61,6 +72,9 @@ export default function EmployeeStreamsPage() {
       id: '2',
       employerName: 'TechStart Inc',
       employerAddress: '9yHKdg4xL0mzMHIJ5sM1rN4oP7qR9tS0uV1wX3yZ4aB5',
+      streamAddress: '5yHKdg4xL0mzMHIJ5sM1rN4oP7qR9tS0uV1wX3yZ4aB5',
+      vaultAddress: '8bMZvi5yM1n0NIJk6tN2sO5pQ8rS0uT1vW2xY4zA5bC6',
+      mintAddress: 'Mint111111111111111111111111111111111111',
       status: 'active' as const,
       hourlyRate: 20.0,
       availableBalance: 400.25,
@@ -72,6 +86,9 @@ export default function EmployeeStreamsPage() {
       id: '3',
       employerName: 'BuildLabs',
       employerAddress: '8bMZvi5yM1n0NIJk6tN2sO5pQ8rS0uT1vW2xY4zA5bC6',
+      streamAddress: '3hSF4p0dR6s5SNPp1yS7xT0uV3wX5yY6zA9aB0cD1eF2',
+      vaultAddress: '2gRE3o9cQ5r4RMOo0xR6wS9tU2vW4xX5yZ8aB9cD0eF1',
+      mintAddress: 'Mint111111111111111111111111111111111111',
       status: 'paused' as const,
       hourlyRate: 30.0,
       availableBalance: 0,
@@ -130,16 +147,7 @@ export default function EmployeeStreamsPage() {
                     </code>
                   </div>
                   {stream.availableBalance > 0 && (
-                    <Button
-                      className="gap-2"
-                      onClick={() =>
-                        handleWithdrawClick({
-                          id: stream.id,
-                          employerName: stream.employerName,
-                          availableBalance: stream.availableBalance,
-                        })
-                      }
-                    >
+                    <Button className="gap-2" onClick={() => handleWithdrawClick(stream)}>
                       <ArrowDownToLine className="h-4 w-4" />
                       Withdraw ${stream.availableBalance.toFixed(2)}
                     </Button>
@@ -190,9 +198,15 @@ export default function EmployeeStreamsPage() {
             setWithdrawModalOpen(false);
             setSelectedStream(null);
           }}
-          streamId={selectedStream.id}
-          availableBalance={selectedStream.availableBalance}
-          employerName={selectedStream.employerName}
+          stream={{
+            id: selectedStream.id,
+            employerName: selectedStream.employerName,
+            employerWallet: selectedStream.employerWallet ?? selectedStream.employerAddress ?? null,
+            streamAddress: selectedStream.streamAddress,
+            vaultAddress: selectedStream.vaultAddress,
+            mintAddress: selectedStream.mintAddress,
+            availableBalance: selectedStream.availableBalance,
+          }}
         />
       )}
     </div>

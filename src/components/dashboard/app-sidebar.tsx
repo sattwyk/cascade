@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -35,6 +35,7 @@ import {
   SidebarSeparator,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { useNotificationCountsQuery } from '@/features/dashboard/data-access/use-notification-counts-query';
 
 type NavigationItem = {
   title: string;
@@ -49,87 +50,91 @@ type NavigationSection = {
   items: NavigationItem[];
 };
 
-const navigation: NavigationSection[] = [
-  {
-    title: 'Organization',
-    items: [
-      {
-        title: 'Overview',
-        href: '/dashboard',
-        icon: LayoutDashboard,
-      },
-      {
-        title: 'Activity Log',
-        href: '/dashboard/activity',
-        icon: Activity,
-      },
-      {
-        title: 'Audit Trail',
-        href: '/dashboard/audit',
-        icon: ShieldCheck,
-        alert: true,
-      },
-    ],
-  },
-  {
-    title: 'Streams',
-    items: [
-      {
-        title: 'All Streams',
-        href: '/dashboard/streams',
-        icon: FolderGit2,
-      },
-      {
-        title: 'Drafts',
-        href: '/dashboard/streams/drafts',
-        icon: FileText,
-        badge: 4,
-      },
-    ],
-  },
-  {
-    title: 'Employees',
-    items: [
-      {
-        title: 'Directory',
-        href: '/dashboard/employees',
-        icon: Users2,
-      },
-      {
-        title: 'Invitations',
-        href: '/dashboard/employees/invitations',
-        icon: UserCheck2,
-        badge: 3,
-      },
-      {
-        title: 'Archived',
-        href: '/dashboard/employees/archived',
-        icon: UserMinus,
-      },
-    ],
-  },
-  {
-    title: 'Reports',
-    items: [
-      {
-        title: 'Reports',
-        href: '/dashboard/reports',
-        icon: BarChart3,
-        badge: 'New',
-      },
-    ],
-  },
-];
-
 export function AppSidebar() {
   const pathname = usePathname();
   const { isMobile, setOpenMobile, state, toggleSidebar } = useSidebar();
+  const { data: notificationCounts } = useNotificationCountsQuery();
 
   const handleNavigate = useCallback(() => {
     if (isMobile) {
       setOpenMobile(false);
     }
   }, [isMobile, setOpenMobile]);
+
+  // Build navigation with dynamic notification counts
+  const navigation: NavigationSection[] = useMemo(
+    () => [
+      {
+        title: 'Organization',
+        items: [
+          {
+            title: 'Overview',
+            href: '/dashboard',
+            icon: LayoutDashboard,
+          },
+          {
+            title: 'Activity Log',
+            href: '/dashboard/activity',
+            icon: Activity,
+          },
+          {
+            title: 'Audit Trail',
+            href: '/dashboard/audit',
+            icon: ShieldCheck,
+            alert: notificationCounts?.unreadAuditItems ? notificationCounts.unreadAuditItems > 0 : false,
+          },
+        ],
+      },
+      {
+        title: 'Streams',
+        items: [
+          {
+            title: 'All Streams',
+            href: '/dashboard/streams',
+            icon: FolderGit2,
+          },
+          {
+            title: 'Drafts',
+            href: '/dashboard/streams/drafts',
+            icon: FileText,
+            badge: notificationCounts?.draftStreams || undefined,
+          },
+        ],
+      },
+      {
+        title: 'Employees',
+        items: [
+          {
+            title: 'Directory',
+            href: '/dashboard/employees',
+            icon: Users2,
+          },
+          {
+            title: 'Invitations',
+            href: '/dashboard/employees/invitations',
+            icon: UserCheck2,
+            badge: notificationCounts?.pendingInvitations || undefined,
+          },
+          {
+            title: 'Archived',
+            href: '/dashboard/employees/archived',
+            icon: UserMinus,
+          },
+        ],
+      },
+      {
+        title: 'Reports',
+        items: [
+          {
+            title: 'Reports',
+            href: '/dashboard/reports',
+            icon: BarChart3,
+          },
+        ],
+      },
+    ],
+    [notificationCounts],
+  );
 
   return (
     <Sidebar collapsible="icon" className="relative">
@@ -163,8 +168,13 @@ export function AppSidebar() {
                   const isActive =
                     pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
 
+                  // Only show badge if there's a value (number > 0 or string)
+                  const shouldShowBadge =
+                    item.badge !== undefined &&
+                    (typeof item.badge === 'string' || (typeof item.badge === 'number' && item.badge > 0));
+
                   return (
-                    <SidebarMenuItem key={item.title}>
+                    <SidebarMenuItem key={item.title} className="relative">
                       <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
                         <Link
                           href={item.href}
@@ -178,8 +188,13 @@ export function AppSidebar() {
                           </span>
                         </Link>
                       </SidebarMenuButton>
-                      {item.badge !== undefined && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
-                      {item.alert && <span className="absolute top-2 right-2 size-2 rounded-full bg-destructive" />}
+                      {shouldShowBadge && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
+                      {item.alert && (
+                        <span
+                          className="absolute top-2 right-2 size-2 rounded-full bg-destructive group-data-[collapsible=icon]:top-1 group-data-[collapsible=icon]:right-1"
+                          aria-label="Unread notifications"
+                        />
+                      )}
                     </SidebarMenuItem>
                   );
                 })}

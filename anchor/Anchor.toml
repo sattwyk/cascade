@@ -12,7 +12,7 @@ cascade = "6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

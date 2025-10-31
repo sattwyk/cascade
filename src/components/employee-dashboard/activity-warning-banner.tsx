@@ -70,8 +70,8 @@ export function ActivityWarningBanner({
   overrideDaysUntilWithdrawal,
 }: ActivityWarningBannerProps) {
   const [isDismissed, setIsDismissed] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const { triggerRefresh } = useEmployeeDashboard();
+  const [isRefreshingLocal, setIsRefreshingLocal] = useState(false);
+  const { refreshActivityHandler, isRefreshingActivity } = useEmployeeDashboard();
 
   const effectiveDaysUntilWithdrawal = overrideDaysUntilWithdrawal ?? daysUntilWithdrawal;
 
@@ -81,20 +81,24 @@ export function ActivityWarningBanner({
   }
 
   const handleRefreshActivity = async () => {
-    setIsRefreshing(true);
+    if (!refreshActivityHandler) {
+      toast.error('Unable to refresh activity right now.');
+      return;
+    }
+
+    setIsRefreshingLocal(true);
     try {
-      // TODO: Implement actual refresh_activity instruction call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      triggerRefresh();
-      toast.success('Activity refreshed successfully');
+      await refreshActivityHandler();
       setIsDismissed(true);
     } catch (error) {
       console.error('Refresh failed:', error);
-      toast.error('Failed to refresh activity');
+      // Error toast already handled by the mutation layer.
     } finally {
-      setIsRefreshing(false);
+      setIsRefreshingLocal(false);
     }
   };
+
+  const isRefreshing = isRefreshingActivity || isRefreshingLocal;
 
   const resolvedSeverity: WarningSeverity = (() => {
     if (variant !== 'auto') {

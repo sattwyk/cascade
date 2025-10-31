@@ -4,6 +4,7 @@ import { HelpCircle } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import type { OverviewMetric } from '@/lib/dashboard/stream-insights';
 
 interface MetricCardProps {
   label: string;
@@ -36,35 +37,43 @@ function MetricCard({ label, value, tooltip }: MetricCardProps) {
   );
 }
 
-export function OverviewMetrics() {
-  // TODO: Replace with actual data from queries
-  const metrics = [
-    {
-      label: 'Active Streams',
-      value: '5',
-      tooltip: 'Count of streams with is_active=true',
-    },
-    {
-      label: 'Monthly Burn',
-      value: '$3,600',
-      tooltip: 'Σ(hourly_rate × 24 × 30 ÷ decimals)',
-    },
-    {
-      label: 'Total Deposited',
-      value: '$18,500',
-      tooltip: 'Σ(total_deposited) across active streams',
-    },
-    {
-      label: 'Vault Coverage',
-      value: '5.1 days',
-      tooltip: 'Σ(vault_balance) ÷ Σ(hourly_rate) in hours/days',
-    },
-  ];
+export function OverviewMetrics({ metrics, isLoading }: { metrics: OverviewMetric[]; isLoading?: boolean }) {
+  if (isLoading && metrics.length === 0) {
+    return (
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Card key={index}>
+            <CardHeader className="pb-3">
+              <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+            </CardHeader>
+            <CardContent>
+              <div className="h-8 w-20 animate-pulse rounded bg-muted" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (metrics.length === 0) {
+    return (
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">No metrics yet</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">Create your first stream to unlock performance insights.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
       {metrics.map((metric) => (
-        <MetricCard key={metric.label} {...metric} />
+        <MetricCard key={metric.id} {...metric} />
       ))}
     </div>
   );

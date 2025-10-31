@@ -20,26 +20,28 @@ export type ActivityEvent = {
   title: string;
   description: string | null;
   actor: string;
-  status: 'success' | 'pending' | 'failed';
+  status: 'success' | 'pending' | 'failed' | 'cancelled';
   metadata?: Record<string, unknown>;
 };
 
 const typeColors: Record<ActivityEvent['type'], string> = {
-  funding: 'bg-blue-100 text-blue-800',
-  employee: 'bg-purple-100 text-purple-800',
-  stream: 'bg-green-100 text-green-800',
-  system: 'bg-gray-100 text-gray-800',
+  funding: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  employee: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+  stream: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  system: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
 };
 
 const statusColors: Record<ActivityEvent['status'], string> = {
-  success: 'bg-green-100 text-green-800',
-  pending: 'bg-yellow-100 text-yellow-800',
-  failed: 'bg-red-100 text-red-800',
+  success: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  failed: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  cancelled: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
 };
 
 export function ActivityLogTab({ activity }: { activity: ActivityEvent[] }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | ActivityEvent['type']>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | ActivityEvent['status']>('all');
   const { accountState, setupProgress, setIsCreateStreamModalOpen } = useDashboard();
   const config = getAccountStateConfig(accountState);
 
@@ -50,9 +52,10 @@ export function ActivityLogTab({ activity }: { activity: ActivityEvent[] }) {
         (event.description ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         event.actor.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType = filterType === 'all' || event.type === filterType;
-      return matchesSearch && matchesType;
+      const matchesStatus = filterStatus === 'all' || event.status === filterStatus;
+      return matchesSearch && matchesType && matchesStatus;
     });
-  }, [activity, filterType, searchQuery]);
+  }, [activity, filterType, filterStatus, searchQuery]);
 
   if (!config.showActivityLogTab) {
     return (
@@ -106,7 +109,7 @@ export function ActivityLogTab({ activity }: { activity: ActivityEvent[] }) {
 
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 md:flex-row">
+          <div className="flex flex-col gap-4">
             <div className="relative flex-1">
               <Search className="absolute top-3 left-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -116,18 +119,35 @@ export function ActivityLogTab({ activity }: { activity: ActivityEvent[] }) {
                 className="pl-10"
               />
             </div>
-            <div className="flex gap-2">
-              {(['all', 'funding', 'employee', 'stream', 'system'] as const).map((type) => (
-                <Button
-                  key={type}
-                  variant={filterType === type ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setFilterType(type)}
-                  className="capitalize"
-                >
-                  {type === 'all' ? 'All' : type}
-                </Button>
-              ))}
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground">Type:</span>
+                {(['all', 'funding', 'employee', 'stream', 'system'] as const).map((type) => (
+                  <Button
+                    key={type}
+                    variant={filterType === type ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFilterType(type)}
+                    className="capitalize"
+                  >
+                    {type === 'all' ? 'All' : type}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground">Status:</span>
+                {(['all', 'success', 'failed', 'cancelled'] as const).map((status) => (
+                  <Button
+                    key={status}
+                    variant={filterStatus === status ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFilterStatus(status)}
+                    className="capitalize"
+                  >
+                    {status === 'all' ? 'All' : status}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
         </CardContent>

@@ -52,6 +52,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     setIsArchiveEmployeeModalOpen,
     selectedEmployeeId,
     selectedEmployee,
+    selectedStreamId,
     isOnboardingRequired,
   } = useDashboard();
 
@@ -75,16 +76,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <AppSidebar />
 
       <SidebarInset className="bg-background">
-        <div className="flex min-h-svh flex-col">
+        <div className="flex h-svh flex-col">
           <DashboardHeader />
 
           <div className="flex flex-1 overflow-hidden">
-            <main className="flex-1 overflow-auto">
+            <main className="flex-1 overflow-y-auto">
               <div className="p-4 sm:p-5 md:p-6 lg:p-8">{children}</div>
             </main>
 
             {!isMobile && (
-              <aside className="sticky top-0 hidden max-h-screen w-64 shrink-0 self-start overflow-y-auto border-l border-border bg-card lg:block xl:w-80">
+              <aside className="hidden h-full w-64 shrink-0 overflow-y-auto border-l border-border bg-card lg:block xl:w-80">
                 <DashboardRightRail />
               </aside>
             )}
@@ -95,10 +96,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <CreateStreamModal isOpen={isCreateStreamModalOpen} onClose={() => setIsCreateStreamModalOpen(false)} />
       <AddEmployeeModal isOpen={isAddEmployeeModalOpen} onClose={() => setIsAddEmployeeModalOpen(false)} />
       <TopUpAccountModal isOpen={isTopUpAccountModalOpen} onClose={() => setIsTopUpAccountModalOpen(false)} />
-      <TopUpStreamModal isOpen={isTopUpModalOpen} onClose={() => setIsTopUpModalOpen(false)} />
+      <TopUpStreamModal
+        isOpen={isTopUpModalOpen}
+        onClose={() => setIsTopUpModalOpen(false)}
+        streamId={selectedStreamId ?? undefined}
+      />
       <EmergencyWithdrawModal
         isOpen={isEmergencyWithdrawModalOpen}
         onClose={() => setIsEmergencyWithdrawModalOpen(false)}
+        streamId={selectedStreamId ?? undefined}
       />
       <CloseStreamModal isOpen={isCloseStreamModalOpen} onClose={() => setIsCloseStreamModalOpen(false)} />
 
@@ -106,6 +112,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         isOpen={isViewStreamsModalOpen}
         onClose={() => setIsViewStreamsModalOpen(false)}
         employeeName={selectedEmployee?.name ?? ''}
+        employeeId={selectedEmployeeId}
       />
       <EditEmployeeModal
         isOpen={isEditEmployeeModalOpen}

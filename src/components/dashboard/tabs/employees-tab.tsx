@@ -1,12 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 
 import { useRouter } from 'next/navigation';
 
+import { useWalletUi } from '@wallet-ui/react';
+import type { Address } from 'gill';
 import { PiggyBank, Plus, UserPlus, Wallet } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { useGetTokenAccountsQuery } from '@/features/account/data-access/use-get-token-accounts-query';
+import { useDashboardEmployeesQuery } from '@/features/dashboard/data-access/use-dashboard-employees-query';
+import { hasPositiveTokenBalance, NULL_ADDRESS } from '@/lib/solana/token-helpers';
 import type { EmployeeSummary } from '@/types/employee';
 
 import { useDashboard } from '../dashboard-context';
@@ -60,6 +65,23 @@ export function EmployeesTab({ filterState, employees }: EmployeesTabProps) {
   const [isPending, startTransition] = useTransition();
   const [optimisticPageKey, setOptimisticPageKey] = useState(filterState);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const { account } = useWalletUi();
+  const walletAddress = (account?.address as Address) ?? NULL_ADDRESS;
+  const tokenAccountsQuery = useGetTokenAccountsQuery({ address: walletAddress, enabled: Boolean(account?.address) });
+  const tokenFundingComplete = useMemo(
+    () => setupProgress.tokenAccountFunded || hasPositiveTokenBalance(tokenAccountsQuery.data),
+    [setupProgress.tokenAccountFunded, tokenAccountsQuery.data],
+  );
+  const walletConnected = setupProgress.walletConnected || Boolean(account?.address);
+
+  // Use client-side query to keep data fresh
+  const { data: clientEmployees } = useDashboardEmployeesQuery();
+
+  // Prefer client-side data if available, fall back to server props
+  const activeEmployees = useMemo(
+    () => (clientEmployees && clientEmployees.length > 0 ? clientEmployees : employees),
+    [clientEmployees, employees],
+  );
 
   useEffect(() => {
     setOptimisticPageKey(filterState);
@@ -83,11 +105,14 @@ export function EmployeesTab({ filterState, employees }: EmployeesTabProps) {
     });
   };
 
-  const hasEmployees = useMemo(() => employees.length > 0, [employees]);
+  const hasEmployees = activeEmployees.length > 0;
   const selectedEmployee = useMemo(
-    () => employees.find((employee) => employee.id === selectedEmployeeId) ?? null,
-    [employees, selectedEmployeeId],
+    () => activeEmployees.find((employee) => employee.id === selectedEmployeeId) ?? null,
+    [activeEmployees, selectedEmployeeId],
   );
+  const showWalletGate = !walletConnected && !hasEmployees;
+  const showFundingGate = walletConnected && !tokenFundingComplete && !hasEmployees;
+  const canInviteEmployees = walletConnected && tokenFundingComplete;
 
   useEffect(() => {
     if (!selectedEmployee) {
@@ -118,23 +143,19 @@ export function EmployeesTab({ filterState, employees }: EmployeesTabProps) {
           <h1 className="text-3xl font-bold">Employees</h1>
           <p className="text-muted-foreground">Manage your employee directory</p>
         </div>
-        <Button
-          onClick={() => setIsAddEmployeeModalOpen(true)}
-          className="gap-2"
-          disabled={!setupProgress.walletConnected || !setupProgress.tokenAccountFunded}
-        >
+        <Button onClick={() => setIsAddEmployeeModalOpen(true)} className="gap-2" disabled={!canInviteEmployees}>
           <Plus className="h-4 w-4" />
           Invite Employee
         </Button>
       </div>
 
-      {!setupProgress.walletConnected ? (
+      {showWalletGate ? (
         <EmptyState
           icon={<Wallet className="h-12 w-12 text-muted-foreground" />}
           title="Connect your employer wallet"
           description="Link a treasury wallet before inviting or managing employees."
         />
-      ) : !setupProgress.tokenAccountFunded ? (
+      ) : showFundingGate ? (
         <EmptyState
           icon={<PiggyBank className="h-12 w-12 text-muted-foreground" />}
           title="Fund your default token account"
@@ -161,7 +182,7 @@ export function EmployeesTab({ filterState, employees }: EmployeesTabProps) {
             onFilterChange={handleFilterChange}
             onSelectEmployee={handleSelectEmployee}
             selectedEmployeeId={selectedEmployeeId}
-            employees={employees}
+            employees={activeEmployees}
             onInviteEmployee={() => setIsAddEmployeeModalOpen(true)}
           />
         </div>

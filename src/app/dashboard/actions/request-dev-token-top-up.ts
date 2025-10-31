@@ -41,6 +41,7 @@ const DEFAULT_DECIMALS = 6;
 const DEFAULT_LOCALNET_RPC = process.env.CASCADE_SOLANA_LOCALNET_RPC ?? 'http://127.0.0.1:8899';
 const DEFAULT_DEVNET_RPC = process.env.CASCADE_SOLANA_DEVNET_RPC ?? 'devnet';
 const MINT_AUTHORITY_ENV = process.env.CASCADE_DEV_FAUCET_AUTHORITY_VAR ?? 'CASCADE_DEV_FAUCET_AUTHORITY_KEYPAIR';
+const ENABLE_DEV_FAUCET = process.env.CASCADE_ENABLE_DEV_FAUCET === 'true';
 
 const inputSchema = z.object({
   amount: z.number().positive('Amount must be greater than zero'),
@@ -74,11 +75,13 @@ export type RequestDevTokenTopUpResult =
     };
 
 export async function requestDevTokenTopUp(input: RequestDevTokenTopUpInput): Promise<RequestDevTokenTopUpResult> {
-  if (process.env.NODE_ENV === 'production') {
+  // For hackathons: Allow dev faucet in production if explicitly enabled
+  if (process.env.NODE_ENV === 'production' && !ENABLE_DEV_FAUCET) {
     return {
       ok: false,
       error: 'unsupported-environment',
-      message: 'Dev faucets are disabled in production environments.',
+      message:
+        'Dev faucets are disabled in production. Set CASCADE_ENABLE_DEV_FAUCET=true to enable for devnet deployments.',
     };
   }
 

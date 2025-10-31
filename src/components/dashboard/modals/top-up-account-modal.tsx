@@ -17,6 +17,7 @@ import { useGetBalanceQuery } from '@/features/account/data-access/use-get-balan
 import { useGetTokenAccountsQuery } from '@/features/account/data-access/use-get-token-accounts-query';
 import { useRequestAirdropMutation } from '@/features/account/data-access/use-request-airdrop-mutation';
 import { useRequestDevTokenTopUpMutation } from '@/features/account/data-access/use-request-dev-token-top-up-mutation';
+import { resolveMintDisplay } from '@/lib/solana/token-helpers';
 import { ellipsify } from '@/lib/utils';
 
 import { useDashboard } from '../dashboard-context';
@@ -32,6 +33,7 @@ export function TopUpAccountModal({ isOpen, onClose }: TopUpAccountModalProps) {
   const { completeSetupStep } = useDashboard();
   const { account, cluster } = useWalletUi();
 
+  const enableDevFaucet = process.env.NEXT_PUBLIC_CASCADE_ENABLE_DEV_FAUCET === 'true';
   const isProduction = process.env.NODE_ENV === 'production';
   const clusterMoniker: ClusterMoniker = cluster?.url === 'localnet' ? 'localnet' : 'devnet';
 
@@ -110,10 +112,11 @@ export function TopUpAccountModal({ isOpen, onClose }: TopUpAccountModalProps) {
   const fundingError = (balanceQuery.error as Error | undefined) ?? (tokenAccountsQuery.error as Error | undefined);
   const isFundingLoading = Boolean(account?.address) && (balanceQuery.isLoading || tokenAccountsQuery.isLoading);
 
-  const primaryMintLabel = primaryToken ? getMintLabel(primaryToken.mint) : null;
+  const primaryMintDisplay = primaryToken ? resolveMintDisplay(primaryToken.mint) : null;
+  const primaryMintLabel = primaryMintDisplay?.symbol ?? null;
   const tokenBalanceLabel =
     hasTokenBalances && primaryToken
-      ? `${TOKEN_FORMATTER.format(primaryToken.amount)} ${primaryMintLabel}`
+      ? `${TOKEN_FORMATTER.format(primaryToken.amount)} ${primaryMintLabel ?? 'SPL token'}`
       : '0 tokens';
 
   const selectedOption = TOKEN_OPTIONS.find((option) => option.id === selectedToken);
@@ -155,9 +158,11 @@ export function TopUpAccountModal({ isOpen, onClose }: TopUpAccountModalProps) {
       return;
     }
 
-    if (isProduction) {
+    // For hackathons: Allow faucet in production if explicitly enabled
+    if (isProduction && !enableDevFaucet) {
       toast.error('Top up unsupported', {
-        description: 'Automatic top ups are only available on devnet/localnet. Fund the account manually.',
+        description:
+          'Automatic top ups are only available on devnet/localnet. Fund the account manually or enable dev faucet.',
       });
       return;
     }
@@ -362,11 +367,3 @@ type TokenTotal = {
 
 const SOL_FORMATTER = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
 const TOKEN_FORMATTER = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-const KNOWN_MINT_LABELS: Record<string, string> = {
-  So11111111111111111111111111111111111111112: 'wSOL',
-};
-
-function getMintLabel(mint: string) {
-  return KNOWN_MINT_LABELS[mint] ?? ellipsify(mint, 4);
-}

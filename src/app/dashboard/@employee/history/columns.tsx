@@ -19,9 +19,9 @@ import {
 export type Payment = {
   id: string;
   amount: number;
-  employer: string;
-  timestamp: Date;
-  txSignature: string;
+  employer: string | null;
+  timestamp: Date | null;
+  txSignature: string | null;
   status: 'completed' | 'failed';
 };
 
@@ -37,7 +37,10 @@ export const columns: ColumnDef<Payment>[] = [
       );
     },
     cell: ({ row }) => {
-      const date = row.getValue('timestamp') as Date;
+      const date = row.getValue('timestamp') as Date | null;
+      if (!date) {
+        return <span className="text-sm text-muted-foreground">Unknown</span>;
+      }
       return (
         <div className="flex flex-col">
           <span className="font-medium">{format(date, 'MMM dd, yyyy')}</span>
@@ -50,7 +53,10 @@ export const columns: ColumnDef<Payment>[] = [
     accessorKey: 'txSignature',
     header: 'Transaction',
     cell: ({ row }) => {
-      const signature = row.getValue('txSignature') as string;
+      const signature = (row.getValue('txSignature') as string) ?? '';
+      if (!signature) {
+        return <span className="text-sm text-muted-foreground">No signature</span>;
+      }
       return (
         <div className="flex items-center gap-2">
           <code className="rounded bg-muted px-2 py-1 font-mono text-xs text-muted-foreground">
@@ -84,7 +90,8 @@ export const columns: ColumnDef<Payment>[] = [
       );
     },
     filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
+      if (!value) return true;
+      return String(row.getValue(id)).toLowerCase().includes(String(value).toLowerCase());
     },
   },
   {
@@ -114,6 +121,7 @@ export const columns: ColumnDef<Payment>[] = [
     enableHiding: false,
     cell: ({ row }) => {
       const payment = row.original;
+      const signature = payment.txSignature ?? '';
 
       return (
         <DropdownMenu>
@@ -127,7 +135,11 @@ export const columns: ColumnDef<Payment>[] = [
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
               onClick={() => {
-                navigator.clipboard.writeText(payment.txSignature);
+                if (!signature) {
+                  toast.error('No transaction signature available to copy');
+                  return;
+                }
+                navigator.clipboard.writeText(signature);
                 toast.success('Transaction signature copied');
               }}
             >
@@ -135,15 +147,19 @@ export const columns: ColumnDef<Payment>[] = [
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <a
-                href={`https://explorer.solana.com/tx/${payment.txSignature}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2"
-              >
-                <ExternalLink className="h-4 w-4" />
-                View on Explorer
-              </a>
+              {signature ? (
+                <a
+                  href={`https://explorer.solana.com/tx/${signature}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  View on Explorer
+                </a>
+              ) : (
+                <span className="text-xs text-muted-foreground">Explorer link unavailable</span>
+              )}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

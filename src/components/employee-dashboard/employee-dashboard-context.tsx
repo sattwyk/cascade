@@ -1,12 +1,16 @@
 'use client';
 
-import { createContext, ReactNode, useContext, useState } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useState } from 'react';
 
 interface EmployeeDashboardContextType {
   selectedStreamId: string | null;
   setSelectedStreamId: (id: string | null) => void;
   isWithdrawing: boolean;
   setIsWithdrawing: (value: boolean) => void;
+  isRefreshingActivity: boolean;
+  setIsRefreshingActivity: (value: boolean) => void;
+  refreshActivityHandler: (() => Promise<void>) | null;
+  setRefreshActivityHandler: (handler: (() => Promise<void>) | null) => void;
   refreshTrigger: number;
   triggerRefresh: () => void;
 }
@@ -16,11 +20,13 @@ const EmployeeDashboardContext = createContext<EmployeeDashboardContextType | un
 export function EmployeeDashboardProvider({ children }: { children: ReactNode }) {
   const [selectedStreamId, setSelectedStreamId] = useState<string | null>(null);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [isRefreshingActivity, setIsRefreshingActivity] = useState(false);
+  const [refreshActivityHandler, setRefreshActivityHandler] = useState<(() => Promise<void>) | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const triggerRefresh = () => {
+  const triggerRefresh = useCallback(() => {
     setRefreshTrigger((prev) => prev + 1);
-  };
+  }, []);
 
   return (
     <EmployeeDashboardContext.Provider
@@ -29,6 +35,10 @@ export function EmployeeDashboardProvider({ children }: { children: ReactNode })
         setSelectedStreamId,
         isWithdrawing,
         setIsWithdrawing,
+        isRefreshingActivity,
+        setIsRefreshingActivity,
+        refreshActivityHandler,
+        setRefreshActivityHandler,
         refreshTrigger,
         triggerRefresh,
       }}

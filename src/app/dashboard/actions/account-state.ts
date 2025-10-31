@@ -58,6 +58,20 @@ export type SetupSnapshot = {
   progress: SetupProgress;
 };
 
+/**
+ * Fetches the current setup progress from the database by querying:
+ * - Token accounts (to check if funded)
+ * - Employees (to check if any added)
+ * - Streams (to check if any created)
+ * - Onboarding tasks (completed checklist items)
+ *
+ * Note: This may not reflect the most up-to-date state if:
+ * - On-chain streams haven't been synced to the database yet
+ * - Recent mutations are still pending/confirming
+ *
+ * The client-side dashboard context merges this server state with
+ * localStorage to prevent losing progress on page refresh.
+ */
 export async function getSetupSnapshot(): Promise<SetupSnapshot> {
   if (!hasDatabase) {
     return {

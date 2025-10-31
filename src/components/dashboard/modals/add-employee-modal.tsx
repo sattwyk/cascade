@@ -14,6 +14,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { employmentTypeEnum } from '@/db/schema';
+import { useDashboardEmployeesQuery } from '@/features/dashboard/data-access/use-dashboard-employees-query';
+import { useInvalidateDashboardEmployeesQuery } from '@/features/dashboard/data-access/use-invalidate-dashboard-employees-query';
 
 import { useDashboard } from '../dashboard-context';
 
@@ -42,6 +44,8 @@ interface AddEmployeeModalProps {
 export function AddEmployeeModal({ isOpen, onClose }: AddEmployeeModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>('profile');
   const { completeSetupStep } = useDashboard();
+  const invalidateEmployees = useInvalidateDashboardEmployeesQuery();
+  const { data: existingEmployees = [] } = useDashboardEmployeesQuery();
 
   // Profile step
   const [name, setName] = useState('');
@@ -49,6 +53,13 @@ export function AddEmployeeModal({ isOpen, onClose }: AddEmployeeModalProps) {
   const [department, setDepartment] = useState('');
   const [location, setLocation] = useState('');
   const [employmentType, setEmploymentType] = useState<EmploymentTypeValue>('full_time');
+
+  // Check for email duplicates
+  const emailExists = useMemo(() => {
+    if (!email) return false;
+    const normalizedEmail = email.trim().toLowerCase();
+    return existingEmployees.some((emp) => emp.email?.toLowerCase() === normalizedEmail);
+  }, [email, existingEmployees]);
 
   // Settings step
   const [hourlyWage, setHourlyWage] = useState('');
@@ -104,6 +115,18 @@ export function AddEmployeeModal({ isOpen, onClose }: AddEmployeeModalProps) {
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
+
+    // Check for duplicate email
+    const normalizedEmail = email.trim().toLowerCase();
+    const existingEmployee = existingEmployees.find((emp) => emp.email?.toLowerCase() === normalizedEmail);
+
+    if (existingEmployee) {
+      toast.error('Email already exists', {
+        description: `An employee with email ${email} already exists. Please use a different email address.`,
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const response = await inviteEmployee({
@@ -125,6 +148,10 @@ export function AddEmployeeModal({ isOpen, onClose }: AddEmployeeModalProps) {
 
       setInviteResult(response.data);
       completeSetupStep('employeeAdded');
+
+      // Invalidate employees cache to refresh the list
+      invalidateEmployees();
+
       toast.success('Invitation sent', {
         description: `${email} can now join Cascade.`,
       });
@@ -164,7 +191,7 @@ export function AddEmployeeModal({ isOpen, onClose }: AddEmployeeModalProps) {
   const isStepValid = () => {
     switch (currentStep) {
       case 'profile':
-        return name && email && department && location && employmentType;
+        return name && email && department && location && employmentType && !emailExists;
       case 'settings':
         return hourlyWage;
       case 'review':
@@ -216,7 +243,11 @@ export function AddEmployeeModal({ isOpen, onClose }: AddEmployeeModalProps) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="john@example.com"
+                    className={emailExists ? 'border-red-500 focus-visible:ring-red-500' : ''}
                   />
+                  {emailExists && (
+                    <p className="text-sm text-red-500">This email is already registered for another employee</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

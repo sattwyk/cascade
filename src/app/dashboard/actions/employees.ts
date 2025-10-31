@@ -11,10 +11,11 @@ import { drizzleClientHttp } from '@/db';
 import { employmentTypeEnum, organizations } from '@/db/schema';
 import { inviteEmployeeWorkflow, type InviteEmployeeWorkflowInput } from '@/workflows/employee-invite';
 
+import { getEmployeesForDashboard, type DashboardEmployee } from '../data/employees';
 import { createActivityLog } from './activity-log';
 import { resolveOrganizationContext } from './organization-context';
 
-type ActionResult<T> =
+export type ActionResult<T> =
   | {
       ok: true;
       data: T;
@@ -24,6 +25,18 @@ type ActionResult<T> =
       reason?: string;
       error: string;
     };
+
+export async function listDashboardEmployees(): Promise<ActionResult<DashboardEmployee[]>> {
+  try {
+    const employees = await getEmployeesForDashboard();
+    return { ok: true, data: employees };
+  } catch (error) {
+    console.error('[employees] Failed to load dashboard employees', error);
+    const message =
+      error instanceof Error && error.message ? error.message : 'We could not load your employees. Please try again.';
+    return { ok: false, error: message };
+  }
+}
 
 const InviteEmployeeSchema = z.object({
   fullName: z.string().min(1, 'Employee name is required.'),

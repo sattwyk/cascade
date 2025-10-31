@@ -1,52 +1,84 @@
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
+import { formatDistanceToNow } from 'date-fns';
+import { Loader2 } from 'lucide-react';
 
-interface ActivityEvent {
-  id: string;
-  type: string;
-  description: string;
-  amount?: string;
-  timestamp: string;
+import { Card, CardContent } from '@/components/ui/card';
+import { useStreamActivityQuery } from '@/features/dashboard/data-access/use-stream-activity-query';
+
+interface StreamActivityHistoryProps {
+  streamId: string;
 }
 
-const MOCK_ACTIVITY: ActivityEvent[] = [
-  {
-    id: '1',
-    type: 'withdrawal',
-    description: 'Employee withdrew vested funds',
-    amount: '$150',
-    timestamp: '2 hours ago',
-  },
-  {
-    id: '2',
-    type: 'refresh',
-    description: 'Activity refreshed',
-    timestamp: '5 hours ago',
-  },
-  {
-    id: '3',
-    type: 'top_up',
-    description: 'Stream topped up',
-    amount: '$500',
-    timestamp: '1 day ago',
-  },
-];
+export function StreamActivityHistory({ streamId }: StreamActivityHistoryProps) {
+  const { data: activities, isLoading, isError } = useStreamActivityQuery({ streamId });
 
-export function StreamActivityHistory() {
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <p className="py-8 text-center text-sm text-muted-foreground">Failed to load activity history</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!activities || activities.length === 0) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <p className="py-8 text-center text-sm text-muted-foreground">No activity recorded yet</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const formatAmount = (metadata: Record<string, unknown>) => {
+    if (metadata.amount && typeof metadata.amount === 'number') {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(metadata.amount);
+    }
+    return null;
+  };
+
   return (
     <Card>
       <CardContent className="pt-6">
         <div className="space-y-3">
-          {MOCK_ACTIVITY.map((event) => (
-            <div key={event.id} className="flex items-start justify-between border-b border-border pb-3 last:border-0">
-              <div>
-                <p className="text-sm font-medium">{event.description}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{event.timestamp}</p>
+          {activities.map((activity) => {
+            const amount = formatAmount(activity.metadata);
+            const timestamp = formatDistanceToNow(new Date(activity.occurredAt), { addSuffix: true });
+
+            return (
+              <div
+                key={activity.id}
+                className="flex items-start justify-between border-b border-border pb-3 last:border-0"
+              >
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{activity.title}</p>
+                  {activity.description && <p className="mt-1 text-xs text-muted-foreground">{activity.description}</p>}
+                  <p className="mt-1 text-xs text-muted-foreground">{timestamp}</p>
+                </div>
+                {amount && <p className="text-sm font-semibold">{amount}</p>}
               </div>
-              {event.amount && <p className="text-sm font-semibold">{event.amount}</p>}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>

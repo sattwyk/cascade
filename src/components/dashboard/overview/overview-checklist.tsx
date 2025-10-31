@@ -19,6 +19,7 @@ export type OverviewChecklistStep = {
   description: string;
   completed: boolean;
   stepNumber: number;
+  optional?: boolean;
   action?: ChecklistAction;
 };
 
@@ -27,23 +28,28 @@ interface OverviewChecklistProps {
 }
 
 export function OverviewChecklist({ steps }: OverviewChecklistProps) {
-  const completedCount = steps.filter((item) => item.completed).length;
-  const nextIncomplete = steps.find((item) => !item.completed);
+  const requiredSteps = steps.filter((item) => !item.optional);
+  const totalRequiredSteps = requiredSteps.length;
+  const completedRequiredSteps = requiredSteps.filter((item) => item.completed).length;
+  const fallbackCompletedSteps = steps.filter((item) => item.completed).length;
+  const progressLabel =
+    totalRequiredSteps > 0
+      ? `${completedRequiredSteps}/${totalRequiredSteps}`
+      : `${fallbackCompletedSteps}/${steps.length}`;
+  const nextIncomplete = requiredSteps.find((item) => !item.completed);
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Setup Checklist</CardTitle>
-          <Badge variant="secondary">
-            {completedCount}/{steps.length}
-          </Badge>
+          <Badge variant="secondary">{progressLabel}</Badge>
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
           {steps.map((item) => {
-            const isCurrent = nextIncomplete?.id === item.id;
+            const isCurrent = !item.optional && nextIncomplete?.id === item.id;
 
             return (
               <div
@@ -69,14 +75,24 @@ export function OverviewChecklist({ steps }: OverviewChecklistProps) {
                   )}
                 </div>
                 <div className="flex-1">
-                  <p
-                    className={cn(
-                      'font-medium',
-                      item.completed ? 'text-muted-foreground line-through' : 'text-foreground',
-                    )}
-                  >
-                    {item.title}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p
+                      className={cn(
+                        'font-medium',
+                        item.completed ? 'text-muted-foreground line-through' : 'text-foreground',
+                      )}
+                    >
+                      {item.title}
+                    </p>
+                    {item.optional ? (
+                      <Badge
+                        variant="outline"
+                        className="border-dashed px-1.5 py-0 text-[10px] tracking-wide uppercase"
+                      >
+                        Optional
+                      </Badge>
+                    ) : null}
+                  </div>
                   <p className="text-sm text-muted-foreground">{item.description}</p>
                 </div>
                 {!item.completed && item.action ? (

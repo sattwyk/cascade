@@ -11,12 +11,18 @@ type OrganizationActivityInsert = typeof organizationActivity.$inferInsert;
 type StreamEventType = OrganizationActivityInsert['activityType'];
 type ActorType = OrganizationActivityInsert['actorType'];
 
+export type ActivityStatus = 'success' | 'failed' | 'cancelled';
+
 export type CreateActivityLogInput = {
   title: string;
   description?: string;
   activityType?: StreamEventType;
   actorType?: ActorType;
   actorAddress?: string | null;
+  streamId?: string;
+  employeeId?: string;
+  status?: ActivityStatus;
+  errorMessage?: string;
   metadata?: Record<string, unknown>;
 };
 
@@ -39,14 +45,23 @@ export async function createActivityLog(input: CreateActivityLogInput) {
 
   const { organizationId, primaryWallet } = context;
 
+  // Merge status and error information into metadata
+  const metadata = {
+    ...input.metadata,
+    status: input.status ?? 'success',
+    ...(input.errorMessage && { errorMessage: input.errorMessage }),
+  };
+
   const values: OrganizationActivityInsert = {
     organizationId,
+    streamId: input.streamId ?? null,
+    employeeId: input.employeeId ?? null,
     title: input.title,
     description: input.description ?? null,
     activityType: input.activityType ?? 'stream_top_up',
     actorType: input.actorType ?? 'employer',
     actorAddress: input.actorAddress ?? primaryWallet ?? null,
-    metadata: input.metadata ?? {},
+    metadata,
   };
 
   const [record] = await drizzleClientHttp.insert(organizationActivity).values(values).returning({

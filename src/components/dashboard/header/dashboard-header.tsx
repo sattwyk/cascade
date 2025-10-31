@@ -18,7 +18,7 @@ export function DashboardHeader() {
 
       <WalletBanner />
 
-      <div className="flex items-center justify-between px-6 py-3 md:px-8">
+      <div className="flex items-center justify-between px-6 md:px-8">
         {isMobile && (
           <SidebarTrigger
             className="md:hidden"
@@ -29,9 +29,9 @@ export function DashboardHeader() {
           />
         )}
 
-        <div className="ml-auto">
+        {/* <div className="ml-auto">
           <StateSwitcher />
-        </div>
+        </div> */}
       </div>
     </header>
   );

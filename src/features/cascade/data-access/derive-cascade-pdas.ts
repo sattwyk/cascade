@@ -22,9 +22,20 @@ export function toBigInt(value: number | bigint): bigint {
  * Gets error message from unknown error type
  */
 export function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'object' && error !== null) {
+    // Handle wallet extension errors
+    if ('message' in error) return String(error.message);
+    if ('reason' in error) return String(error.reason);
+    if ('name' in error && 'message' in error) {
+      return `${String(error.name)}: ${String(error.message)}`;
+    }
+  }
   if (typeof error === 'string') return error;
-  return 'Operation failed';
+  // Last resort: stringify the error
+  return JSON.stringify(error) || 'Operation failed';
 }
 
 export async function derivePaymentStream(employer: AddressLike, employee: AddressLike) {

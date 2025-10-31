@@ -239,6 +239,24 @@ async function upsertOrganizationUser(input: UpsertOrganizationUserInput) {
   'use step';
 
   const db = drizzleClientHttp;
+
+  // Check if this email already exists as an employer in this organization
+  const [existingUser] = await db
+    .select({
+      id: organizationUsers.id,
+      role: organizationUsers.role,
+      email: organizationUsers.email,
+    })
+    .from(organizationUsers)
+    .where(and(eq(organizationUsers.organizationId, input.organizationId), eq(organizationUsers.email, input.email)))
+    .limit(1);
+
+  if (existingUser && existingUser.role === 'employer') {
+    throw new FatalError(
+      `The email ${input.email} is already registered as an employer/admin in this organization. Employers cannot be invited as employees.`,
+    );
+  }
+
   const [record] = await db
     .insert(organizationUsers)
     .values({

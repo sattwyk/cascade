@@ -134,7 +134,7 @@ export function identifyCascadeInstruction(
 }
 
 export type ParsedCascadeInstruction<
-  TProgram extends string = '6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ',
+  TProgram extends string = 'J2A6twQYqg61SqDeKPzoNo5MXoFhVaDnQ6MC4vjB2yZi',
 > =
   | ({
       instructionType: CascadeInstruction.CloseStream;

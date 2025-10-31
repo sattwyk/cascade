@@ -11,6 +11,7 @@ import { Building2, FileText, LayoutDashboard, User } from 'lucide-react';
 import { useSolana } from '@/components/solana/use-solana';
 import { Button } from '@/components/ui/button';
 import { WalletDropdown } from '@/components/wallet-dropdown';
+import { useEmployeeDashboardOverviewQuery } from '@/features/employee-dashboard/data-access/use-employee-dashboard-overview-query';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -24,25 +25,25 @@ export function EmployeeDashboardLayout({ children }: EmployeeDashboardLayoutPro
   const isMobile = useIsMobile();
   const { connected } = useSolana();
   const pathname = usePathname();
+  const { data: overview } = useEmployeeDashboardOverviewQuery();
 
-  // Mock data - TODO: Fetch actual organization and last activity from blockchain/backend
-  const organizationName = 'Acme Corp';
+  const organizationName = overview?.organization?.name ?? '—';
 
   const activityInfo = useMemo(() => {
-    if (typeof window === 'undefined') {
+    if (!overview?.activity.lastActivityAt || overview.activity.daysUntilEmployerWithdrawal == null) {
       return null;
     }
 
-    const mockLastActivityDate = new Date('2025-10-08'); // 20 days ago
-    const now = new Date();
-    const daysSinceActivity = Math.floor((now.getTime() - mockLastActivityDate.getTime()) / (1000 * 60 * 60 * 24));
-    const daysUntilWithdrawal = Math.max(0, 30 - daysSinceActivity);
-
-    return {
-      lastActivityDate: mockLastActivityDate,
-      daysUntilWithdrawal,
-    };
-  }, []);
+    try {
+      return {
+        lastActivityDate: new Date(overview.activity.lastActivityAt),
+        daysUntilWithdrawal: overview.activity.daysUntilEmployerWithdrawal,
+      };
+    } catch (error) {
+      console.warn('[employee-dashboard] Failed to parse last activity date', error);
+      return null;
+    }
+  }, [overview]);
 
   const navItems = [
     {

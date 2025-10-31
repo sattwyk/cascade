@@ -213,17 +213,53 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         if (cancelled || !snapshot) return;
 
         const serverProgress = { ...snapshot.progress };
+
+        let mergedProgress: SetupProgress;
+
         setSetupProgress((prev) => {
-          if (areProgressEqual(prev, serverProgress)) return prev;
-          saveSetupProgress(serverProgress);
-          return serverProgress;
+          // Merge server progress with local progress, preferring "true" values
+          // This prevents server queries from resetting progress that's already completed locally
+          const merged: SetupProgress = {
+            walletConnected: prev.walletConnected || serverProgress.walletConnected,
+            tokenAccountFunded: prev.tokenAccountFunded || serverProgress.tokenAccountFunded,
+            employeeAdded: prev.employeeAdded || serverProgress.employeeAdded,
+            streamCreated: prev.streamCreated || serverProgress.streamCreated,
+          };
+
+          mergedProgress = merged;
+
+          // Log when local state is preserved over server state
+          if (process.env.NODE_ENV === 'development') {
+            const hadLocalOverride =
+              (prev.tokenAccountFunded && !serverProgress.tokenAccountFunded) ||
+              (prev.employeeAdded && !serverProgress.employeeAdded) ||
+              (prev.streamCreated && !serverProgress.streamCreated);
+
+            if (hadLocalOverride) {
+              console.info('[dashboard] Preserved local progress over server state', {
+                local: prev,
+                server: serverProgress,
+                merged,
+              });
+            }
+          }
+
+          if (areProgressEqual(prev, merged)) return prev;
+          saveSetupProgress(merged);
+          return merged;
         });
 
-        const normalizedState = resolveStateFromProgress(serverProgress, snapshot.accountState);
+        // Use merged progress (not just server progress) to determine state
+        const normalizedState = resolveStateFromProgress(mergedProgress!, snapshot.accountState);
         lastPersistedStateRef.current = snapshot.accountState;
-        setAccountStateInternal((prev) => (prev === normalizedState ? prev : normalizedState));
-        saveAccountState(normalizedState);
-        syncProgressWithState(normalizedState);
+        setAccountStateInternal((prev) => {
+          // Only update state if it's an upgrade
+          if (isStateUpgrade(prev, normalizedState)) {
+            saveAccountState(normalizedState);
+            return normalizedState;
+          }
+          return prev;
+        });
       } catch (error) {
         console.error('[dashboard] Failed to load setup snapshot', error);
       }

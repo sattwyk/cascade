@@ -2,11 +2,29 @@
 
 import { useMemo } from 'react';
 
+import { useWalletUi } from '@wallet-ui/react';
+import type { Address } from 'gill';
 import { AlertCircle, TrendingDown, Users, Zap } from 'lucide-react';
 
+import type { ActivityLogEntry } from '@/app/dashboard/actions/activity-log';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useGetTokenAccountsQuery } from '@/features/account/data-access/use-get-token-accounts-query';
+import { useDashboardActivityQuery } from '@/features/dashboard/data-access/use-dashboard-activity-query';
+import { useDashboardAlertsQuery } from '@/features/dashboard/data-access/use-dashboard-alerts-query';
+import { useDashboardEmployeesQuery } from '@/features/dashboard/data-access/use-dashboard-employees-query';
+import { useDashboardStreamsQuery } from '@/features/dashboard/data-access/use-dashboard-streams-query';
 import { getAccountStateConfig } from '@/lib/config/account-states';
+import {
+  deriveOverviewMetrics,
+  deriveSecondaryMetrics,
+  toTimelineEvents,
+  type OverviewMetric,
+  type SecondaryMetric,
+  type TimelineEvent,
+} from '@/lib/dashboard/stream-insights';
+import { hasPositiveTokenBalance, NULL_ADDRESS } from '@/lib/solana/token-helpers';
+import type { DashboardStream } from '@/types/stream';
 
 import { useDashboard } from '../dashboard-context';
 import { EmptyState } from '../empty-state';
@@ -15,7 +33,12 @@ import { OverviewAlerts } from '../overview/overview-alerts';
 import { OverviewChecklist, type OverviewChecklistStep } from '../overview/overview-checklist';
 import { OverviewMetrics } from '../overview/overview-metrics';
 
-export function OverviewTab() {
+interface OverviewTabProps {
+  initialStreams: DashboardStream[];
+  initialActivity: ActivityLogEntry[];
+}
+
+export function OverviewTab({ initialStreams, initialActivity }: OverviewTabProps) {
   const {
     accountState,
     setIsCreateStreamModalOpen,
@@ -23,10 +46,42 @@ export function OverviewTab() {
     setIsTopUpAccountModalOpen,
     setupProgress,
   } = useDashboard();
+  const { account } = useWalletUi();
+  const { data: streamData = [], isFetching: streamsFetching } = useDashboardStreamsQuery({
+    initialData: initialStreams,
+  });
+  const { data: employees = [] } = useDashboardEmployeesQuery();
+  const {
+    data: activityEntries = [],
+    isFetching: activityFetching,
+    error: activityError,
+  } = useDashboardActivityQuery({ initialData: initialActivity, limit: 10 });
+  const walletAddress = (account?.address as Address) ?? NULL_ADDRESS;
+  const tokenAccountsQuery = useGetTokenAccountsQuery({ address: walletAddress, enabled: Boolean(account?.address) });
+  const hasOnChainTokenBalance = useMemo(
+    () => hasPositiveTokenBalance(tokenAccountsQuery.data),
+    [tokenAccountsQuery.data],
+  );
+  const walletConnected = setupProgress.walletConnected || Boolean(account?.address);
+  const hasEmployeeRecords = employees.length > 0;
+  const hasStreamRecords = streamData.length > 0;
+  const tokenFundingComplete = setupProgress.tokenAccountFunded || hasOnChainTokenBalance;
+  const tokenFundingOptional = !setupProgress.tokenAccountFunded && hasOnChainTokenBalance;
+  const employeeStepComplete = setupProgress.employeeAdded || hasEmployeeRecords;
+  const streamStepComplete = setupProgress.streamCreated || hasStreamRecords;
+  const setupComplete = walletConnected && employeeStepComplete && streamStepComplete;
 
   const config = getAccountStateConfig(accountState);
-  const hasStreams = config.hasStreams;
-  const showSetupPhase = !config.setupComplete;
+  const hasStreams = hasStreamRecords || config.hasStreams;
+  const showSetupPhase = !setupComplete;
+
+  const metrics = useMemo<OverviewMetric[]>(() => deriveOverviewMetrics(streamData), [streamData]);
+  const { data: alerts = [] } = useDashboardAlertsQuery({ status: 'all' });
+  const secondaryMetrics = useMemo<SecondaryMetric[]>(
+    () => deriveSecondaryMetrics(streamData, activityEntries),
+    [streamData, activityEntries],
+  );
+  const timelineEvents = useMemo<TimelineEvent[]>(() => toTimelineEvents(activityEntries), [activityEntries]);
 
   const checklistSteps = useMemo<OverviewChecklistStep[]>(
     () => [
@@ -34,16 +89,17 @@ export function OverviewTab() {
         id: 'wallet',
         title: 'Connect employer wallet',
         description: 'Link the treasury wallet used to fund ongoing payroll streams.',
-        completed: setupProgress.walletConnected,
+        completed: walletConnected,
         stepNumber: 1,
       },
       {
         id: 'token-account',
         title: 'Verify token account funding',
         description: 'Confirm your default token account has enough balance for upcoming payroll.',
-        completed: setupProgress.tokenAccountFunded,
+        completed: tokenFundingComplete,
         stepNumber: 2,
-        action: setupProgress.tokenAccountFunded
+        optional: tokenFundingOptional,
+        action: tokenFundingComplete
           ? undefined
           : {
               label: 'Top Up Account',
@@ -54,9 +110,9 @@ export function OverviewTab() {
         id: 'employee',
         title: 'Add first employee',
         description: 'Invite or create an employee profile with a wallet address.',
-        completed: setupProgress.employeeAdded,
+        completed: employeeStepComplete,
         stepNumber: 3,
-        action: setupProgress.employeeAdded
+        action: employeeStepComplete
           ? undefined
           : {
               label: 'Add Employee',
@@ -67,51 +123,52 @@ export function OverviewTab() {
         id: 'stream',
         title: 'Create payment stream',
         description: 'Launch the first live payment stream for your team member.',
-        completed: setupProgress.streamCreated,
+        completed: streamStepComplete,
         stepNumber: 4,
-        action: setupProgress.streamCreated
+        action: streamStepComplete
           ? undefined
           : {
               label: 'Create Stream',
               onClick: () => setIsCreateStreamModalOpen(true),
-              disabled: !setupProgress.employeeAdded || !setupProgress.tokenAccountFunded,
+              disabled: !employeeStepComplete || !tokenFundingComplete,
             },
       },
     ],
     [
+      walletConnected,
+      employeeStepComplete,
+      streamStepComplete,
+      tokenFundingComplete,
+      tokenFundingOptional,
       setIsAddEmployeeModalOpen,
       setIsCreateStreamModalOpen,
       setIsTopUpAccountModalOpen,
-      setupProgress.employeeAdded,
-      setupProgress.streamCreated,
-      setupProgress.tokenAccountFunded,
-      setupProgress.walletConnected,
     ],
   );
 
   const primaryCta = useMemo(() => {
-    if (!setupProgress.walletConnected) return null;
-    if (!setupProgress.employeeAdded) {
+    if (!walletConnected) return null;
+    if (!employeeStepComplete) {
       return {
         label: 'Add Employee',
         onClick: () => setIsAddEmployeeModalOpen(true),
       };
     }
-    if (!setupProgress.streamCreated) {
+    if (!streamStepComplete) {
       return {
         label: 'Create Stream',
         onClick: () => setIsCreateStreamModalOpen(true),
-        disabled: !setupProgress.tokenAccountFunded,
+        disabled: !tokenFundingComplete,
       };
     }
     return null;
   }, [
     setIsAddEmployeeModalOpen,
     setIsCreateStreamModalOpen,
-    setupProgress.employeeAdded,
-    setupProgress.streamCreated,
-    setupProgress.tokenAccountFunded,
-    setupProgress.walletConnected,
+    employeeStepComplete,
+    streamStepComplete,
+    tokenFundingComplete,
+    walletConnected,
   ]);
 
   return (
@@ -175,78 +232,62 @@ export function OverviewTab() {
       {!showSetupPhase && hasStreams && (
         <div className="space-y-4 sm:space-y-5 md:space-y-6">
           {/* KPI Row */}
-          {config.showMetrics && <OverviewMetrics />}
+          {config.showMetrics && <OverviewMetrics metrics={metrics} isLoading={streamsFetching} />}
 
           {/* Secondary metrics grid */}
           {config.showSecondaryMetrics && (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="pb-2 sm:pb-3">
-                  <CardTitle className="flex items-center gap-2 text-xs font-medium sm:text-sm">
-                    <AlertCircle className="h-3 w-3 shrink-0 sm:h-4 sm:w-4" />
-                    <span className="truncate">Pending Actions</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xl font-bold sm:text-2xl">2</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Require attention</p>
-                </CardContent>
-              </Card>
+              {secondaryMetrics.map((metric) => {
+                const IconComponent =
+                  metric.icon === 'alert'
+                    ? AlertCircle
+                    : metric.icon === 'trending-down'
+                      ? TrendingDown
+                      : metric.icon === 'zap'
+                        ? Zap
+                        : Users;
 
-              <Card>
-                <CardHeader className="pb-2 sm:pb-3">
-                  <CardTitle className="flex items-center gap-2 text-xs font-medium sm:text-sm">
-                    <TrendingDown className="h-3 w-3 shrink-0 sm:h-4 sm:w-4" />
-                    <span className="truncate">Inactivity Risk</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xl font-bold sm:text-2xl">1</p>
-                  <p className="mt-1 text-xs text-muted-foreground">25+ days inactive</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2 sm:pb-3">
-                  <CardTitle className="flex items-center gap-2 text-xs font-medium sm:text-sm">
-                    <Zap className="h-3 w-3 shrink-0 sm:h-4 sm:w-4" />
-                    <span className="truncate">Clawbacks (30d)</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xl font-bold sm:text-2xl">0</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Emergency withdrawals</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2 sm:pb-3">
-                  <CardTitle className="flex items-center gap-2 text-xs font-medium sm:text-sm">
-                    <Users className="h-3 w-3 shrink-0 sm:h-4 sm:w-4" />
-                    <span className="truncate">Token Health</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xl font-bold sm:text-2xl">100%</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Above threshold</p>
-                </CardContent>
-              </Card>
+                return (
+                  <Card key={metric.id}>
+                    <CardHeader className="pb-2 sm:pb-3">
+                      <CardTitle className="flex items-center gap-2 text-xs font-medium sm:text-sm">
+                        <IconComponent className="h-3 w-3 shrink-0 sm:h-4 sm:w-4" />
+                        <span className="truncate">{metric.label}</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-xl font-bold sm:text-2xl">{metric.value}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{metric.description}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
 
           {/* Activity and Alerts */}
           {(config.showActivityTimeline || config.showAlerts) && (
             <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 lg:grid-cols-3">
-              {config.showActivityTimeline && (
+              {config.showActivityTimeline ? (
                 <div className="lg:col-span-2">
-                  <OverviewActivityTimeline />
+                  <OverviewActivityTimeline
+                    events={timelineEvents}
+                    isLoading={activityFetching}
+                    error={activityError instanceof Error ? activityError : null}
+                  />
                 </div>
-              )}
-              {config.showAlerts && (
+              ) : null}
+              {config.showAlerts ? (
                 <div>
-                  <OverviewAlerts />
+                  <OverviewAlerts
+                    alerts={alerts}
+                    onCreateStream={() => setIsCreateStreamModalOpen(true)}
+                    onAddEmployee={() => setIsAddEmployeeModalOpen(true)}
+                    hasSetupProgress={setupProgress.employeeAdded}
+                    isFundingReady={setupProgress.tokenAccountFunded}
+                  />
                 </div>
-              )}
+              ) : null}
             </div>
           )}
         </div>

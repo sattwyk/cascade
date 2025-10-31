@@ -357,6 +357,23 @@ async function registerOrganizationAdmin({
 
   const db = drizzleClientHttp;
 
+  // Check if this email already exists as an employee in this organization
+  const [existingUser] = await db
+    .select({
+      id: organizationUsers.id,
+      role: organizationUsers.role,
+      email: organizationUsers.email,
+    })
+    .from(organizationUsers)
+    .where(and(eq(organizationUsers.organizationId, organizationId), eq(organizationUsers.email, normalizedEmail)))
+    .limit(1);
+
+  if (existingUser && existingUser.role === 'employee') {
+    throw new FatalError(
+      `The email ${normalizedEmail} is already registered as an employee in this organization. Please use a different email address for the employer account.`,
+    );
+  }
+
   const [user] = await db
     .insert(organizationUsers)
     .values({

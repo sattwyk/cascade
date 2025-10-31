@@ -1,43 +1,42 @@
 'use client';
 
-import { Copy, Download, ExternalLink, X } from 'lucide-react';
+import { Copy, Download, X } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { AppExplorerLink } from '@/components/app-explorer-link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
+import type { DashboardStream } from '@/types/stream';
 
 import { StreamActionButtons } from './stream-action-buttons';
 import { StreamActivityHistory } from './stream-activity-history';
 
 interface StreamDetailDrawerProps {
-  streamId: string;
+  stream: DashboardStream;
   onClose: () => void;
   isOpen: boolean;
 }
 
-// Mock stream data
-const MOCK_STREAM_DETAIL = {
-  id: '1',
-  employeeName: 'Alice Johnson',
-  employeeAddress: '7xL...abc',
-  streamAddress: '7xL...stream1',
-  vaultAddress: '7xL...vault1',
-  mint: 'USDC',
-  hourlyRate: 50,
-  vaultBalance: 2400,
-  totalDeposited: 5000,
-  availableToWithdraw: 1200,
-  status: 'active' as const,
-  lastActivity: '2 hours ago',
-  cluster: 'devnet',
-};
-
-export function StreamDetailDrawer({ streamId, onClose, isOpen }: StreamDetailDrawerProps) {
-  const stream = MOCK_STREAM_DETAIL;
+export function StreamDetailDrawer({ stream, onClose, isOpen }: StreamDetailDrawerProps) {
   const isMobile = useIsMobile();
+
+  const USD_FORMATTER = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  const runwayDays = (() => {
+    if (!stream.hourlyRate) return 0;
+    const days = stream.availableToWithdraw / (stream.hourlyRate * 24);
+    return Number.isFinite(days) ? Math.max(Math.floor(days), 0) : 0;
+  })();
+
+  const runwayPercentage = Math.min(runwayDays / 30, 1) * 100;
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -83,7 +82,9 @@ export function StreamDetailDrawer({ streamId, onClose, isOpen }: StreamDetailDr
             {/* Header */}
             <div>
               <DrawerTitle className="text-lg font-bold">{stream.employeeName}</DrawerTitle>
-              <p className="mt-1 text-xs text-muted-foreground">{stream.employeeAddress}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {stream.employeeWallet ?? 'No employee wallet on file'}
+              </p>
             </div>
 
             {/* Status badge */}
@@ -98,19 +99,19 @@ export function StreamDetailDrawer({ streamId, onClose, isOpen }: StreamDetailDr
             <div className="grid grid-cols-2 gap-3 rounded-lg bg-muted/50 p-3">
               <div>
                 <p className="text-xs text-muted-foreground">Vault Balance</p>
-                <p className="text-lg font-bold">${stream.vaultBalance}</p>
+                <p className="text-lg font-bold">{USD_FORMATTER.format(stream.vaultBalance)}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Total Deposited</p>
-                <p className="text-lg font-bold">${stream.totalDeposited}</p>
+                <p className="text-lg font-bold">{USD_FORMATTER.format(stream.totalDeposited)}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Available</p>
-                <p className="text-lg font-bold">${stream.availableToWithdraw}</p>
+                <p className="text-lg font-bold">{USD_FORMATTER.format(stream.availableToWithdraw)}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Hourly Rate</p>
-                <p className="text-lg font-bold">${stream.hourlyRate}</p>
+                <p className="text-lg font-bold">{USD_FORMATTER.format(stream.hourlyRate)}</p>
               </div>
             </div>
 
@@ -118,10 +119,10 @@ export function StreamDetailDrawer({ streamId, onClose, isOpen }: StreamDetailDr
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-sm font-medium">Runway</p>
-                <p className="text-sm font-semibold">48 hours</p>
+                <p className="text-sm font-semibold">{runwayDays} days</p>
               </div>
               <div className="h-2 w-full rounded-full bg-muted">
-                <div className="h-2 rounded-full bg-green-500" style={{ width: '75%' }} />
+                <div className="h-2 rounded-full bg-green-500" style={{ width: `${runwayPercentage || 0}%` }} />
               </div>
             </div>
 
@@ -133,7 +134,7 @@ export function StreamDetailDrawer({ streamId, onClose, isOpen }: StreamDetailDr
               </TabsList>
 
               <TabsContent value="activity" className="mt-3 space-y-3">
-                <StreamActivityHistory />
+                <StreamActivityHistory streamId={stream.id} />
               </TabsContent>
 
               <TabsContent value="details" className="mt-3 space-y-3">
@@ -174,10 +175,30 @@ export function StreamDetailDrawer({ streamId, onClose, isOpen }: StreamDetailDr
                         </Button>
                       </div>
                     </div>
+                    <div>
+                      <p className="mb-1 text-xs text-muted-foreground">Mint</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 truncate rounded bg-muted p-2 font-mono text-xs">
+                          {stream.mintAddress}
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => copyToClipboard(stream.mintAddress, 'mint')}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="pt-1 text-xs text-muted-foreground">{stream.mintLabel}</p>
+                    </div>
                     <div className="flex gap-2 pt-2">
-                      <Button variant="outline" size="sm" className="flex-1 gap-2 bg-transparent">
-                        <ExternalLink className="h-4 w-4" />
-                        Explorer
+                      <Button variant="outline" size="sm" className="flex-1 gap-2 bg-transparent" asChild>
+                        <AppExplorerLink
+                          address={stream.streamAddress}
+                          label="Explorer"
+                          className="inline-flex items-center justify-center gap-2"
+                        />
                       </Button>
                       <Button variant="outline" size="sm" className="flex-1 gap-2 bg-transparent">
                         <Download className="h-4 w-4" />
@@ -190,7 +211,7 @@ export function StreamDetailDrawer({ streamId, onClose, isOpen }: StreamDetailDr
             </Tabs>
 
             {/* Action buttons */}
-            <StreamActionButtons streamId={streamId} status={stream.status} />
+            <StreamActionButtons streamId={stream.id} status={stream.status} />
           </div>
         </div>
       </DrawerContent>
