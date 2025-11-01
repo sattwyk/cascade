@@ -58,3 +58,6 @@ test-ledger
 
 # Workflow
 .well-known
+
+# drizzle
+drizzle.prod.config.ts
