@@ -95,6 +95,7 @@ function EmployeeDashboardOverviewInner({
     setWithdrawModalOpen(true);
   };
 
+  // TODO: it throws error when there's no active streams
   const handleRefreshActivity = useCallback(async () => {
     const currentData = latestDataRef.current;
     const activeStream = currentData.streams.find((stream) => stream.status === 'active');

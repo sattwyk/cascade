@@ -12,7 +12,7 @@ import {
 } from 'gill/programs/token';
 import { z } from 'zod';
 
-const SUPPORTED_TOKENS = ['USDC', 'USDT'] as const;
+const SUPPORTED_TOKENS = ['USDC', 'USDT', 'EURC'] as const;
 
 type SupportedToken = (typeof SUPPORTED_TOKENS)[number];
 
@@ -34,6 +34,11 @@ const TOKEN_ENV_CONFIG: Record<SupportedToken, TokenMintConfig> = {
     mintAddress: process.env.CASCADE_DEV_FAUCET_USDT_MINT,
     decimals: parseEnvInt('CASCADE_DEV_FAUCET_USDT_DECIMALS'),
     tokenProgram: process.env.CASCADE_DEV_FAUCET_USDT_TOKEN_PROGRAM,
+  },
+  EURC: {
+    mintAddress: process.env.CASCADE_DEV_FAUCET_EURC_MINT,
+    decimals: parseEnvInt('CASCADE_DEV_FAUCET_EURC_DECIMALS'),
+    tokenProgram: process.env.CASCADE_DEV_FAUCET_EURC_TOKEN_PROGRAM,
   },
 };
 

@@ -21,7 +21,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { useDashboard } from '@/components/dashboard/dashboard-context';
-import { SolanaIcon, USDCIcon, USDTIcon } from '@/components/icons';
+import { EURCIcon, USDCIcon, USDTIcon } from '@/components/icons';
 import { WalletDrawer } from '@/components/onboarding/shared/wallet-picker';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -78,10 +78,11 @@ const TOKEN_OPTIONS: Array<{
   name: string;
   description: string;
   Icon: React.ComponentType<LucideProps>;
+  disabled?: boolean;
 }> = [
   { id: 'USDC', name: 'USDC', description: 'USD Coin · Recommended', Icon: USDCIcon },
-  { id: 'USDT', name: 'USDT', description: 'Tether USD', Icon: USDTIcon },
-  { id: 'SOL', name: 'SOL', description: 'Solana native token', Icon: SolanaIcon },
+  { id: 'USDT', name: 'USDT', description: 'Coming soon', Icon: USDTIcon, disabled: true },
+  { id: 'EURC', name: 'EURC', description: 'Coming soon', Icon: EURCIcon, disabled: true },
 ];
 
 // ----------------------------
@@ -473,6 +474,7 @@ const TokenStep = memo(function TokenStep({ showValidation }: { showValidation: 
         {TOKEN_OPTIONS.map((token) => {
           const Icon = token.Icon;
           const isSelected = selected === token.id;
+          const isDisabled = token.disabled ?? false;
           return (
             <Controller
               key={token.id}
@@ -481,11 +483,13 @@ const TokenStep = memo(function TokenStep({ showValidation }: { showValidation: 
               render={({ field }) => (
                 <button
                   type="button"
-                  onClick={() => field.onChange(token.id)}
+                  onClick={() => !isDisabled && field.onChange(token.id)}
+                  disabled={isDisabled}
                   className={cn(
                     'rounded-lg border border-border bg-background p-4 text-left transition-all',
                     isSelected && 'border-primary bg-primary/5 shadow-sm ring-2 ring-primary/30',
-                    !isSelected && 'hover:bg-muted/50',
+                    !isSelected && !isDisabled && 'hover:bg-muted/50',
+                    isDisabled && 'cursor-not-allowed opacity-50',
                   )}
                 >
                   <div className="flex items-center gap-3">

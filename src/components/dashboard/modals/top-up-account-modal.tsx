@@ -7,7 +7,7 @@ import { LAMPORTS_PER_SOL, type Address } from 'gill';
 import { toast } from 'sonner';
 
 import { createActivityLog } from '@/app/dashboard/actions/activity-log';
-import { SolanaIcon, USDCIcon, USDTIcon } from '@/components/icons';
+import { EURCIcon, SolanaIcon, USDCIcon, USDTIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -18,7 +18,6 @@ import { useGetTokenAccountsQuery } from '@/features/account/data-access/use-get
 import { useRequestAirdropMutation } from '@/features/account/data-access/use-request-airdrop-mutation';
 import { useRequestDevTokenTopUpMutation } from '@/features/account/data-access/use-request-dev-token-top-up-mutation';
 import { resolveMintDisplay } from '@/lib/solana/token-helpers';
-import { ellipsify } from '@/lib/utils';
 
 import { useDashboard } from '../dashboard-context';
 
@@ -274,13 +273,14 @@ export function TopUpAccountModal({ isOpen, onClose }: TopUpAccountModalProps) {
           <div className="space-y-2">
             <Label>Select Token</Label>
             <div className="grid grid-cols-2 gap-2">
-              {TOKEN_OPTIONS.map(({ id, label, description, Icon }) => (
+              {TOKEN_OPTIONS.map(({ id, label, description, Icon, disabled }) => (
                 <button
                   key={id}
-                  onClick={() => setSelectedToken(id)}
+                  onClick={() => !disabled && setSelectedToken(id)}
+                  disabled={disabled}
                   className={`flex w-full flex-col items-start gap-1 rounded-lg border p-3 text-left text-sm font-medium transition-colors ${
                     selectedToken === id ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:bg-muted/50'
-                  }`}
+                  } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
                 >
                   <span className="flex items-center gap-2 text-sm font-semibold">
                     <Icon className="h-5 w-5" />
@@ -349,9 +349,10 @@ export function TopUpAccountModal({ isOpen, onClose }: TopUpAccountModalProps) {
 }
 
 const TOKEN_OPTIONS = [
-  { id: 'USDC', label: 'USDC', description: 'Minted via dev faucet', Icon: USDCIcon },
-  { id: 'USDT', label: 'USDT', description: 'Minted via dev faucet', Icon: USDTIcon },
-  { id: 'SOL', label: 'SOL', description: 'For gas fees (airdrop)', Icon: SolanaIcon },
+  { id: 'USDC', label: 'USDC', description: 'Minted via dev faucet', Icon: USDCIcon, disabled: false },
+  { id: 'USDT', label: 'USDT', description: 'Coming soon', Icon: USDTIcon, disabled: true },
+  { id: 'EURC', label: 'EURC', description: 'Coming soon', Icon: EURCIcon, disabled: true },
+  { id: 'SOL', label: 'SOL', description: 'For gas fees (airdrop)', Icon: SolanaIcon, disabled: false },
 ] as const;
 
 type TokenOptionMeta = (typeof TOKEN_OPTIONS)[number];
