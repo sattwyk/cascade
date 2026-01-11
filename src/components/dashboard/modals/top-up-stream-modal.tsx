@@ -101,7 +101,7 @@ export function TopUpStreamModal({ isOpen, onClose, streamId }: TopUpStreamModal
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 6,
   });
 
   if (!stream) {
@@ -182,9 +182,9 @@ export function TopUpStreamModal({ isOpen, onClose, streamId }: TopUpStreamModal
               type="number"
               value={topUpAmount}
               onChange={(e) => setTopUpAmount(e.target.value)}
-              placeholder="500.00"
+              placeholder="0.000000"
               min="0"
-              step="any"
+              step="0.000001"
             />
           </div>
 

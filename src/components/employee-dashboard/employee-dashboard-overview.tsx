@@ -18,6 +18,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRefreshActivityMutation } from '@/features/cascade/data-access/use-refresh-activity-mutation';
 import { useEmployeeDashboardOverviewQuery } from '@/features/employee-dashboard/data-access/use-employee-dashboard-overview-query';
 
+const AMOUNT_DECIMALS = 6;
+
 interface EmployeeDashboardOverviewProps {
   initialData: EmployeeDashboardOverviewData;
 }
@@ -168,7 +170,7 @@ function EmployeeDashboardOverviewInner({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xl font-bold sm:text-2xl">${stats.totalEarned.toFixed(2)}</p>
+            <p className="text-xl font-bold sm:text-2xl">${stats.totalEarned.toFixed(AMOUNT_DECIMALS)}</p>
             <p className="mt-1 text-xs text-muted-foreground">All-time earnings</p>
           </CardContent>
         </Card>
@@ -181,7 +183,7 @@ function EmployeeDashboardOverviewInner({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xl font-bold sm:text-2xl">${stats.availableToWithdraw.toFixed(2)}</p>
+            <p className="text-xl font-bold sm:text-2xl">${stats.availableToWithdraw.toFixed(AMOUNT_DECIMALS)}</p>
             <p className="mt-1 text-xs text-muted-foreground">Ready to withdraw</p>
           </CardContent>
         </Card>
@@ -228,14 +230,16 @@ function EmployeeDashboardOverviewInner({
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    ${stream.hourlyRate.toFixed(2)}/hour
+                    ${stream.hourlyRate.toFixed(AMOUNT_DECIMALS)}/hour
                     {stream.createdAt ? ` • Started ${new Date(stream.createdAt).toLocaleDateString()}` : null}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">Available</p>
-                    <p className="text-lg font-bold text-green-600">${stream.availableBalance.toFixed(2)}</p>
+                    <p className="text-lg font-bold text-green-600">
+                      ${stream.availableBalance.toFixed(AMOUNT_DECIMALS)}
+                    </p>
                   </div>
                   {stream.availableBalance > 0 && (
                     <Button size="sm" className="gap-2" onClick={() => handleWithdrawClick(stream)}>
@@ -298,7 +302,7 @@ function EmployeeDashboardOverviewInner({
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-green-600">+${payment.amount.toFixed(2)}</p>
+                    <p className="text-lg font-bold text-green-600">+${payment.amount.toFixed(AMOUNT_DECIMALS)}</p>
                   </div>
                 </div>
               );

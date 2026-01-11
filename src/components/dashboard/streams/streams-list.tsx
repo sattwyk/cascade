@@ -33,7 +33,7 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
   minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
+  maximumFractionDigits: 6,
 });
 
 function formatLastActivity(lastActivityAt: string | null) {

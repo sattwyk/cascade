@@ -107,7 +107,7 @@ export function EmergencyWithdrawModal({ isOpen, onClose, streamId }: EmergencyW
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 6,
   });
 
   if (!stream) {

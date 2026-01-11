@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { toBaseUnits } from '@/features/cascade/data-access/derive-cascade-pdas';
 import { useWithdrawMutation } from '@/features/cascade/data-access/use-withdraw-mutation';
 
 interface WithdrawModalProps {
@@ -27,10 +28,7 @@ interface WithdrawModalProps {
   };
 }
 
-function toBaseUnits(amount: number) {
-  // Until we have mint metadata, assume UI amounts are denominated with 2 decimal places.
-  return BigInt(Math.round(amount * 100));
-}
+const AMOUNT_DECIMALS = 6;
 
 export function WithdrawModal({ isOpen, onClose, stream }: WithdrawModalProps) {
   const { account } = useSolana();
@@ -48,17 +46,18 @@ export function WithdrawModal({ isOpen, onClose, stream }: WithdrawModalProps) {
 
   const employerName = stream.employerName;
 
-  const maxAmountLabel = useMemo(() => `$${availableBalance.toFixed(2)}`, [availableBalance]);
+  const maxAmountLabel = useMemo(() => `$${availableBalance.toFixed(AMOUNT_DECIMALS)}`, [availableBalance]);
 
   const handleWithdraw = async () => {
     const withdrawAmount = Number.parseFloat(amount);
+    const roundedAmount = Number.isFinite(withdrawAmount) ? Number(withdrawAmount.toFixed(AMOUNT_DECIMALS)) : NaN;
 
-    if (!Number.isFinite(withdrawAmount) || withdrawAmount <= 0) {
+    if (!Number.isFinite(roundedAmount) || roundedAmount <= 0) {
       toast.error('Please enter a valid amount');
       return;
     }
 
-    if (withdrawAmount > availableBalance) {
+    if (roundedAmount > availableBalance) {
       toast.error('Amount exceeds available balance');
       return;
     }
@@ -78,8 +77,8 @@ export function WithdrawModal({ isOpen, onClose, stream }: WithdrawModalProps) {
       await withdrawMutation.mutateAsync({
         employer: stream.employerWallet,
         mintAddress: stream.mintAddress,
-        amount: withdrawAmount,
-        amountBaseUnits: toBaseUnits(withdrawAmount),
+        amount: roundedAmount,
+        amountBaseUnits: toBaseUnits(roundedAmount, AMOUNT_DECIMALS),
         streamId: stream.id,
         stream: stream.streamAddress,
         vault: stream.vaultAddress,
@@ -96,7 +95,7 @@ export function WithdrawModal({ isOpen, onClose, stream }: WithdrawModalProps) {
   };
 
   const handleMaxClick = () => {
-    setAmount(availableBalance.toString());
+    setAmount(availableBalance.toFixed(AMOUNT_DECIMALS));
   };
 
   return (
@@ -120,11 +119,11 @@ export function WithdrawModal({ isOpen, onClose, stream }: WithdrawModalProps) {
               <Input
                 id="amount"
                 type="number"
-                placeholder="0.00"
+                placeholder="0.000000"
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
                 className="pl-7"
-                step="0.01"
+                step="0.000001"
                 min="0"
                 max={availableBalance}
               />
@@ -134,7 +133,7 @@ export function WithdrawModal({ isOpen, onClose, stream }: WithdrawModalProps) {
           <div className="rounded-lg bg-muted/50 p-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Available Balance</span>
-              <span className="font-medium">${availableBalance.toFixed(2)}</span>
+              <span className="font-medium">${availableBalance.toFixed(AMOUNT_DECIMALS)}</span>
             </div>
           </div>
         </div>

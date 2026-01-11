@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
+const AMOUNT_DECIMALS = 6;
+
 export default function EmployeeStreamsPage() {
   const { account, connected } = useSolana();
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
@@ -149,7 +151,7 @@ export default function EmployeeStreamsPage() {
                   {stream.availableBalance > 0 && (
                     <Button className="gap-2" onClick={() => handleWithdrawClick(stream)}>
                       <ArrowDownToLine className="h-4 w-4" />
-                      Withdraw ${stream.availableBalance.toFixed(2)}
+                      Withdraw ${stream.availableBalance.toFixed(AMOUNT_DECIMALS)}
                     </Button>
                   )}
                 </div>
@@ -157,7 +159,7 @@ export default function EmployeeStreamsPage() {
                 <div className="grid grid-cols-2 gap-4 border-t pt-4 md:grid-cols-4">
                   <div>
                     <p className="text-xs text-muted-foreground">Hourly Rate</p>
-                    <p className="text-lg font-semibold">${stream.hourlyRate.toFixed(2)}/hr</p>
+                    <p className="text-lg font-semibold">${stream.hourlyRate.toFixed(AMOUNT_DECIMALS)}/hr</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Hours Worked</p>
@@ -165,7 +167,9 @@ export default function EmployeeStreamsPage() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Total Earned</p>
-                    <p className="text-lg font-semibold text-green-600">${stream.totalEarned.toFixed(2)}</p>
+                    <p className="text-lg font-semibold text-green-600">
+                      ${stream.totalEarned.toFixed(AMOUNT_DECIMALS)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Started</p>
@@ -182,7 +186,9 @@ export default function EmployeeStreamsPage() {
                       <p className="text-sm font-medium text-green-900">Available to withdraw</p>
                       <p className="text-xs text-green-700">Ready for immediate withdrawal</p>
                     </div>
-                    <p className="text-xl font-bold text-green-600">${stream.availableBalance.toFixed(2)}</p>
+                    <p className="text-xl font-bold text-green-600">
+                      ${stream.availableBalance.toFixed(AMOUNT_DECIMALS)}
+                    </p>
                   </div>
                 )}
               </div>

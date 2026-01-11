@@ -12,6 +12,12 @@ interface StreamActivityHistoryProps {
 
 export function StreamActivityHistory({ streamId }: StreamActivityHistoryProps) {
   const { data: activities, isLoading, isError } = useStreamActivityQuery({ streamId });
+  const amountFormatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 6,
+  });
 
   if (isLoading) {
     return (
@@ -47,12 +53,7 @@ export function StreamActivityHistory({ streamId }: StreamActivityHistoryProps) 
 
   const formatAmount = (metadata: Record<string, unknown>) => {
     if (metadata.amount && typeof metadata.amount === 'number') {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(metadata.amount);
+      return amountFormatter.format(metadata.amount);
     }
     return null;
   };

@@ -58,7 +58,7 @@ type TokenAccountOption = {
 
 const TOKEN_FORMATTER = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 0,
-  maximumFractionDigits: 2,
+  maximumFractionDigits: 6,
 });
 
 const HOURS_FORMATTER = new Intl.NumberFormat('en-US', {
@@ -75,7 +75,39 @@ function formatTokenAmount(amount: number) {
   return TOKEN_FORMATTER.format(amount);
 }
 
+const AMOUNT_DECIMALS = 6;
+
+type CreateStreamModalContentProps = CreateStreamModalProps & {
+  account: UiWalletAccount;
+  clusterId: string;
+};
+
 export function CreateStreamModal({ isOpen, onClose }: CreateStreamModalProps) {
+  const { account, cluster } = useWalletUi();
+  const clusterId = cluster?.id ?? 'devnet';
+
+  if (!account) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Payment Stream</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">Connect an employer wallet to create a payment stream.</p>
+          <div className="flex justify-end pt-2">
+            <Button variant="outline" onClick={onClose}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return <CreateStreamModalContent isOpen={isOpen} onClose={onClose} account={account} clusterId={clusterId} />;
+}
+
+function CreateStreamModalContent({ isOpen, onClose, account, clusterId }: CreateStreamModalContentProps) {
   const [currentStep, setCurrentStep] = useState<Step>('employee');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [employeeAddressOverride, setEmployeeAddressOverride] = useState('');
@@ -86,8 +118,7 @@ export function CreateStreamModal({ isOpen, onClose }: CreateStreamModalProps) {
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const router = useRouter();
   const { completeSetupStep, setAccountState, selectedEmployee } = useDashboard();
-  const { account, cluster } = useWalletUi();
-  const createStreamMutation = useCreateStreamMutation({ account: account as UiWalletAccount });
+  const createStreamMutation = useCreateStreamMutation({ account });
 
   const employerAddress = useMemo<Address | null>(() => {
     if (account?.address) return account.address as Address;
@@ -182,19 +213,21 @@ export function CreateStreamModal({ isOpen, onClose }: CreateStreamModalProps) {
   const economicsSummary = useMemo(() => {
     const parsedRate = Number.parseFloat(hourlyRate);
     const parsedDeposit = Number.parseFloat(initialDeposit);
+    const roundedRate = Number.isFinite(parsedRate) ? Number(parsedRate.toFixed(AMOUNT_DECIMALS)) : NaN;
+    const roundedDeposit = Number.isFinite(parsedDeposit) ? Number(parsedDeposit.toFixed(AMOUNT_DECIMALS)) : NaN;
 
-    const validRate = Number.isFinite(parsedRate) && parsedRate > 0;
-    const validDeposit = Number.isFinite(parsedDeposit) && parsedDeposit > 0;
+    const validRate = Number.isFinite(roundedRate) && roundedRate > 0;
+    const validDeposit = Number.isFinite(roundedDeposit) && roundedDeposit > 0;
 
-    const spendPerDay = validRate ? parsedRate * 24 : null;
+    const spendPerDay = validRate ? roundedRate * 24 : null;
     const spendPerWeek = spendPerDay != null ? spendPerDay * 7 : null;
     const spendPerMonth = spendPerDay != null ? spendPerDay * 30 : null;
-    const coverageHours = validRate && validDeposit ? parsedDeposit / parsedRate : null;
+    const coverageHours = validRate && validDeposit ? roundedDeposit / roundedRate : null;
     const coverageDays = coverageHours != null ? coverageHours / 24 : null;
 
     return {
-      rate: validRate ? parsedRate : 0,
-      deposit: validDeposit ? parsedDeposit : 0,
+      rate: validRate ? roundedRate : 0,
+      deposit: validDeposit ? roundedDeposit : 0,
       validRate,
       validDeposit,
       spendPerDay,
@@ -299,7 +332,7 @@ export function CreateStreamModal({ isOpen, onClose }: CreateStreamModalProps) {
         employerTokenAccount: selectedTokenAccountOption.address as Address,
         hourlyRate: economicsSummary.rate,
         totalDeposit: economicsSummary.deposit,
-        cluster: cluster.id as 'devnet' | 'testnet' | 'mainnet' | 'localnet' | 'custom',
+        cluster: clusterId as 'devnet' | 'testnet' | 'mainnet' | 'localnet' | 'custom',
       });
       toast.success('Stream created successfully!', {
         description: `Payment stream for ${selectedEmployeeOption?.name ?? ellipsify(effectiveEmployeeAddress, 4)} has been created.`,
@@ -478,12 +511,28 @@ export function CreateStreamModal({ isOpen, onClose }: CreateStreamModalProps) {
 
               <div className="space-y-2">
                 <Label htmlFor="hourlyRate">Hourly Rate</Label>
-                <Input id="hourlyRate" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} />
+                <Input
+                  id="hourlyRate"
+                  type="number"
+                  min="0"
+                  step="0.000001"
+                  placeholder={`0.${'0'.repeat(AMOUNT_DECIMALS)}`}
+                  value={hourlyRate}
+                  onChange={(e) => setHourlyRate(e.target.value)}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="initialDeposit">Initial Deposit</Label>
-                <Input id="initialDeposit" value={initialDeposit} onChange={(e) => setInitialDeposit(e.target.value)} />
+                <Input
+                  id="initialDeposit"
+                  type="number"
+                  min="0"
+                  step="0.000001"
+                  placeholder={`0.${'0'.repeat(AMOUNT_DECIMALS)}`}
+                  value={initialDeposit}
+                  onChange={(e) => setInitialDeposit(e.target.value)}
+                />
               </div>
 
               <div className="rounded-xl border border-dashed border-border/60 bg-muted/40 p-4 text-sm text-muted-foreground">

@@ -32,7 +32,7 @@ function formatDateLabel(isoDate?: string | null) {
 function formatTokenAmount(value?: number | null) {
   if (value == null || !Number.isFinite(value)) return '—';
   return value.toLocaleString(undefined, {
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 6,
   });
 }
 
