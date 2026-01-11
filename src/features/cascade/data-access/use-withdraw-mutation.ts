@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { UiWalletAccount, useWalletUiSigner } from '@wallet-ui/react';
-import { useWalletUiGill, useWalletUiSignAndSend } from '@wallet-ui/react-gill';
-import { address as toAddress, type Address } from 'gill';
+import { useWalletUiGill } from '@wallet-ui/react-gill';
+import { address as toAddress, type Address, type Signature } from 'gill';
 import { getAssociatedTokenAccountAddress, getCreateAssociatedTokenIdempotentInstruction } from 'gill/programs/token';
 import { toast } from 'sonner';
 
-import { getWithdrawInstruction } from '@project/anchor';
+import { fetchMaybePaymentStream, getWithdrawInstruction } from '@project/anchor';
 
 import type { EmployeeDashboardOverview } from '@/app/dashboard/@employee/actions/overview';
 import { recordEmployeeWithdrawal } from '@/app/dashboard/@employee/actions/record-withdrawal';
@@ -17,6 +17,9 @@ import { EMPLOYEE_WITHDRAWALS_QUERY_KEY } from '@/features/employee-dashboard/da
 
 import { derivePaymentStream, deriveVault, getErrorMessage } from './derive-cascade-pdas';
 import { useInvalidatePaymentStreamQuery } from './use-invalidate-payment-stream-query';
+import { useWalletUiSignAndSendWithFallback } from './use-wallet-ui-sign-and-send-with-fallback';
+
+const AMOUNT_DECIMALS = 6;
 
 export type WithdrawInput = {
   employer: Address | string;
@@ -32,7 +35,7 @@ export type WithdrawInput = {
 
 async function waitForSignatureConfirmation(
   client: ReturnType<typeof useWalletUiGill>,
-  signature: string,
+  signature: Signature,
   { maxAttempts = 12, delayMs = 1000 }: { maxAttempts?: number; delayMs?: number } = {},
 ) {
   if (!client?.rpc?.getSignatureStatuses) {
@@ -44,7 +47,7 @@ async function waitForSignatureConfirmation(
   // Poll for confirmation up to the configured attempts.
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
-      const response = await getSignatureStatuses([signature] as Parameters<typeof getSignatureStatuses>[0]).send();
+      const response = await getSignatureStatuses([signature]).send();
       const status = response?.value?.[0];
 
       if (status?.err) {
@@ -73,7 +76,7 @@ async function waitForSignatureConfirmation(
 
 export function useWithdrawMutation({ account }: { account: UiWalletAccount }) {
   const signer = useWalletUiSigner({ account });
-  const signAndSend = useWalletUiSignAndSend();
+  const signAndSend = useWalletUiSignAndSendWithFallback();
   const client = useWalletUiGill();
   const invalidatePaymentStreamQuery = useInvalidatePaymentStreamQuery();
   const queryClient = useQueryClient();
@@ -111,6 +114,36 @@ export function useWithdrawMutation({ account }: { account: UiWalletAccount }) {
 
         const mintAddress = typeof input.mintAddress === 'string' ? toAddress(input.mintAddress) : input.mintAddress;
 
+        const streamAccount = await fetchMaybePaymentStream(client.rpc, streamAddress);
+        if (!streamAccount.exists) {
+          throw new Error('Stream not found on-chain for the connected cluster.');
+        }
+        if (streamAccount.data.employee !== employeeAddressResolved) {
+          throw new Error('Connected wallet does not match the employee on this stream.');
+        }
+        if (!streamAccount.data.isActive) {
+          throw new Error('Stream is not active. Withdrawals are disabled.');
+        }
+        if (streamAccount.data.vault !== vaultAddress) {
+          throw new Error('Stream vault mismatch. Please refresh and try again.');
+        }
+        if (streamAccount.data.mint !== mintAddress) {
+          throw new Error('Stream mint mismatch. Please refresh and try again.');
+        }
+
+        const secondsElapsed = Math.max(0, Math.floor(Date.now() / 1000) - Number(streamAccount.data.createdAt));
+        const hoursElapsed = Math.floor(secondsElapsed / 3600);
+        const totalEarnedUncapped = BigInt(hoursElapsed) * streamAccount.data.hourlyRate;
+        const totalEarned =
+          totalEarnedUncapped > streamAccount.data.totalDeposited
+            ? streamAccount.data.totalDeposited
+            : totalEarnedUncapped;
+        const availableBalance = totalEarned - streamAccount.data.withdrawnAmount;
+
+        if (input.amountBaseUnits > availableBalance) {
+          throw new Error('Insufficient balance available for withdrawal.');
+        }
+
         const employeeTokenAccount = input.employeeTokenAccount
           ? typeof input.employeeTokenAccount === 'string'
             ? toAddress(input.employeeTokenAccount)
@@ -134,20 +167,29 @@ export function useWithdrawMutation({ account }: { account: UiWalletAccount }) {
           amount: input.amountBaseUnits.toString(),
         });
 
-        const createAtaInstruction = getCreateAssociatedTokenIdempotentInstruction({
-          payer: signer,
-          ata: employeeTokenAccount,
-          owner: employeeAddressResolved,
-          mint: mintAddress,
-          tokenProgram: toAddress('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
-        });
+        const ataAccountInfo = await client.rpc.getAccountInfo(employeeTokenAccount, { encoding: 'base64' }).send();
+        const instructions = [];
 
-        const signature = await signAndSend([createAtaInstruction, withdrawInstruction], signer);
+        if (!ataAccountInfo.value) {
+          instructions.push(
+            getCreateAssociatedTokenIdempotentInstruction({
+              payer: signer,
+              ata: employeeTokenAccount,
+              owner: employeeAddressResolved,
+              mint: mintAddress,
+              tokenProgram: toAddress('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
+            }),
+          );
+        }
+
+        instructions.push(withdrawInstruction);
+
+        const signature = await signAndSend(instructions, signer);
         if (!signature) {
           throw new Error('Transaction signature is empty');
         }
 
-        await waitForSignatureConfirmation(client, signature);
+        await waitForSignatureConfirmation(client, signature as Signature);
 
         return {
           signature,
@@ -206,7 +248,7 @@ export function useWithdrawMutation({ account }: { account: UiWalletAccount }) {
       try {
         await createActivityLog({
           title: 'Withdrawal completed',
-          description: `You withdrew ${variables.amount.toFixed(2)} tokens`,
+          description: `You withdrew ${variables.amount.toFixed(AMOUNT_DECIMALS)} tokens`,
           activityType: 'stream_withdrawn',
           actorType: 'employee',
           actorAddress: signer.address,
@@ -227,7 +269,7 @@ export function useWithdrawMutation({ account }: { account: UiWalletAccount }) {
       try {
         await createActivityLog({
           title: 'Employee withdrawal',
-          description: `Employee withdrew ${variables.amount.toFixed(2)} tokens from stream`,
+          description: `Employee withdrew ${variables.amount.toFixed(AMOUNT_DECIMALS)} tokens from stream`,
           activityType: 'stream_withdrawn',
           actorType: 'employee',
           actorAddress: signer.address,
@@ -363,7 +405,7 @@ export function useWithdrawMutation({ account }: { account: UiWalletAccount }) {
         await createActivityLog({
           title: cancelled ? 'Employee cancelled withdrawal' : 'Employee withdrawal failed',
           description: cancelled
-            ? `Employee cancelled a withdrawal attempt of ${variables?.amount?.toFixed(2) ?? 'unknown'} tokens`
+            ? `Employee cancelled a withdrawal attempt of ${variables?.amount?.toFixed(AMOUNT_DECIMALS) ?? 'unknown'} tokens`
             : `Employee withdrawal attempt failed: ${errorMessage}`,
           activityType: 'stream_withdrawn',
           actorType: 'employee',

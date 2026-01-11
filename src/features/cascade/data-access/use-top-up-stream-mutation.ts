@@ -1,6 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
 import { UiWalletAccount, useWalletUiSigner } from '@wallet-ui/react';
-import { useWalletUiSignAndSend } from '@wallet-ui/react-gill';
 import type { Address } from 'gill';
 import { toast } from 'sonner';
 
@@ -12,6 +11,7 @@ import { useInvalidateDashboardStreamsQuery } from '@/features/dashboard/data-ac
 
 import { derivePaymentStream, deriveVault, getErrorMessage, toBigInt } from './derive-cascade-pdas';
 import { useInvalidatePaymentStreamQuery } from './use-invalidate-payment-stream-query';
+import { useWalletUiSignAndSendWithFallback } from './use-wallet-ui-sign-and-send-with-fallback';
 
 export type TopUpStreamInput = {
   employee: Address;
@@ -23,7 +23,7 @@ export type TopUpStreamInput = {
 
 export function useTopUpStreamMutation({ account }: { account: UiWalletAccount }) {
   const signer = useWalletUiSigner({ account });
-  const signAndSend = useWalletUiSignAndSend();
+  const signAndSend = useWalletUiSignAndSendWithFallback();
   const invalidatePaymentStreamQuery = useInvalidatePaymentStreamQuery();
   const invalidateDashboardStreamsQuery = useInvalidateDashboardStreamsQuery();
 
