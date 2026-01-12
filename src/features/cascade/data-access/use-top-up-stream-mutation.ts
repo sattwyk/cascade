@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { getTopUpStreamInstruction } from '@project/anchor';
 
 import { createActivityLog } from '@/app/dashboard/actions/activity-log';
+import { recordStreamTopUp } from '@/app/dashboard/actions/streams';
 import { toastTx } from '@/components/toast-tx';
 import { useInvalidateDashboardStreamsQuery } from '@/features/dashboard/data-access/use-invalidate-dashboard-streams-query';
 
@@ -14,6 +15,7 @@ import { useInvalidatePaymentStreamQuery } from './use-invalidate-payment-stream
 import { useWalletUiSignAndSendWithFallback } from './use-wallet-ui-sign-and-send-with-fallback';
 
 export type TopUpStreamInput = {
+  streamId?: string;
   employee: Address;
   employerTokenAccount: Address;
   additionalAmount: number | bigint;
@@ -76,6 +78,42 @@ export function useTopUpStreamMutation({ account }: { account: UiWalletAccount }
 
       toastTx(signature, 'Stream funded');
 
+      const topUpAmount =
+        typeof input.additionalAmount === 'bigint' ? Number(input.additionalAmount) : input.additionalAmount;
+
+      if (Number.isFinite(topUpAmount) && input.streamId) {
+        try {
+          const recordResult = await recordStreamTopUp({
+            streamId: input.streamId,
+            streamAddress: String(streamAddress),
+            amount: topUpAmount,
+            signature,
+            employerTokenAccount: String(input.employerTokenAccount),
+            actorAddress: signer.address,
+          });
+
+          if (recordResult.ok === false) {
+            const quietReasons = [
+              'database-disabled',
+              'identity-required',
+              'organization-not-found',
+              'stream-not-found',
+              'stream-mismatch',
+            ];
+            if (quietReasons.includes(recordResult.reason)) {
+              console.warn('[stream-top-up] Dashboard persistence skipped:', recordResult.reason);
+            } else {
+              toast.error(`Stream funded on-chain but: ${recordResult.error}`);
+            }
+          }
+        } catch (recordError) {
+          console.error('[stream-top-up] Failed to record top up', recordError);
+          toast.warning('Stream funded on-chain. Dashboard may take a moment to update.');
+        }
+      } else if (!input.streamId) {
+        console.warn('[stream-top-up] Missing streamId for dashboard update.');
+      }
+
       // Log successful top-up
       try {
         await createActivityLog({
@@ -84,6 +122,7 @@ export function useTopUpStreamMutation({ account }: { account: UiWalletAccount }
           activityType: 'stream_top_up',
           actorType: 'employer',
           actorAddress: signer.address,
+          streamId: input.streamId,
           status: 'success',
           metadata: {
             streamAddress,
