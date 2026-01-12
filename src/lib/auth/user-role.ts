@@ -1,6 +1,6 @@
 import { cookies, headers } from 'next/headers';
 
-import { eq, or } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 import { drizzleClientHttp } from '@/db';
 import { organizationUsers } from '@/db/schema';
@@ -25,6 +25,7 @@ export async function getUserRole(): Promise<UserRole> {
     const headerStore = await headers();
 
     const roleCookie = cookieStore.get('cascade-user-role')?.value as UserRole | undefined;
+    const organizationId = normalizeWallet(cookieStore.get('cascade-organization-id')?.value);
 
     const email =
       normalizeEmail(cookieStore.get('cascade-user-email')?.value) ??
@@ -33,24 +34,63 @@ export async function getUserRole(): Promise<UserRole> {
     const wallet =
       normalizeWallet(cookieStore.get('cascade-wallet')?.value) ?? normalizeWallet(headerStore.get('x-cascade-wallet'));
 
-    if (hasDatabase && (email || wallet)) {
+    if (hasDatabase && wallet) {
       const db = drizzleClientHttp;
-      const conditions = [];
-      if (email) {
-        conditions.push(eq(organizationUsers.email, email));
-      }
-      if (wallet) {
-        conditions.push(eq(organizationUsers.walletAddress, wallet));
-      }
-
       const matchingUsers = await db
         .select({
           role: organizationUsers.role,
           isPrimary: organizationUsers.isPrimary,
+          organizationId: organizationUsers.organizationId,
         })
         .from(organizationUsers)
-        .where(conditions.length === 2 ? or(...conditions) : conditions[0]!)
+        .where(eq(organizationUsers.walletAddress, wallet))
         .limit(10);
+
+      const organizationMatch = organizationId
+        ? matchingUsers.find((entry) => entry.organizationId === organizationId)
+        : undefined;
+      if (organizationMatch) {
+        return organizationMatch.role;
+      }
+
+      const cookieMatch = roleCookie ? matchingUsers.find((entry) => entry.role === roleCookie) : undefined;
+      if (cookieMatch) {
+        return cookieMatch.role;
+      }
+
+      const prioritized =
+        matchingUsers.find((entry) => entry.role === 'employer' && entry.isPrimary) ??
+        matchingUsers.find((entry) => entry.role === 'employer') ??
+        matchingUsers.find((entry) => entry.role === 'employee');
+
+      if (prioritized) {
+        return prioritized.role;
+      }
+    }
+
+    if (hasDatabase && email) {
+      const db = drizzleClientHttp;
+      const matchingUsers = await db
+        .select({
+          role: organizationUsers.role,
+          isPrimary: organizationUsers.isPrimary,
+          organizationId: organizationUsers.organizationId,
+        })
+        .from(organizationUsers)
+        .where(eq(organizationUsers.email, email))
+        .limit(10);
+
+      const organizationMatch = organizationId
+        ? matchingUsers.find((entry) => entry.organizationId === organizationId)
+        : undefined;
+      if (organizationMatch) {
+        return organizationMatch.role;
+      }
+
+      const cookieMatch = roleCookie ? matchingUsers.find((entry) => entry.role === roleCookie) : undefined;
+      if (cookieMatch) {
+        return cookieMatch.role;
+      }
 
       const prioritized =
         matchingUsers.find((entry) => entry.role === 'employer' && entry.isPrimary) ??
