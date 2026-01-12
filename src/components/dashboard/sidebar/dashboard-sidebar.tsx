@@ -1,12 +1,14 @@
 'use client';
 
 import type React from 'react';
-import { useState, useTransition } from 'react';
+import { useCallback, useState, useTransition } from 'react';
 
 import { usePathname, useRouter } from 'next/navigation';
 
 import { ChevronDown, ChevronRight, ExternalLink, X } from 'lucide-react';
+import { toast } from 'sonner';
 
+import { useSolana } from '@/components/solana/use-solana';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -79,6 +81,7 @@ export function DashboardSidebar({ open, onOpenChange }: DashboardSidebarProps) 
   const isMobile = useIsMobile();
   const pathname = usePathname();
   const router = useRouter();
+  const { connected, disconnect } = useSolana();
 
   const toggleSection = (title: string) => {
     const newExpanded = new Set(expandedSections);
@@ -103,6 +106,20 @@ export function DashboardSidebar({ open, onOpenChange }: DashboardSidebarProps) 
       }
     }
   };
+
+  const handleDisconnect = useCallback(async () => {
+    if (!connected) return;
+    try {
+      await Promise.resolve(disconnect());
+      toast.success('Wallet disconnected');
+      if (isMobile) {
+        onOpenChange(false);
+      }
+    } catch (error) {
+      console.error('Failed to disconnect wallet', error);
+      toast.error('Failed to disconnect wallet');
+    }
+  }, [connected, disconnect, isMobile, onOpenChange]);
 
   return (
     <>
@@ -178,7 +195,13 @@ export function DashboardSidebar({ open, onOpenChange }: DashboardSidebarProps) 
 
         {/* Footer */}
         <div className="border-t border-sidebar-border p-3 sm:p-4">
-          <Button variant="outline" size="sm" className="w-full bg-transparent text-xs sm:text-sm">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full bg-transparent text-xs sm:text-sm"
+            onClick={handleDisconnect}
+            disabled={!connected}
+          >
             Disconnect
           </Button>
         </div>

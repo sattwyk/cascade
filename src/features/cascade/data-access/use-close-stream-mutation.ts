@@ -1,6 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
 import { UiWalletAccount, useWalletUiSigner } from '@wallet-ui/react';
-import { useWalletUiSignAndSend } from '@wallet-ui/react-gill';
 import type { Address } from 'gill';
 import { toast } from 'sonner';
 
@@ -12,6 +11,7 @@ import { useInvalidateDashboardStreamsQuery } from '@/features/dashboard/data-ac
 
 import { derivePaymentStream, getErrorMessage } from './derive-cascade-pdas';
 import { useInvalidatePaymentStreamQuery } from './use-invalidate-payment-stream-query';
+import { useWalletUiSignAndSendWithFallback } from './use-wallet-ui-sign-and-send-with-fallback';
 
 export type CloseStreamInput = {
   employee: Address;
@@ -21,7 +21,7 @@ export type CloseStreamInput = {
 
 export function useCloseStreamMutation({ account }: { account: UiWalletAccount }) {
   const signer = useWalletUiSigner({ account });
-  const signAndSend = useWalletUiSignAndSend();
+  const signAndSend = useWalletUiSignAndSendWithFallback();
   const invalidatePaymentStreamQuery = useInvalidatePaymentStreamQuery();
   const invalidateDashboardStreamsQuery = useInvalidateDashboardStreamsQuery();
 

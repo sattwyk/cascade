@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { UiWalletAccount, useWalletUiSigner } from '@wallet-ui/react';
-import { useWalletUiSignAndSend } from '@wallet-ui/react-gill';
 import { address as toAddress, type Address } from 'gill';
 import { toast } from 'sonner';
 
@@ -14,6 +13,7 @@ import { EMPLOYEE_DASHBOARD_OVERVIEW_QUERY_KEY } from '@/features/employee-dashb
 
 import { derivePaymentStream, getErrorMessage } from './derive-cascade-pdas';
 import { useInvalidatePaymentStreamQuery } from './use-invalidate-payment-stream-query';
+import { useWalletUiSignAndSendWithFallback } from './use-wallet-ui-sign-and-send-with-fallback';
 
 export type RefreshActivityInput = {
   employer: Address | string;
@@ -24,7 +24,7 @@ export type RefreshActivityInput = {
 
 export function useRefreshActivityMutation({ account }: { account: UiWalletAccount }) {
   const signer = useWalletUiSigner({ account });
-  const signAndSend = useWalletUiSignAndSend();
+  const signAndSend = useWalletUiSignAndSendWithFallback();
   const invalidatePaymentStreamQuery = useInvalidatePaymentStreamQuery();
   const queryClient = useQueryClient();
 

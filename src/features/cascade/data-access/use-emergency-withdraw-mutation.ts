@@ -1,6 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
 import { UiWalletAccount, useWalletUiSigner } from '@wallet-ui/react';
-import { useWalletUiSignAndSend } from '@wallet-ui/react-gill';
 import type { Address } from 'gill';
 import { toast } from 'sonner';
 
@@ -11,6 +10,7 @@ import { toastTx } from '@/components/toast-tx';
 
 import { derivePaymentStream, deriveVault, getErrorMessage } from './derive-cascade-pdas';
 import { useInvalidatePaymentStreamQuery } from './use-invalidate-payment-stream-query';
+import { useWalletUiSignAndSendWithFallback } from './use-wallet-ui-sign-and-send-with-fallback';
 
 export type EmergencyWithdrawInput = {
   employee: Address;
@@ -21,7 +21,7 @@ export type EmergencyWithdrawInput = {
 
 export function useEmergencyWithdrawMutation({ account }: { account: UiWalletAccount }) {
   const signer = useWalletUiSigner({ account });
-  const signAndSend = useWalletUiSignAndSend();
+  const signAndSend = useWalletUiSignAndSendWithFallback();
   const invalidatePaymentStreamQuery = useInvalidatePaymentStreamQuery();
 
   return useMutation({

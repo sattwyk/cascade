@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { UiWalletAccount } from '@wallet-ui/react';
 import { formatDistanceToNow } from 'date-fns';
+import { getExplorerLink, type SolanaClusterMoniker } from 'gill';
 import { ArrowDownToLine, Clock, DollarSign, ExternalLink, RefreshCw, TrendingUp, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -18,12 +19,39 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRefreshActivityMutation } from '@/features/cascade/data-access/use-refresh-activity-mutation';
 import { useEmployeeDashboardOverviewQuery } from '@/features/employee-dashboard/data-access/use-employee-dashboard-overview-query';
 
+const AMOUNT_DECIMALS = 6;
+const SECONDS_PER_HOUR = 3600;
+
+function formatCountdown(totalSeconds: number) {
+  const clamped = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(clamped / 60);
+  const seconds = clamped % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function getNextUnlockInfo(createdAt: string | null, nowMs: number) {
+  if (!createdAt) return null;
+  const createdAtMs = Date.parse(createdAt);
+  if (!Number.isFinite(createdAtMs)) return null;
+
+  const secondsElapsed = Math.max(0, Math.floor((nowMs - createdAtMs) / 1000));
+  const secondsIntoHour = secondsElapsed % SECONDS_PER_HOUR;
+  const secondsUntilNextHour = secondsIntoHour === 0 ? 0 : SECONDS_PER_HOUR - secondsIntoHour;
+  const progress = secondsIntoHour / SECONDS_PER_HOUR;
+
+  return {
+    progress,
+    secondsUntilNextHour,
+  };
+}
+
 interface EmployeeDashboardOverviewProps {
   initialData: EmployeeDashboardOverviewData;
 }
 
 export function EmployeeDashboardOverview({ initialData }: EmployeeDashboardOverviewProps) {
-  const { account, connected } = useSolana();
+  const { account, connected, cluster } = useSolana();
+  const clusterMoniker = cluster.id.replace('solana:', '') as SolanaClusterMoniker;
   if (!connected || !account) {
     return (
       <div className="flex h-full items-center justify-center p-8">
@@ -42,15 +70,17 @@ export function EmployeeDashboardOverview({ initialData }: EmployeeDashboardOver
     );
   }
 
-  return <EmployeeDashboardOverviewInner initialData={initialData} account={account} />;
+  return <EmployeeDashboardOverviewInner initialData={initialData} account={account} clusterMoniker={clusterMoniker} />;
 }
 
 function EmployeeDashboardOverviewInner({
   initialData,
   account,
+  clusterMoniker,
 }: {
   initialData: EmployeeDashboardOverviewData;
   account: UiWalletAccount;
+  clusterMoniker: SolanaClusterMoniker;
 }) {
   const { triggerRefresh, setIsRefreshingActivity, setRefreshActivityHandler } = useEmployeeDashboard();
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
@@ -64,6 +94,7 @@ function EmployeeDashboardOverviewInner({
     availableBalance: number;
   } | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [tickerNow, setTickerNow] = useState(() => Date.now());
 
   const { data = initialData, isFetching } = useEmployeeDashboardOverviewQuery({ initialData });
 
@@ -73,6 +104,13 @@ function EmployeeDashboardOverviewInner({
   useEffect(() => {
     latestDataRef.current = data;
   }, [data]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTickerNow(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const stats = data.stats;
   const organizationDisplayName = data.organization?.name ?? 'Employer';
@@ -95,6 +133,7 @@ function EmployeeDashboardOverviewInner({
     setWithdrawModalOpen(true);
   };
 
+  // TODO: it throws error when there's no active streams
   const handleRefreshActivity = useCallback(async () => {
     const currentData = latestDataRef.current;
     const activeStream = currentData.streams.find((stream) => stream.status === 'active');
@@ -167,7 +206,7 @@ function EmployeeDashboardOverviewInner({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xl font-bold sm:text-2xl">${stats.totalEarned.toFixed(2)}</p>
+            <p className="text-xl font-bold sm:text-2xl">${stats.totalEarned.toFixed(AMOUNT_DECIMALS)}</p>
             <p className="mt-1 text-xs text-muted-foreground">All-time earnings</p>
           </CardContent>
         </Card>
@@ -180,7 +219,7 @@ function EmployeeDashboardOverviewInner({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xl font-bold sm:text-2xl">${stats.availableToWithdraw.toFixed(2)}</p>
+            <p className="text-xl font-bold sm:text-2xl">${stats.availableToWithdraw.toFixed(AMOUNT_DECIMALS)}</p>
             <p className="mt-1 text-xs text-muted-foreground">Ready to withdraw</p>
           </CardContent>
         </Card>
@@ -227,14 +266,40 @@ function EmployeeDashboardOverviewInner({
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    ${stream.hourlyRate.toFixed(2)}/hour
+                    ${stream.hourlyRate.toFixed(AMOUNT_DECIMALS)}/hour
                     {stream.createdAt ? ` • Started ${new Date(stream.createdAt).toLocaleDateString()}` : null}
                   </p>
+                  {stream.hourlyRate > 0
+                    ? (() => {
+                        const unlockInfo = getNextUnlockInfo(stream.createdAt, tickerNow);
+                        if (!unlockInfo) return null;
+                        const percent = Math.min(100, Math.max(0, unlockInfo.progress * 100));
+                        const prefix = stream.totalEarned > 0 ? 'Next unlock in' : 'First unlock in';
+                        const timeLabel =
+                          unlockInfo.secondsUntilNextHour === 0
+                            ? 'Unlocking now'
+                            : `${prefix} ${formatCountdown(unlockInfo.secondsUntilNextHour)}`;
+                        return (
+                          <div className="mt-2 space-y-1">
+                            <p className="text-xs text-muted-foreground">{timeLabel}</p>
+                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                              <div
+                                className="h-full rounded-full bg-primary transition-[width] duration-300 ease-linear"
+                                style={{ width: `${percent}%` }}
+                                aria-hidden="true"
+                              />
+                            </div>
+                          </div>
+                        );
+                      })()
+                    : null}
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">Available</p>
-                    <p className="text-lg font-bold text-green-600">${stream.availableBalance.toFixed(2)}</p>
+                    <p className="text-lg font-bold text-green-600">
+                      ${stream.availableBalance.toFixed(AMOUNT_DECIMALS)}
+                    </p>
                   </div>
                   {stream.availableBalance > 0 && (
                     <Button size="sm" className="gap-2" onClick={() => handleWithdrawClick(stream)}>
@@ -267,6 +332,7 @@ function EmployeeDashboardOverviewInner({
                 : 'Unknown time';
               const truncatedSignature =
                 signature && signature.length > 8 ? `${signature.slice(0, 8)}...${signature.slice(-8)}` : signature;
+              const txLink = signature ? getExplorerLink({ transaction: signature, cluster: clusterMoniker }) : null;
 
               return (
                 <div
@@ -283,9 +349,9 @@ function EmployeeDashboardOverviewInner({
                     <p className="text-sm text-muted-foreground">{occurredAtLabel}</p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <code className="rounded bg-muted px-1">{truncatedSignature ?? 'N/A'}</code>
-                      {signature ? (
+                      {txLink ? (
                         <a
-                          href={`https://explorer.solana.com/tx/${signature}`}
+                          href={txLink}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1 transition-colors hover:text-primary"
@@ -297,7 +363,7 @@ function EmployeeDashboardOverviewInner({
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-green-600">+${payment.amount.toFixed(2)}</p>
+                    <p className="text-lg font-bold text-green-600">+${payment.amount.toFixed(AMOUNT_DECIMALS)}</p>
                   </div>
                 </div>
               );

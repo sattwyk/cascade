@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 
+import type { UiWalletAccount } from '@wallet-ui/react';
 import { address } from 'gill';
 import { AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -15,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label';
 import { useEmergencyWithdrawMutation } from '@/features/cascade/data-access';
 import { useDashboardStreamsQuery } from '@/features/dashboard/data-access/use-dashboard-streams-query';
+import type { DashboardStream } from '@/types/stream';
 
 interface EmergencyWithdrawModalProps {
   isOpen: boolean;
@@ -26,12 +28,97 @@ export function EmergencyWithdrawModal({ isOpen, onClose, streamId }: EmergencyW
   const [acknowledged, setAcknowledged] = useState(false);
   const { account, connected } = useSolana();
   const { data: streams } = useDashboardStreamsQuery({});
-  const emergencyWithdrawMutation = useEmergencyWithdrawMutation({ account: account! });
+  const handleClose = () => {
+    setAcknowledged(false);
+    onClose();
+  };
 
   const stream = useMemo(() => {
     if (!streamId || !streams) return null;
     return streams.find((s) => s.id === streamId);
   }, [streamId, streams]);
+
+  if (!account) {
+    return (
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Emergency Withdraw
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <p className="text-sm text-muted-foreground">
+              Connect your employer wallet to process an emergency refund.
+            </p>
+            <div className="flex gap-3 border-t border-border pt-6">
+              <Button variant="outline" onClick={handleClose} className="flex-1 bg-transparent">
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (!stream) {
+    return (
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Emergency Withdraw
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <p className="text-sm text-muted-foreground">Stream not found. Please select a valid stream.</p>
+            <div className="flex gap-3 border-t border-border pt-6">
+              <Button variant="outline" onClick={handleClose} className="flex-1 bg-transparent">
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return (
+    <EmergencyWithdrawModalContent
+      isOpen={isOpen}
+      onClose={handleClose}
+      stream={stream}
+      account={account}
+      connected={connected}
+      acknowledged={acknowledged}
+      setAcknowledged={setAcknowledged}
+    />
+  );
+}
+
+type EmergencyWithdrawModalContentProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  stream: DashboardStream;
+  account: UiWalletAccount;
+  connected: boolean;
+  acknowledged: boolean;
+  setAcknowledged: (value: boolean) => void;
+};
+
+function EmergencyWithdrawModalContent({
+  isOpen,
+  onClose,
+  stream,
+  account,
+  connected,
+  acknowledged,
+  setAcknowledged,
+}: EmergencyWithdrawModalContentProps) {
+  const emergencyWithdrawMutation = useEmergencyWithdrawMutation({ account });
 
   const vaultBalance = stream?.vaultBalance ?? 0;
 
@@ -91,7 +178,7 @@ export function EmergencyWithdrawModal({ isOpen, onClose, streamId }: EmergencyW
       resetForm();
       onClose();
     } catch (error) {
-      console.error('Failed to process emergency withdrawal', { streamId, error });
+      console.error('Failed to process emergency withdrawal', { streamId: stream.id, error });
       toast.error('Failed to process withdrawal', {
         description: error instanceof Error ? error.message : 'Please try again or contact support.',
       });
@@ -107,31 +194,8 @@ export function EmergencyWithdrawModal({ isOpen, onClose, streamId }: EmergencyW
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 6,
   });
-
-  if (!stream) {
-    return (
-      <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              Emergency Withdraw
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6">
-            <p className="text-sm text-muted-foreground">Stream not found. Please select a valid stream.</p>
-            <div className="flex gap-3 border-t border-border pt-6">
-              <Button variant="outline" onClick={handleClose} className="flex-1 bg-transparent">
-                Close
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>

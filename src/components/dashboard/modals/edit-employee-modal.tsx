@@ -2,17 +2,39 @@
 
 import { useEffect, useState } from 'react';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { updateDashboardEmployee } from '@/app/dashboard/actions/employees';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useInvalidateDashboardEmployeesQuery } from '@/features/dashboard/data-access/use-invalidate-dashboard-employees-query';
 import type { EmployeeSummary } from '@/types/employee';
 
+import { useDashboard } from '../dashboard-context';
+
 type Step = 'profile' | 'settings' | 'review';
+
+const EMPLOYMENT_TYPE_VALUES = ['full_time', 'part_time', 'contract', 'temporary', 'intern', 'other'] as const;
+
+function normalizeEmploymentTypeInput(value: string) {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+  return EMPLOYMENT_TYPE_VALUES.includes(normalized as (typeof EMPLOYMENT_TYPE_VALUES)[number]) ? normalized : null;
+}
+
+function parseTagsInput(value: string) {
+  return value
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
 
 interface EditEmployeeModalProps {
   isOpen: boolean;
@@ -22,6 +44,10 @@ interface EditEmployeeModalProps {
 }
 
 export function EditEmployeeModal({ isOpen, onClose, employeeId, employee }: EditEmployeeModalProps) {
+  const { setSelectedEmployee } = useDashboard();
+  const invalidateDashboardEmployeesQuery = useInvalidateDashboardEmployeesQuery();
+  const queryClient = useQueryClient();
+
   const [currentStep, setCurrentStep] = useState<Step>('profile');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -83,8 +109,8 @@ export function EditEmployeeModal({ isOpen, onClose, employeeId, employee }: Edi
     );
   }
 
-  const resetForm = () => {
-    hydrateFromEmployee(employee);
+  const resetForm = (nextEmployee?: EmployeeSummary | null) => {
+    hydrateFromEmployee(nextEmployee ?? employee);
     setCurrentStep('profile');
   };
 
@@ -112,13 +138,92 @@ export function EditEmployeeModal({ isOpen, onClose, employeeId, employee }: Edi
       return;
     }
 
+    if (!employeeId) {
+      toast.error('Missing employee record', {
+        description: 'Please re-select the employee and try again.',
+      });
+      return;
+    }
+
+    const normalizedEmploymentType = normalizeEmploymentTypeInput(employmentType);
+    if (!normalizedEmploymentType) {
+      toast.error('Invalid employment type', {
+        description: 'Use one of: Full Time, Part Time, Contract, Temporary, Intern, Other.',
+      });
+      return;
+    }
+
+    const normalizedName = name.trim();
+    const normalizedEmail = email.trim();
+    const normalizedDepartment = department.trim();
+    const normalizedLocation = location.trim();
+    const normalizedPrimaryWallet = primaryWallet.trim();
+
+    if (
+      !normalizedName ||
+      !normalizedEmail ||
+      !normalizedDepartment ||
+      !normalizedLocation ||
+      !normalizedPrimaryWallet
+    ) {
+      toast.error('Missing required fields', {
+        description: 'Please fill in all required fields.',
+      });
+      return;
+    }
+
+    const parsedHourlyRate = Number.parseFloat(hourlyWage);
+    if (!Number.isFinite(parsedHourlyRate) || parsedHourlyRate < 0) {
+      toast.error('Invalid hourly wage', {
+        description: 'Enter a valid hourly wage amount.',
+      });
+      return;
+    }
+
+    const payload = {
+      employeeId,
+      fullName: normalizedName,
+      email: normalizedEmail,
+      department: normalizedDepartment,
+      location: normalizedLocation,
+      employmentType: normalizedEmploymentType,
+      primaryWallet: normalizedPrimaryWallet,
+      hourlyRate: parsedHourlyRate,
+      tags: parseTagsInput(tags),
+    };
+
     setIsSubmitting(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const result = await updateDashboardEmployee(payload);
+      if (!result.ok) {
+        toast.error('Failed to update employee', {
+          description: result.error ?? 'Please try again or contact support.',
+        });
+        return;
+      }
+
+      if (employee) {
+        const updatedEmployee: EmployeeSummary = {
+          ...employee,
+          name: payload.fullName,
+          email: payload.email,
+          department: payload.department,
+          location: payload.location,
+          employmentType: payload.employmentType,
+          primaryWallet: payload.primaryWallet,
+          hourlyRateUsd: payload.hourlyRate,
+          tags: payload.tags,
+        };
+        setSelectedEmployee(updatedEmployee);
+        resetForm(updatedEmployee);
+      }
+
+      invalidateDashboardEmployeesQuery();
+      queryClient.invalidateQueries({ queryKey: ['dashboard-activity'] });
+
       toast.success('Employee updated successfully!', {
-        description: `${name || employee?.name || 'Employee'} (ID: ${employeeId}) has been updated.`,
+        description: `${payload.fullName || employee?.name || 'Employee'} (ID: ${employeeId}) has been updated.`,
       });
-      resetForm();
       onClose();
     } catch (error) {
       console.error('Failed to update employee', { employeeId, error });

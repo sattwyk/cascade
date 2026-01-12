@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { useWalletUi } from '@wallet-ui/react';
 import type { Address } from 'gill';
@@ -9,6 +9,7 @@ import { AlertCircle, TrendingDown, Users, Zap } from 'lucide-react';
 import type { ActivityLogEntry } from '@/app/dashboard/actions/activity-log';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useGetBalanceQuery } from '@/features/account/data-access/use-get-balance-query';
 import { useGetTokenAccountsQuery } from '@/features/account/data-access/use-get-token-accounts-query';
 import { useDashboardActivityQuery } from '@/features/dashboard/data-access/use-dashboard-activity-query';
 import { useDashboardAlertsQuery } from '@/features/dashboard/data-access/use-dashboard-alerts-query';
@@ -45,6 +46,7 @@ export function OverviewTab({ initialStreams, initialActivity }: OverviewTabProp
     setIsAddEmployeeModalOpen,
     setIsTopUpAccountModalOpen,
     setupProgress,
+    completeSetupStep,
   } = useDashboard();
   const { account } = useWalletUi();
   const { data: streamData = [], isFetching: streamsFetching } = useDashboardStreamsQuery({
@@ -57,19 +59,30 @@ export function OverviewTab({ initialStreams, initialActivity }: OverviewTabProp
     error: activityError,
   } = useDashboardActivityQuery({ initialData: initialActivity, limit: 10 });
   const walletAddress = (account?.address as Address) ?? NULL_ADDRESS;
+  const balanceQuery = useGetBalanceQuery({ address: walletAddress, enabled: Boolean(account?.address) });
   const tokenAccountsQuery = useGetTokenAccountsQuery({ address: walletAddress, enabled: Boolean(account?.address) });
   const hasOnChainTokenBalance = useMemo(
     () => hasPositiveTokenBalance(tokenAccountsQuery.data),
     [tokenAccountsQuery.data],
   );
+  const hasVaultBalance = useMemo(() => streamData.some((stream) => stream.vaultBalance > 0), [streamData]);
+  const lamportsRaw = balanceQuery.data?.value;
+  const solBalanceLamports = typeof lamportsRaw === 'bigint' ? lamportsRaw : BigInt(lamportsRaw ?? 0);
+  const hasSolBalance = solBalanceLamports > 0n;
+  const hasTreasuryFunding = hasOnChainTokenBalance || hasSolBalance || hasVaultBalance;
   const walletConnected = setupProgress.walletConnected || Boolean(account?.address);
   const hasEmployeeRecords = employees.length > 0;
   const hasStreamRecords = streamData.length > 0;
-  const tokenFundingComplete = setupProgress.tokenAccountFunded || hasOnChainTokenBalance;
-  const tokenFundingOptional = !setupProgress.tokenAccountFunded && hasOnChainTokenBalance;
+  const tokenFundingComplete = setupProgress.tokenAccountFunded || hasTreasuryFunding;
+  const tokenFundingOptional = !setupProgress.tokenAccountFunded && hasTreasuryFunding;
   const employeeStepComplete = setupProgress.employeeAdded || hasEmployeeRecords;
   const streamStepComplete = setupProgress.streamCreated || hasStreamRecords;
   const setupComplete = walletConnected && employeeStepComplete && streamStepComplete;
+
+  useEffect(() => {
+    if (!walletConnected || setupProgress.tokenAccountFunded || !hasTreasuryFunding) return;
+    completeSetupStep('tokenAccountFunded');
+  }, [completeSetupStep, hasTreasuryFunding, setupProgress.tokenAccountFunded, walletConnected]);
 
   const config = getAccountStateConfig(accountState);
   const hasStreams = hasStreamRecords || config.hasStreams;

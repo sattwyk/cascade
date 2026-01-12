@@ -1,10 +1,10 @@
 import { useMutation } from '@tanstack/react-query';
 import { UiWalletAccount, useWalletUiSigner } from '@wallet-ui/react';
-import { useWalletUiSignAndSend } from '@wallet-ui/react-gill';
+import { useWalletUiGill } from '@wallet-ui/react-gill';
 import type { Address } from 'gill';
 import { toast } from 'sonner';
 
-import { getCreateStreamInstructionAsync } from '@project/anchor';
+import { fetchMaybePaymentStream, getCreateStreamInstructionAsync } from '@project/anchor';
 
 import { createActivityLog } from '@/app/dashboard/actions/activity-log';
 import { createStreamRecord } from '@/app/dashboard/actions/streams';
@@ -14,6 +14,7 @@ import { useInvalidateDashboardStreamsQuery } from '@/features/dashboard/data-ac
 
 import { derivePaymentStream, deriveVault, getErrorMessage, toBigInt } from './derive-cascade-pdas';
 import { useInvalidatePaymentStreamQuery } from './use-invalidate-payment-stream-query';
+import { useWalletUiSignAndSendWithFallback } from './use-wallet-ui-sign-and-send-with-fallback';
 
 export type CreateStreamInput = {
   employee: Address;
@@ -27,7 +28,8 @@ export type CreateStreamInput = {
 
 export function useCreateStreamMutation({ account }: { account: UiWalletAccount }) {
   const signer = useWalletUiSigner({ account });
-  const signAndSend = useWalletUiSignAndSend();
+  const client = useWalletUiGill();
+  const signAndSend = useWalletUiSignAndSendWithFallback();
   const invalidatePaymentStreamQuery = useInvalidatePaymentStreamQuery();
   const invalidateDashboardStreamsQuery = useInvalidateDashboardStreamsQuery();
 
@@ -36,10 +38,20 @@ export function useCreateStreamMutation({ account }: { account: UiWalletAccount 
       let signature: string;
 
       try {
+        const [streamPda] = await derivePaymentStream(signer.address, input.employee);
+        const [vaultPda] = await deriveVault(streamPda);
+
+        const existingStream = await fetchMaybePaymentStream(client.rpc, streamPda);
+        if (existingStream.exists) {
+          throw new Error('Stream already exists for this employee. Top up or close it before creating a new one.');
+        }
+
         const instruction = await getCreateStreamInstructionAsync({
           employer: signer,
           employee: input.employee,
           mint: input.mint,
+          stream: streamPda,
+          vault: vaultPda,
           employerTokenAccount: input.employerTokenAccount,
           hourlyRate: toBigInt(input.hourlyRate),
           totalDeposit: toBigInt(input.totalDeposit),
@@ -64,12 +76,14 @@ export function useCreateStreamMutation({ account }: { account: UiWalletAccount 
           throw new Error('Transaction signature is empty');
         }
       } catch (signError) {
+        const message = getErrorMessage(signError);
         console.error('Error during instruction creation or signing:', {
           error: signError,
-          message: signError instanceof Error ? signError.message : String(signError),
+          message,
           stack: signError instanceof Error ? signError.stack : undefined,
+          cause: signError instanceof Error ? signError.cause : undefined,
         });
-        throw signError;
+        throw signError instanceof Error ? signError : new Error(message);
       }
 
       // Derive PDAs for database storage

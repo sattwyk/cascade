@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 
+import { type SolanaClusterMoniker } from 'gill';
 import { CircleDollarSign, LineChart, Wallet } from 'lucide-react';
 
 import type { EmployeeWithdrawal } from '@/app/dashboard/@employee/actions/withdrawal-history';
@@ -10,12 +11,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WalletDropdown } from '@/components/wallet-dropdown';
 import { useEmployeeWithdrawalsQuery } from '@/features/employee-dashboard/data-access/use-employee-withdrawals-query';
 
-import { columns, type Payment } from './columns';
+import { getEmployeeHistoryColumns, type Payment } from './columns';
 import { DataTable } from './data-table';
 
 const CURRENCY_FORMATTER = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 6,
 });
 
 interface EmployeeHistoryContentProps {
@@ -23,7 +26,8 @@ interface EmployeeHistoryContentProps {
 }
 
 export function EmployeeHistoryContent({ initialData }: EmployeeHistoryContentProps) {
-  const { account, connected } = useSolana();
+  const { account, connected, cluster } = useSolana();
+  const clusterMoniker = cluster.id.replace('solana:', '') as SolanaClusterMoniker;
   const { data = initialData } = useEmployeeWithdrawalsQuery({ initialData });
 
   const payments: Payment[] = useMemo(
@@ -65,6 +69,8 @@ export function EmployeeHistoryContent({ initialData }: EmployeeHistoryContentPr
       </div>
     );
   }
+
+  const columns = useMemo(() => getEmployeeHistoryColumns(clusterMoniker), [clusterMoniker]);
 
   return (
     <div className="space-y-6">

@@ -6,6 +6,8 @@ import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
 import { AppSidebar } from '@/components/dashboard/app-sidebar';
+import { useSolana } from '@/components/solana/use-solana';
+import { Button } from '@/components/ui/button';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -30,6 +32,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
   const isMobile = useIsMobile();
+  const { account, connected } = useSolana();
 
   const {
     isCreateStreamModalOpen,
@@ -69,6 +72,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   if (isRedirectingToOnboarding || isRedirectingToDashboard) {
     return null;
+  }
+
+  if (!connected || !account) {
+    return (
+      <div className="flex min-h-svh items-center justify-center bg-background p-6">
+        <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 text-center shadow-sm">
+          <h2 className="text-xl font-semibold">Wallet disconnected</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Connect your employer wallet from the landing page to access the dashboard.
+          </p>
+          <Button className="mt-4" onClick={() => router.push('/')}>
+            Return to landing
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (

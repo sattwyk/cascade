@@ -4,7 +4,7 @@ import type { Address } from 'gill';
 import { requestDevTokenTopUp } from '@/app/dashboard/actions/request-dev-token-top-up';
 import { toastTx } from '@/components/toast-tx';
 
-type SupportedToken = 'USDC' | 'USDT';
+type SupportedToken = 'USDC' | 'USDT' | 'EURC';
 type ClusterMoniker = 'devnet' | 'localnet';
 
 type MutationArgs = {

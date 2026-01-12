@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 import { drizzleClientHttp } from '@/db';
 import { organizationUsers } from '@/db/schema';
@@ -50,13 +50,7 @@ export async function POST(request: Request) {
 
   if (hasDatabase) {
     try {
-      const conditions = [eq(organizationUsers.walletAddress, walletAddress)];
-
-      if (organizationId) {
-        conditions.push(eq(organizationUsers.organizationId, organizationId));
-      }
-
-      const [record] = await drizzleClientHttp
+      const records = await drizzleClientHttp
         .select({
           id: organizationUsers.id,
           role: organizationUsers.role,
@@ -64,10 +58,13 @@ export async function POST(request: Request) {
           organizationId: organizationUsers.organizationId,
         })
         .from(organizationUsers)
-        .where(conditions.length === 2 ? and(...conditions) : conditions[0]!)
-        .limit(1);
+        .where(eq(organizationUsers.walletAddress, walletAddress));
 
-      user = record;
+      const exactMatch = organizationId
+        ? records.find((record) => record.organizationId === organizationId)
+        : undefined;
+      const roleMatch = records.find((record) => record.role === intendedRole);
+      user = exactMatch ?? roleMatch ?? records[0];
     } catch (error) {
       dbUnavailable = true;
       console.error('[auth] Wallet role lookup failed', error);

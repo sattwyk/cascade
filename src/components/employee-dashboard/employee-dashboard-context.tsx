@@ -21,8 +21,12 @@ export function EmployeeDashboardProvider({ children }: { children: ReactNode })
   const [selectedStreamId, setSelectedStreamId] = useState<string | null>(null);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [isRefreshingActivity, setIsRefreshingActivity] = useState(false);
-  const [refreshActivityHandler, setRefreshActivityHandler] = useState<(() => Promise<void>) | null>(null);
+  const [refreshActivityHandler, setRefreshActivityHandlerState] = useState<(() => Promise<void>) | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const setRefreshActivityHandler = useCallback((handler: (() => Promise<void>) | null) => {
+    setRefreshActivityHandlerState(() => handler);
+  }, []);
 
   const triggerRefresh = useCallback(() => {
     setRefreshTrigger((prev) => prev + 1);

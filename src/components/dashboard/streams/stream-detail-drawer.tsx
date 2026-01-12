@@ -27,7 +27,7 @@ export function StreamDetailDrawer({ stream, onClose, isOpen }: StreamDetailDraw
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 6,
   });
 
   const runwayDays = (() => {

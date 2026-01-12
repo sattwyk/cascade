@@ -1,6 +1,6 @@
 'use server';
 
-import { desc, eq, or, sql } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 
 import { drizzleClientHttp } from '@/db';
 import {

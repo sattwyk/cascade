@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 
+import type { UiWalletAccount } from '@wallet-ui/react';
 import { address } from 'gill';
 import { Copy } from 'lucide-react';
 import { toast } from 'sonner';
@@ -15,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTopUpStreamMutation } from '@/features/cascade/data-access';
 import { useDashboardStreamsQuery } from '@/features/dashboard/data-access/use-dashboard-streams-query';
+import type { DashboardStream } from '@/types/stream';
 
 interface TopUpStreamModalProps {
   isOpen: boolean;
@@ -26,15 +28,88 @@ export function TopUpStreamModal({ isOpen, onClose, streamId }: TopUpStreamModal
   const [topUpAmount, setTopUpAmount] = useState('');
   const { account, connected } = useSolana();
   const { data: streams } = useDashboardStreamsQuery({});
-  const topUpMutation = useTopUpStreamMutation({ account: account! });
 
   const stream = useMemo(() => {
     if (!streamId || !streams) return null;
     return streams.find((s) => s.id === streamId);
   }, [streamId, streams]);
 
-  const currentVaultBalance = stream?.vaultBalance ?? 0;
-  const hourlyRate = stream?.hourlyRate ?? 0;
+  if (!account) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Top Up Stream</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <p className="text-sm text-muted-foreground">Connect your employer wallet to fund a stream.</p>
+            <div className="flex gap-3 border-t border-border pt-6">
+              <Button variant="outline" onClick={onClose} className="flex-1 bg-transparent">
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (!stream) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Top Up Stream</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <p className="text-sm text-muted-foreground">Stream not found. Please select a valid stream.</p>
+            <div className="flex gap-3 border-t border-border pt-6">
+              <Button variant="outline" onClick={onClose} className="flex-1 bg-transparent">
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return (
+    <TopUpStreamModalContent
+      isOpen={isOpen}
+      onClose={onClose}
+      account={account}
+      connected={connected}
+      stream={stream}
+      topUpAmount={topUpAmount}
+      setTopUpAmount={setTopUpAmount}
+    />
+  );
+}
+
+type TopUpStreamModalContentProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  account: UiWalletAccount;
+  connected: boolean;
+  stream: DashboardStream;
+  topUpAmount: string;
+  setTopUpAmount: (value: string) => void;
+};
+
+function TopUpStreamModalContent({
+  isOpen,
+  onClose,
+  account,
+  connected,
+  stream,
+  topUpAmount,
+  setTopUpAmount,
+}: TopUpStreamModalContentProps) {
+  const topUpMutation = useTopUpStreamMutation({ account });
+
+  const currentVaultBalance = stream.vaultBalance ?? 0;
+  const hourlyRate = stream.hourlyRate ?? 0;
   const currentRunway = hourlyRate > 0 ? Math.floor(currentVaultBalance / (hourlyRate * 24)) : 0;
 
   const topUpAmountNumber = Number.parseFloat(topUpAmount) || 0;
@@ -69,6 +144,7 @@ export function TopUpStreamModal({ isOpen, onClose, streamId }: TopUpStreamModal
 
     try {
       const result = await topUpMutation.mutateAsync({
+        streamId: stream.id,
         employee: address(stream.employeeWallet!),
         employerTokenAccount: address(stream.employerTokenAccount),
         additionalAmount: topUpAmountNumber,
@@ -80,7 +156,7 @@ export function TopUpStreamModal({ isOpen, onClose, streamId }: TopUpStreamModal
       resetForm();
       onClose();
     } catch (error) {
-      console.error('Failed to top up stream', { streamId, error });
+      console.error('Failed to top up stream', { streamId: stream.id, error });
       toast.error('Failed to top up stream', {
         description: error instanceof Error ? error.message : 'Please try again or contact support.',
       });
@@ -101,28 +177,8 @@ export function TopUpStreamModal({ isOpen, onClose, streamId }: TopUpStreamModal
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 6,
   });
-
-  if (!stream) {
-    return (
-      <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Top Up Stream</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6">
-            <p className="text-sm text-muted-foreground">Stream not found. Please select a valid stream.</p>
-            <div className="flex gap-3 border-t border-border pt-6">
-              <Button variant="outline" onClick={handleClose} className="flex-1 bg-transparent">
-                Close
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -182,9 +238,9 @@ export function TopUpStreamModal({ isOpen, onClose, streamId }: TopUpStreamModal
               type="number"
               value={topUpAmount}
               onChange={(e) => setTopUpAmount(e.target.value)}
-              placeholder="500.00"
+              placeholder="0.000000"
               min="0"
-              step="any"
+              step="0.000001"
             />
           </div>
 

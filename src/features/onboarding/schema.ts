@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const OnboardingMintEnum = z.enum(['USDC', 'USDT', 'SOL']);
+export const OnboardingMintEnum = z.enum(['USDC', 'USDT', 'EURC']);
 
 export const OnboardingFormBaseSchema = z.object({
   organizationName: z.string().min(1, 'Organization name is required.'),

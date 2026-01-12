@@ -19,7 +19,7 @@ import { OverviewAlerts } from '../overview/overview-alerts';
 
 const FALLBACK_ADDRESS = '11111111111111111111111111111111' as Address;
 const SOL_FORMATTER = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
-const TOKEN_FORMATTER = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const TOKEN_FORMATTER = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
 
 type TokenTotal = {
   mint: string;

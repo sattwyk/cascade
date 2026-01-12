@@ -23,7 +23,7 @@ export type CompleteOnboardingInput = {
   organizationMail: string;
   verificationSessionId: string;
   timezone: string;
-  selectedMint: 'USDC' | 'USDT' | 'SOL';
+  selectedMint: 'USDC' | 'USDT' | 'EURC';
   fundingAcknowledged: true;
   emergencyAcknowledged: true;
   confirmedWalletAddress: string;
@@ -298,7 +298,7 @@ async function createOrganization({
   name: string;
   email: string;
   timezone: string;
-  defaultMint: 'USDC' | 'USDT' | 'SOL';
+  defaultMint: 'USDC' | 'USDT' | 'EURC';
   primaryWallet: string;
   fundingAcknowledged: true;
   emergencyAcknowledged: true;
