@@ -71,6 +71,44 @@ function toNumber(value: unknown): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+const AMOUNT_DECIMALS = 6;
+
+function roundAmount(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Number(value.toFixed(AMOUNT_DECIMALS));
+}
+
+function computeVestedBalance({
+  hourlyRate,
+  totalDeposited,
+  withdrawnAmount,
+  createdAt,
+}: {
+  hourlyRate: number;
+  totalDeposited: number;
+  withdrawnAmount: number;
+  createdAt: Date | null;
+}) {
+  if (!createdAt || hourlyRate <= 0 || totalDeposited <= 0) {
+    return { earned: 0, available: 0 };
+  }
+
+  const secondsElapsed = Math.max(0, Math.floor((Date.now() - createdAt.getTime()) / 1000));
+  const hoursElapsed = Math.floor(secondsElapsed / 3600);
+  if (hoursElapsed <= 0) {
+    return { earned: 0, available: 0 };
+  }
+
+  const earnedUncapped = hourlyRate * hoursElapsed;
+  const earned = Math.min(earnedUncapped, totalDeposited);
+  const available = Math.max(earned - withdrawnAmount, 0);
+
+  return {
+    earned: roundAmount(earned),
+    available: roundAmount(available),
+  };
+}
+
 export async function getEmployeeDashboardOverview(): Promise<EmployeeDashboardOverview> {
   const context = await resolveEmployeeContext();
   if (context.status !== 'ok') {
@@ -104,12 +142,18 @@ export async function getEmployeeDashboardOverview(): Promise<EmployeeDashboardO
     const hourlyRate = toNumber(row.hourlyRate);
     const totalDeposited = toNumber(row.totalDeposited);
     const withdrawnAmount = toNumber(row.withdrawnAmount);
-    const availableBalance = Math.max(totalDeposited - withdrawnAmount, 0);
-    const createdAtIso = row.createdAt instanceof Date ? row.createdAt.toISOString() : null;
+    const createdAtDate = row.createdAt instanceof Date ? row.createdAt : null;
+    const createdAtIso = createdAtDate ? createdAtDate.toISOString() : null;
     const lastActivity = row.lastActivityAt instanceof Date ? row.lastActivityAt.toISOString() : null;
+    const { earned, available } = computeVestedBalance({
+      hourlyRate,
+      totalDeposited,
+      withdrawnAmount,
+      createdAt: createdAtDate,
+    });
 
-    totalEarned += totalDeposited;
-    availableToWithdraw += availableBalance;
+    totalEarned += earned;
+    availableToWithdraw += available;
 
     if (lastActivity) {
       if (!lastActivityIso || new Date(lastActivity) > new Date(lastActivityIso)) {
@@ -126,9 +170,9 @@ export async function getEmployeeDashboardOverview(): Promise<EmployeeDashboardO
       status: row.status ?? 'active',
       mintAddress: row.mintAddress ?? null,
       hourlyRate,
-      totalEarned: totalDeposited,
+      totalEarned: earned,
       withdrawnAmount,
-      availableBalance,
+      availableBalance: available,
       createdAt: createdAtIso,
       lastActivityAt: lastActivity,
     };
