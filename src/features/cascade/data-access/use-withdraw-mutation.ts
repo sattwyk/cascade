@@ -20,6 +20,13 @@ import { useInvalidatePaymentStreamQuery } from './use-invalidate-payment-stream
 import { useWalletUiSignAndSendWithFallback } from './use-wallet-ui-sign-and-send-with-fallback';
 
 const AMOUNT_DECIMALS = 6;
+const AMOUNT_SCALE = 10n ** BigInt(AMOUNT_DECIMALS);
+
+function formatTokenAmount(value: bigint) {
+  const whole = value / AMOUNT_SCALE;
+  const fraction = (value % AMOUNT_SCALE).toString().padStart(AMOUNT_DECIMALS, '0');
+  return `${whole.toString()}.${fraction}`;
+}
 
 export type WithdrawInput = {
   employer: Address | string;
@@ -141,7 +148,32 @@ export function useWithdrawMutation({ account }: { account: UiWalletAccount }) {
         const availableBalance = totalEarned - streamAccount.data.withdrawnAmount;
 
         if (input.amountBaseUnits > availableBalance) {
-          throw new Error('Insufficient balance available for withdrawal.');
+          const totalDeposited = streamAccount.data.totalDeposited;
+          const withdrawnAmount = streamAccount.data.withdrawnAmount;
+          const requestedLabel = formatTokenAmount(input.amountBaseUnits);
+          const availableLabel = formatTokenAmount(availableBalance > 0n ? availableBalance : 0n);
+
+          if (totalDeposited <= withdrawnAmount) {
+            throw new Error(
+              `Stream has no remaining balance to withdraw. Deposited ${formatTokenAmount(
+                totalDeposited,
+              )} tokens and already withdrawn ${formatTokenAmount(withdrawnAmount)} tokens.`,
+            );
+          }
+
+          if (hoursElapsed <= 0) {
+            const secondsUntilNextHour = Math.max(0, 3600 - (secondsElapsed % 3600));
+            const minutesUntilNextHour = Math.max(1, Math.ceil(secondsUntilNextHour / 60));
+            throw new Error(
+              `No earnings vested yet. Earnings unlock hourly; try again in about ${minutesUntilNextHour} minute${
+                minutesUntilNextHour === 1 ? '' : 's'
+              }.`,
+            );
+          }
+
+          throw new Error(
+            `Insufficient vested balance. Requested ${requestedLabel} tokens, but only ${availableLabel} tokens are available right now.`,
+          );
         }
 
         const employeeTokenAccount = input.employeeTokenAccount
