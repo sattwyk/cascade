@@ -325,10 +325,10 @@ export const LandingPage = () => {
                 mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
               )}
             >
-              Stream payments
+              Why wait 2 weeks
               <br />
               <span className="bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                hour by hour
+                to get paid?
               </span>
             </h1>
 
@@ -338,8 +338,8 @@ export const LandingPage = () => {
                 mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
               )}
             >
-              Real-time payroll streaming on Solana. Pay employees by the hour with transparent, on-chain settlement and
-              zero friction.
+              Stream USDC to your team every hour, automatically. Employees withdraw what they&apos;ve earned the moment
+              they need it—no more chasing payday.
             </p>
 
             <div
@@ -361,7 +361,7 @@ export const LandingPage = () => {
                   </span>
                 ) : (
                   <>
-                    <span>Start Employer Onboarding</span>
+                    <span>Start Streaming Payroll</span>
                     <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                   </>
                 )}
@@ -381,7 +381,7 @@ export const LandingPage = () => {
                   </span>
                 ) : (
                   <>
-                    <span>Employee Sign In</span>
+                    <span>See What I&apos;ve Earned</span>
                     <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                   </>
                 )}
@@ -394,8 +394,7 @@ export const LandingPage = () => {
                 mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
               )}
             >
-              New employers can onboard directly. Employees should use the invite link sent to their inbox to access
-              their workspace.
+              Set up in under 5 minutes. No banks, no paperwork, no waiting.
             </p>
           </div>
 
@@ -417,6 +416,7 @@ export const LandingPage = () => {
                   width={2000}
                   height={1200}
                   className="w-full"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 92vw, 1280px"
                   priority
                   draggable={false}
                 />
@@ -443,10 +443,11 @@ export const LandingPage = () => {
               )}
             >
               <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-                Built for modern payroll
+                Built for how work actually happens
               </h2>
               <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-                Everything you need to manage hourly compensation on-chain
+                Tired of reconciling timesheets? Done chasing invoice approvals? Cascade handles continuous payments so
+                you can focus on building.
               </p>
             </div>
 
@@ -483,7 +484,9 @@ export const LandingPage = () => {
                 mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
               )}
             >
-              <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">Why Cascade?</h2>
+              <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
+                What makes Cascade different
+              </h2>
             </div>
 
             <div className="grid gap-8 md:grid-cols-2">
@@ -640,7 +643,7 @@ export const LandingPage = () => {
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">Cascade</span>
             </div>
-            <p className="text-sm text-muted-foreground">Built on Solana • Real-time payment streaming</p>
+            <p className="text-sm text-muted-foreground">Payroll that flows • Powered by Solana</p>
           </div>
         </div>
       </footer>
@@ -651,51 +654,51 @@ export const LandingPage = () => {
 const FEATURES = [
   {
     icon: Zap,
-    title: 'Hourly Streaming',
-    description: 'Pay employees by the hour with automatic, continuous token streams on Solana',
+    title: 'Hourly Payments, Automatically',
+    description: 'Money flows to your team every hour. No spreadsheets, no batch processing, no delays.',
   },
   {
     icon: Check,
-    title: 'Transparent Balances',
-    description: 'Real-time visibility into vault balances, deposits, and withdrawals',
+    title: 'See Every Dollar in Real-Time',
+    description: 'Watch vault balances update live. Know exactly what you owe and what employees can withdraw.',
   },
   {
     icon: ArrowRight,
-    title: 'Simple Withdrawals',
-    description: 'Employees can withdraw earned funds anytime with a single transaction',
+    title: 'Withdraw in One Click',
+    description: 'Employees grab their earned funds instantly. No approval chains, no 3-5 business days.',
   },
   {
     icon: Zap,
-    title: 'Emergency Controls',
-    description: 'Employer emergency withdrawal and stream closure for full control',
+    title: 'Stay in Control',
+    description: 'Pause streams, emergency withdraw, or close positions anytime. Your treasury, your rules.',
   },
   {
     icon: Check,
-    title: 'Activity Tracking',
-    description: 'Automatic inactivity detection and refresh mechanisms',
+    title: 'Never Miss a Beat',
+    description: 'Automatic inactivity detection keeps streams healthy. Set it and forget it.',
   },
   {
     icon: ArrowRight,
-    title: 'Multi-Token Support',
-    description: 'Stream payments in USDC, USDT, or any SPL token',
+    title: 'Pay in Any Token',
+    description: 'Stream USDC, USDT, or any SPL token. Your team chooses how they want to get paid.',
   },
 ];
 
 const BENEFITS = [
   {
-    title: 'On-Chain Settlement',
-    description: 'Every payment is recorded on Solana, providing immutable proof and complete transparency',
+    title: 'Every Payment is Permanent',
+    description: "Solana records every transaction. No disputes about hours worked or payments made—it's all on-chain.",
   },
   {
-    title: 'Zero Intermediaries',
-    description: 'Direct wallet-to-wallet transfers eliminate traditional payroll processing delays',
+    title: 'Cut Out the Middlemen',
+    description: 'Wallet-to-wallet transfers mean no banks, no processors, no 2-day holds. Funds move in seconds.',
   },
   {
-    title: 'Flexible Top-Ups',
-    description: 'Add funds to active streams at any time to maintain continuous payment flow',
+    title: 'Top Up Without Stopping',
+    description: 'Running low? Add funds to active streams instantly. No need to restart anything.',
   },
   {
-    title: 'Employee Control',
-    description: 'Workers maintain custody of their wallets and can access earned funds instantly',
+    title: 'Your Wallet, Your Money',
+    description: 'Employees own their keys and control their funds. Withdraw earned wages anytime, day or night.',
   },
 ];
