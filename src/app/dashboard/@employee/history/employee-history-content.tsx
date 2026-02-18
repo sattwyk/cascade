@@ -47,6 +47,7 @@ export function EmployeeHistoryContent({ initialData }: EmployeeHistoryContentPr
     () => payments.reduce((sum, payment) => sum + (Number.isFinite(payment.amount) ? payment.amount : 0), 0),
     [payments],
   );
+  const columns = useMemo(() => getEmployeeHistoryColumns(clusterMoniker), [clusterMoniker]);
 
   const totalTransactions = payments.length;
   const averagePayment = totalTransactions > 0 ? totalWithdrawn / totalTransactions : 0;
@@ -69,8 +70,6 @@ export function EmployeeHistoryContent({ initialData }: EmployeeHistoryContentPr
       </div>
     );
   }
-
-  const columns = useMemo(() => getEmployeeHistoryColumns(clusterMoniker), [clusterMoniker]);
 
   return (
     <div className="space-y-6">

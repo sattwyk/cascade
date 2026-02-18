@@ -61,3 +61,9 @@ test-ledger
 
 # drizzle
 drizzle.prod.config.ts
+
+# next-docs
+.next-docs
+
+# agents
+.agents
