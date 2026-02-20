@@ -1,9 +1,9 @@
-'use client';
-
 import { AlertCircle, Book, ExternalLink, MessageCircle } from 'lucide-react';
 
+import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { employeeDashboardHelpViewFlag } from '@/flags';
 
 const helpTopics = [
   {
@@ -23,7 +23,16 @@ const helpTopics = [
   },
 ];
 
-export default function EmployeeHelpPage() {
+export default async function EmployeeHelpPage() {
+  if (!(await employeeDashboardHelpViewFlag())) {
+    return (
+      <DashboardFeatureFlagDisabled
+        title="Help & Support"
+        description="Enable `dashboard_employee_help_view` to access this employee dashboard page."
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>

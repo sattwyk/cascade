@@ -1,5 +1,7 @@
 import { getActivityLog } from '@/app/dashboard/actions/activity-log';
+import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
 import { ActivityLogTab, type ActivityEvent } from '@/components/dashboard/tabs/activity-log-tab';
+import { employerDashboardActivityViewFlag } from '@/flags';
 
 const STREAM_CATEGORY_MAP: Record<string, ActivityEvent['type']> = {
   stream_created: 'stream',
@@ -37,6 +39,15 @@ function toActivityEvent(entry: Awaited<ReturnType<typeof getActivityLog>>[numbe
 }
 
 export default async function DashboardActivityPage() {
+  if (!(await employerDashboardActivityViewFlag())) {
+    return (
+      <DashboardFeatureFlagDisabled
+        title="Activity"
+        description="Enable `dashboard_employer_activity_view` to access this employer dashboard page."
+      />
+    );
+  }
+
   const activityEntries = await getActivityLog({ limit: 100 });
   const activity: ActivityEvent[] = activityEntries.map(toActivityEvent);
 
