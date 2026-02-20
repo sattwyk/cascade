@@ -4,7 +4,6 @@ import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 import { OnboardingBanner } from './onboarding-banner';
-import { StateSwitcher } from './state-switcher';
 import { WalletBanner } from './wallet-banner';
 
 export function DashboardHeader() {

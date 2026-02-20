@@ -5,6 +5,7 @@ import { useCallback } from 'react';
 import { Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { ClusterDropdown } from '@/components/cluster-dropdown';
 import { useSolana } from '@/components/solana/use-solana';
 import { Button } from '@/components/ui/button';
 import { ellipsify } from '@/lib/utils';
@@ -13,6 +14,7 @@ export function WalletBanner() {
   const { account, connected, disconnect } = useSolana();
   const walletAddress = account?.address;
   const displayAddress = walletAddress ? ellipsify(walletAddress, 6) : 'No wallet connected';
+  const showClusterDropdown = process.env.NODE_ENV === 'development';
 
   const handleDisconnect = useCallback(async () => {
     if (!connected) return;
@@ -32,9 +34,12 @@ export function WalletBanner() {
           <Wallet className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">{displayAddress}</span>
         </div>
-        <Button size="sm" variant="outline" onClick={handleDisconnect} disabled={!connected}>
-          Disconnect
-        </Button>
+        <div className="flex items-center gap-2">
+          {showClusterDropdown ? <ClusterDropdown /> : null}
+          <Button size="sm" variant="outline" onClick={handleDisconnect} disabled={!connected}>
+            Disconnect
+          </Button>
+        </div>
       </div>
     </div>
   );
