@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useTopUpStreamMutation } from '@/features/cascade/data-access';
+import { useTopUpStreamMutation } from '@/features/cascade/data-access/use-top-up-stream-mutation';
 import { useDashboardStreamsQuery } from '@/features/dashboard/data-access/use-dashboard-streams-query';
 import type { DashboardStream } from '@/types/stream';
 

@@ -14,7 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { useEmergencyWithdrawMutation } from '@/features/cascade/data-access';
+import { useEmergencyWithdrawMutation } from '@/features/cascade/data-access/use-emergency-withdraw-mutation';
 import { useDashboardStreamsQuery } from '@/features/dashboard/data-access/use-dashboard-streams-query';
 import type { DashboardStream } from '@/types/stream';
 
