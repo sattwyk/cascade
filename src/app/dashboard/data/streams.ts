@@ -17,11 +17,11 @@ function toIsoString(value: Date | null | undefined): string | null {
   }
 }
 
-export async function getStreamsForDashboard(): Promise<DashboardStream[]> {
-  const context = await resolveOrganizationContext();
-  if (context.status !== 'ok') {
-    return [];
-  }
+export async function getStreamsForDashboard(organizationId?: string): Promise<DashboardStream[]> {
+  const resolvedOrganizationId =
+    organizationId ??
+    (await resolveOrganizationContext().then((context) => (context.status === 'ok' ? context.organizationId : null)));
+  if (!resolvedOrganizationId) return [];
 
   const rows = await drizzleClientHttp
     .select({
@@ -57,7 +57,7 @@ export async function getStreamsForDashboard(): Promise<DashboardStream[]> {
         eq(organizationTokenAccounts.tokenAccountAddress, streams.employerTokenAccount),
       ),
     )
-    .where(eq(streams.organizationId, context.organizationId))
+    .where(eq(streams.organizationId, resolvedOrganizationId))
     .orderBy(desc(streams.createdAt));
 
   return rows.map((row) => {

@@ -72,11 +72,17 @@ export async function createActivityLog(input: CreateActivityLogInput) {
   return { ok: true, id: record.id, occurredAt: record.occurredAt } as const;
 }
 
-export async function getActivityLog({ limit = 50 }: { limit?: number } = {}): Promise<ActivityLogEntry[]> {
-  const context = await resolveOrganizationContext();
-  if (context.status !== 'ok') {
-    return [];
-  }
+export async function getActivityLog({
+  limit = 50,
+  organizationId,
+}: {
+  limit?: number;
+  organizationId?: string;
+} = {}): Promise<ActivityLogEntry[]> {
+  const resolvedOrganizationId =
+    organizationId ??
+    (await resolveOrganizationContext().then((context) => (context.status === 'ok' ? context.organizationId : null)));
+  if (!resolvedOrganizationId) return [];
 
   const rows = await drizzleClientHttp
     .select({
@@ -90,7 +96,7 @@ export async function getActivityLog({ limit = 50 }: { limit?: number } = {}): P
       metadata: organizationActivity.metadata,
     })
     .from(organizationActivity)
-    .where(eq(organizationActivity.organizationId, context.organizationId))
+    .where(eq(organizationActivity.organizationId, resolvedOrganizationId))
     .orderBy(desc(organizationActivity.occurredAt))
     .limit(limit);
 
