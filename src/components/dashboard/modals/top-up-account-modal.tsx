@@ -26,6 +26,123 @@ interface TopUpAccountModalProps {
   onClose: () => void;
 }
 
+function FundingSnapshotCard({
+  fundingError,
+  isFundingLoading,
+  solBalance,
+  tokenBalanceLabel,
+  monthlyBurn,
+}: {
+  fundingError: Error | undefined;
+  isFundingLoading: boolean;
+  solBalance: number;
+  tokenBalanceLabel: string;
+  monthlyBurn: number;
+}) {
+  return (
+    <Card className="bg-muted/50">
+      <CardContent className="space-y-3 pt-6">
+        {fundingError ? (
+          <div className="text-xs text-destructive">
+            <p className="font-medium">Unable to load balances</p>
+            <p className="mt-1 leading-relaxed text-destructive/80">{fundingError.message}</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex justify-between">
+              <span className="text-xs text-muted-foreground">Vault Balance</span>
+              <span className="font-semibold">
+                {isFundingLoading ? 'Loading...' : `${SOL_FORMATTER.format(solBalance)} SOL`}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-xs text-muted-foreground">Token Treasury</span>
+              <span className="font-semibold">{isFundingLoading ? 'Loading...' : tokenBalanceLabel}</span>
+            </div>
+            <div className="flex justify-between border-t border-border pt-3">
+              <span className="text-xs text-muted-foreground">Monthly Burn</span>
+              <span className="font-semibold">
+                {monthlyBurn > 0 ? `$${monthlyBurn.toFixed(2)}` : 'Set via settings'}
+              </span>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function TokenSelectionGrid({
+  selectedToken,
+  setSelectedToken,
+}: {
+  selectedToken: TokenOption;
+  setSelectedToken: (token: TokenOption) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>Select Token</Label>
+      <div className="grid grid-cols-2 gap-2">
+        {TOKEN_OPTIONS.map(({ id, label, description, Icon, disabled }) => (
+          <button
+            key={id}
+            onClick={() => !disabled && setSelectedToken(id)}
+            disabled={disabled}
+            className={`flex w-full flex-col items-start gap-1 rounded-lg border p-3 text-left text-sm font-medium transition-colors ${
+              selectedToken === id ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:bg-muted/50'
+            } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
+          >
+            <span className="flex items-center gap-2 text-sm font-semibold">
+              <Icon className="h-5 w-5" />
+              <span>{label}</span>
+            </span>
+            {description ? <span className="text-xs text-muted-foreground">{description}</span> : null}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TopUpPreviewCard({
+  topUpAmount,
+  solPreviewBalance,
+  tokenPreviewLabel,
+  runwayDays,
+}: {
+  topUpAmount: string;
+  solPreviewBalance: number;
+  tokenPreviewLabel: string;
+  runwayDays: number | null;
+}) {
+  if (!topUpAmount) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">After Top Up</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">New Vault Balance</span>
+          <span className="font-semibold">{`${SOL_FORMATTER.format(solPreviewBalance)} SOL`}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Selected Asset Balance</span>
+          <span className="font-semibold">{tokenPreviewLabel}</span>
+        </div>
+        <div className="flex justify-between border-t border-border pt-3">
+          <span className="text-muted-foreground">Network Fee</span>
+          <span className="font-semibold">~0.00025 SOL</span>
+        </div>
+        <div className="flex justify-between border-t border-border pt-3">
+          <span className="text-muted-foreground">Estimated Runway</span>
+          <span className="font-semibold">{runwayDays != null ? `${runwayDays} days` : 'N/A'}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function TopUpAccountModal({ isOpen, onClose }: TopUpAccountModalProps) {
   const [topUpAmount, setTopUpAmount] = useState('');
   const [selectedToken, setSelectedToken] = useState<TokenOption>('USDC');
@@ -34,7 +151,7 @@ export function TopUpAccountModal({ isOpen, onClose }: TopUpAccountModalProps) {
 
   const enableDevFaucet = process.env.NEXT_PUBLIC_CASCADE_ENABLE_DEV_FAUCET === 'true';
   const isProduction = process.env.NODE_ENV === 'production';
-  const clusterMoniker: ClusterMoniker = cluster?.url === 'localnet' ? 'localnet' : 'devnet';
+  const clusterMoniker: ClusterMoniker = cluster?.id === 'solana:localnet' ? 'localnet' : 'devnet';
 
   const employerAddress = useMemo<Address>(
     () => (account?.address as Address) ?? ('11111111111111111111111111111111' as Address),
@@ -238,59 +355,14 @@ export function TopUpAccountModal({ isOpen, onClose }: TopUpAccountModalProps) {
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Current balances */}
-          <Card className="bg-muted/50">
-            <CardContent className="space-y-3 pt-6">
-              {fundingError ? (
-                <div className="text-xs text-destructive">
-                  <p className="font-medium">Unable to load balances</p>
-                  <p className="mt-1 leading-relaxed text-destructive/80">{fundingError.message}</p>
-                </div>
-              ) : (
-                <>
-                  <div className="flex justify-between">
-                    <span className="text-xs text-muted-foreground">Vault Balance</span>
-                    <span className="font-semibold">
-                      {isFundingLoading ? 'Loading...' : `${SOL_FORMATTER.format(solBalance)} SOL`}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-xs text-muted-foreground">Token Treasury</span>
-                    <span className="font-semibold">{isFundingLoading ? 'Loading...' : tokenBalanceLabel}</span>
-                  </div>
-                  <div className="flex justify-between border-t border-border pt-3">
-                    <span className="text-xs text-muted-foreground">Monthly Burn</span>
-                    <span className="font-semibold">
-                      {monthlyBurn > 0 ? `$${monthlyBurn.toFixed(2)}` : 'Set via settings'}
-                    </span>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Token selection */}
-          <div className="space-y-2">
-            <Label>Select Token</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {TOKEN_OPTIONS.map(({ id, label, description, Icon, disabled }) => (
-                <button
-                  key={id}
-                  onClick={() => !disabled && setSelectedToken(id)}
-                  disabled={disabled}
-                  className={`flex w-full flex-col items-start gap-1 rounded-lg border p-3 text-left text-sm font-medium transition-colors ${
-                    selectedToken === id ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:bg-muted/50'
-                  } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
-                >
-                  <span className="flex items-center gap-2 text-sm font-semibold">
-                    <Icon className="h-5 w-5" />
-                    <span>{label}</span>
-                  </span>
-                  {description ? <span className="text-xs text-muted-foreground">{description}</span> : null}
-                </button>
-              ))}
-            </div>
-          </div>
+          <FundingSnapshotCard
+            fundingError={fundingError}
+            isFundingLoading={isFundingLoading}
+            solBalance={solBalance}
+            tokenBalanceLabel={tokenBalanceLabel}
+            monthlyBurn={monthlyBurn}
+          />
+          <TokenSelectionGrid selectedToken={selectedToken} setSelectedToken={setSelectedToken} />
 
           {/* Top up amount */}
           <div className="space-y-2">
@@ -306,32 +378,12 @@ export function TopUpAccountModal({ isOpen, onClose }: TopUpAccountModalProps) {
             />
           </div>
 
-          {/* New balance preview */}
-          {topUpAmount && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">After Top Up</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">New Vault Balance</span>
-                  <span className="font-semibold">{`${SOL_FORMATTER.format(solPreviewBalance)} SOL`}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Selected Asset Balance</span>
-                  <span className="font-semibold">{tokenPreviewLabel}</span>
-                </div>
-                <div className="flex justify-between border-t border-border pt-3">
-                  <span className="text-muted-foreground">Network Fee</span>
-                  <span className="font-semibold">~0.00025 SOL</span>
-                </div>
-                <div className="flex justify-between border-t border-border pt-3">
-                  <span className="text-muted-foreground">Estimated Runway</span>
-                  <span className="font-semibold">{runwayDays != null ? `${runwayDays} days` : 'N/A'}</span>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <TopUpPreviewCard
+            topUpAmount={topUpAmount}
+            solPreviewBalance={solPreviewBalance}
+            tokenPreviewLabel={tokenPreviewLabel}
+            runwayDays={runwayDays}
+          />
 
           {/* Action buttons */}
           <div className="flex gap-3 border-t border-border pt-6">
