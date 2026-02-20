@@ -2,6 +2,9 @@ services:
   postgres:
     image: postgres:17
     command: '-d 1'
+    mem_limit: 1g
+    cpus: 1.50
+    pids_limit: 256
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
@@ -18,6 +21,9 @@ services:
 
   neon-proxy:
     image: ghcr.io/timowilhelm/local-neon-http-proxy:main
+    mem_limit: 512m
+    cpus: 0.75
+    pids_limit: 128
     environment:
       - PG_CONNECTION_STRING=postgres://postgres:postgres@postgres:5432/main
     ports:

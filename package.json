@@ -17,9 +17,12 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "setup": "pnpm run anchor keys sync && pnpm run codama:js",
     "start": "next start",
     "prepare": "husky",
+    "setup:localnet-faucet": "bash ./scripts/setup-localnet-faucet.sh",
     "knip": "knip"
   },
   "lint-staged": {
