@@ -4,6 +4,9 @@ import { withWorkflow } from 'workflow/next';
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  experimental: {
+    optimizePackageImports: ['lucide-react'],
+  },
   // cacheComponents: true,
 };
 
