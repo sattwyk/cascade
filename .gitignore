@@ -62,8 +62,19 @@ test-ledger
 # drizzle
 drizzle.prod.config.ts
 
-# next-docs
+# docs
 .next-docs
+.anchor-docs
+.gill-docs
+.wallet-ui-docs
 
 # agents
 .agents
+AGENTS.md
+.llms
+
+# Nix
+result
+result-*
+.direnv/
+.envrc
