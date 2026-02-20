@@ -1,7 +1,11 @@
 import { ReactNode, Suspense } from 'react';
 
+import { redirect } from 'next/navigation';
+
+import { resolveOrganizationContext } from '@/app/dashboard/actions/organization-context';
 import { RoleProvider } from '@/components/dashboard/role-context';
 import { getUserRole } from '@/lib/auth/user-role';
+import { AccountState } from '@/lib/enums';
 
 import { DashboardLayoutClient } from './layout.client';
 
@@ -13,6 +17,18 @@ type DashboardLayoutWrapperProps = {
 
 async function RoleResolver(props: DashboardLayoutWrapperProps) {
   const role = await getUserRole();
+
+  if (role === 'employer') {
+    const organizationContext = await resolveOrganizationContext();
+    const accountState = organizationContext.status === 'ok' ? organizationContext.accountState : null;
+    const needsOnboarding =
+      accountState == null || accountState === AccountState.NEW_ACCOUNT || accountState === AccountState.ONBOARDING;
+
+    if (needsOnboarding) {
+      redirect('/onboarding');
+    }
+  }
+
   return (
     <RoleProvider initialRole={role}>
       <DashboardLayoutClient {...props} />
