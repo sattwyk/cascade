@@ -7,6 +7,7 @@ import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 
 import { Geist, Geist_Mono, Source_Serif_4 } from 'next/font/google';
+import Script from 'next/script';
 
 import { AppProviders } from '@/components/app-providers';
 import { ReactScan } from '@/components/react-scan';
@@ -58,6 +59,15 @@ export default function RootLayout({
       className={`${geist.variable} ${geistMono.variable} ${sourceSerif4.variable} light`}
       style={{ colorScheme: 'light' }}
     >
+      <head>
+        {process.env.NODE_ENV === 'development' && (
+          <Script
+            src="//unpkg.com/react-grab/dist/index.global.js"
+            crossOrigin="anonymous"
+            strategy="beforeInteractive"
+          />
+        )}
+      </head>
       <ReactScan />
       <body className="font-sans antialiased">
         <AppProviders>
