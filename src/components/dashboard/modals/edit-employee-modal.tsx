@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useReducer, useState } from 'react';
 
 import { useQueryClient } from '@tanstack/react-query';
 import { ChevronRight } from 'lucide-react';
@@ -15,9 +15,8 @@ import { Label } from '@/components/ui/label';
 import { useInvalidateDashboardEmployeesQuery } from '@/features/dashboard/data-access/use-invalidate-dashboard-employees-query';
 import type { EmployeeSummary } from '@/types/employee';
 
-import { useDashboard } from '../dashboard-context';
-
 type Step = 'profile' | 'settings' | 'review';
+const EDIT_EMPLOYEE_STEPS: Step[] = ['profile', 'settings', 'review'];
 
 const EMPLOYMENT_TYPE_VALUES = ['full_time', 'part_time', 'contract', 'temporary', 'intern', 'other'] as const;
 
@@ -36,6 +35,15 @@ function parseTagsInput(value: string) {
     .filter(Boolean);
 }
 
+function formatEmploymentTypeForInput(value: string | null | undefined) {
+  return value
+    ? value
+        .split('_')
+        .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+        .join(' ')
+    : '';
+}
+
 interface EditEmployeeModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -43,58 +51,222 @@ interface EditEmployeeModalProps {
   employee: EmployeeSummary | null;
 }
 
+type EmployeeFormState = {
+  name: string;
+  email: string;
+  department: string;
+  location: string;
+  employmentType: string;
+  primaryWallet: string;
+  hourlyWage: string;
+  tags: string;
+};
+
+type EmployeeFormAction =
+  | { type: 'hydrate'; source: EmployeeSummary | null }
+  | { type: 'patch'; patch: Partial<EmployeeFormState> };
+
+function createEmployeeFormState(source: EmployeeSummary | null): EmployeeFormState {
+  return {
+    name: source?.name ?? '',
+    email: source?.email ?? '',
+    department: source?.department ?? '',
+    location: source?.location ?? '',
+    employmentType: formatEmploymentTypeForInput(source?.employmentType),
+    primaryWallet: source?.primaryWallet ?? '',
+    hourlyWage: source?.hourlyRateUsd != null ? source.hourlyRateUsd.toString() : '',
+    tags: source?.tags.join(', ') ?? '',
+  };
+}
+
+function employeeFormReducer(state: EmployeeFormState, action: EmployeeFormAction): EmployeeFormState {
+  switch (action.type) {
+    case 'hydrate':
+      return createEmployeeFormState(action.source);
+    case 'patch':
+      return { ...state, ...action.patch };
+    default:
+      return state;
+  }
+}
+
+function EditEmployeeProgress({ currentStep }: { currentStep: Step }) {
+  return (
+    <div className="flex gap-2">
+      {EDIT_EMPLOYEE_STEPS.map((step, index) => (
+        <div
+          key={step}
+          className={`h-1 flex-1 rounded-full ${EDIT_EMPLOYEE_STEPS.indexOf(currentStep) >= index ? 'bg-primary' : 'bg-muted'}`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function EditEmployeeProfileStep({
+  formState,
+  setFormField,
+}: {
+  formState: EmployeeFormState;
+  setFormField: (patch: Partial<EmployeeFormState>) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="mb-2 font-semibold">Employee Profile</h3>
+        <p className="text-sm text-muted-foreground">Update employee information</p>
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Full Name</Label>
+          <Input id="name" value={formState.name} onChange={(e) => setFormField({ name: e.target.value })} />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            value={formState.email}
+            onChange={(e) => setFormField({ email: e.target.value })}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="department">Department</Label>
+            <Input
+              id="department"
+              value={formState.department}
+              onChange={(e) => setFormField({ department: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="location">Location</Label>
+            <Input
+              id="location"
+              value={formState.location}
+              onChange={(e) => setFormField({ location: e.target.value })}
+            />
+          </div>
+
+          <div className="col-span-2 space-y-2">
+            <Label htmlFor="employment-type">Employment Type</Label>
+            <Input
+              id="employment-type"
+              value={formState.employmentType}
+              onChange={(e) => setFormField({ employmentType: e.target.value })}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EditEmployeeSettingsStep({
+  formState,
+  setFormField,
+}: {
+  formState: EmployeeFormState;
+  setFormField: (patch: Partial<EmployeeFormState>) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="mb-2 font-semibold">Employment Settings</h3>
+        <p className="text-sm text-muted-foreground">Update wage and preferences</p>
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="hourly-wage">Hourly Wage (USD)</Label>
+          <Input
+            id="hourly-wage"
+            type="number"
+            value={formState.hourlyWage}
+            onChange={(e) => setFormField({ hourlyWage: e.target.value })}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="primary-wallet">Primary Wallet</Label>
+          <Input
+            id="primary-wallet"
+            value={formState.primaryWallet}
+            onChange={(e) => setFormField({ primaryWallet: e.target.value })}
+            placeholder="Employee payout wallet"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="tags">Tags (comma-separated)</Label>
+          <Input id="tags" value={formState.tags} onChange={(e) => setFormField({ tags: e.target.value })} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EditEmployeeReviewStep({ formState }: { formState: EmployeeFormState }) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="mb-2 font-semibold">Review & Confirm</h3>
+        <p className="text-sm text-muted-foreground">Verify all changes before saving</p>
+      </div>
+
+      <Card className="bg-muted/50">
+        <CardContent className="space-y-3 pt-6">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Name</span>
+            <span className="font-medium">{formState.name}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Email</span>
+            <span className="font-medium">{formState.email}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Department</span>
+            <span className="font-medium">{formState.department}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Employment Type</span>
+            <span className="font-medium">{formState.employmentType}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Primary Wallet</span>
+            <span className="font-mono text-xs">{formState.primaryWallet || '—'}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Hourly Wage</span>
+            <span className="font-medium">{formState.hourlyWage ? `$${formState.hourlyWage}` : '—'}</span>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export function EditEmployeeModal({ isOpen, onClose, employeeId, employee }: EditEmployeeModalProps) {
-  const { setSelectedEmployee } = useDashboard();
   const invalidateDashboardEmployeesQuery = useInvalidateDashboardEmployeesQuery();
   const queryClient = useQueryClient();
 
   const [currentStep, setCurrentStep] = useState<Step>('profile');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [department, setDepartment] = useState('');
-  const [location, setLocation] = useState('');
-  const [employmentType, setEmploymentType] = useState('');
-  const [primaryWallet, setPrimaryWallet] = useState('');
-  const [hourlyWage, setHourlyWage] = useState('');
-  const [tags, setTags] = useState('');
+  const [formState, dispatchForm] = useReducer(employeeFormReducer, employee, createEmployeeFormState);
+  const { name, email, department, location, employmentType, primaryWallet, hourlyWage, tags } = formState;
 
-  const hydrateFromEmployee = (source: EmployeeSummary | null) => {
-    if (!source) {
-      setName('');
-      setEmail('');
-      setDepartment('');
-      setLocation('');
-      setEmploymentType('');
-      setPrimaryWallet('');
-      setHourlyWage('');
-      setTags('');
-      return;
-    }
+  const setFormField = useCallback((patch: Partial<EmployeeFormState>) => {
+    dispatchForm({ type: 'patch', patch });
+  }, []);
 
-    setName(source.name ?? '');
-    setEmail(source.email ?? '');
-    setDepartment(source.department ?? '');
-    setLocation(source.location ?? '');
-    setEmploymentType(
-      source.employmentType
-        ? source.employmentType
-            .split('_')
-            .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-            .join(' ')
-        : '',
-    );
-    setPrimaryWallet(source.primaryWallet ?? '');
-    setHourlyWage(source.hourlyRateUsd != null ? source.hourlyRateUsd.toString() : '');
-    setTags(source.tags.join(', '));
-  };
-
-  useEffect(() => {
-    if (!isOpen) return;
-    hydrateFromEmployee(employee);
-    setCurrentStep('profile');
-  }, [employee, isOpen]);
+  const hydrateFromEmployee = useCallback((source: EmployeeSummary | null) => {
+    dispatchForm({ type: 'hydrate', source });
+  }, []);
 
   if (!employee) {
     return (
@@ -115,22 +287,20 @@ export function EditEmployeeModal({ isOpen, onClose, employeeId, employee }: Edi
   };
 
   const handleNext = () => {
-    const steps: Step[] = ['profile', 'settings', 'review'];
-    const currentIndex = steps.indexOf(currentStep);
-    if (currentIndex < steps.length - 1) {
-      setCurrentStep(steps[currentIndex + 1]);
+    const currentIndex = EDIT_EMPLOYEE_STEPS.indexOf(currentStep);
+    if (currentIndex < EDIT_EMPLOYEE_STEPS.length - 1) {
+      setCurrentStep(EDIT_EMPLOYEE_STEPS[currentIndex + 1]);
     }
   };
 
   const handleBack = () => {
-    const steps: Step[] = ['profile', 'settings', 'review'];
-    const currentIndex = steps.indexOf(currentStep);
+    const currentIndex = EDIT_EMPLOYEE_STEPS.indexOf(currentStep);
     if (currentIndex > 0) {
-      setCurrentStep(steps[currentIndex - 1]);
+      setCurrentStep(EDIT_EMPLOYEE_STEPS[currentIndex - 1]);
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!name || !email || !department || !location || !hourlyWage) {
       toast.error('Missing required fields', {
         description: 'Please fill in all required fields.',
@@ -193,46 +363,47 @@ export function EditEmployeeModal({ isOpen, onClose, employeeId, employee }: Edi
     };
 
     setIsSubmitting(true);
-    try {
-      const result = await updateDashboardEmployee(payload);
-      if (!result.ok) {
-        toast.error('Failed to update employee', {
-          description: result.error ?? 'Please try again or contact support.',
+    void updateDashboardEmployee(payload)
+      .then((result) => {
+        if (!result.ok) {
+          toast.error('Failed to update employee', {
+            description: result.error ?? 'Please try again or contact support.',
+          });
+          return;
+        }
+
+        if (employee) {
+          const updatedEmployee: EmployeeSummary = {
+            ...employee,
+            name: payload.fullName,
+            email: payload.email,
+            department: payload.department,
+            location: payload.location,
+            employmentType: payload.employmentType,
+            primaryWallet: payload.primaryWallet,
+            hourlyRateUsd: payload.hourlyRate,
+            tags: payload.tags,
+          };
+          resetForm(updatedEmployee);
+        }
+
+        invalidateDashboardEmployeesQuery();
+        queryClient.invalidateQueries({ queryKey: ['dashboard-activity'] });
+
+        toast.success('Employee updated successfully!', {
+          description: `${payload.fullName || employee?.name || 'Employee'} (ID: ${employeeId}) has been updated.`,
         });
-        return;
-      }
-
-      if (employee) {
-        const updatedEmployee: EmployeeSummary = {
-          ...employee,
-          name: payload.fullName,
-          email: payload.email,
-          department: payload.department,
-          location: payload.location,
-          employmentType: payload.employmentType,
-          primaryWallet: payload.primaryWallet,
-          hourlyRateUsd: payload.hourlyRate,
-          tags: payload.tags,
-        };
-        setSelectedEmployee(updatedEmployee);
-        resetForm(updatedEmployee);
-      }
-
-      invalidateDashboardEmployeesQuery();
-      queryClient.invalidateQueries({ queryKey: ['dashboard-activity'] });
-
-      toast.success('Employee updated successfully!', {
-        description: `${payload.fullName || employee?.name || 'Employee'} (ID: ${employeeId}) has been updated.`,
+        onClose();
+      })
+      .catch((error) => {
+        console.error('Failed to update employee', { employeeId, error });
+        toast.error('Failed to update employee', {
+          description: 'Please try again or contact support.',
+        });
+      })
+      .finally(() => {
+        setIsSubmitting(false);
       });
-      onClose();
-    } catch (error) {
-      console.error('Failed to update employee', { employeeId, error });
-      toast.error('Failed to update employee', {
-        description: 'Please try again or contact support.',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const handleClose = () => {
@@ -266,136 +437,10 @@ export function EditEmployeeModal({ isOpen, onClose, employeeId, employee }: Edi
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Progress indicator */}
-          <div className="flex gap-2">
-            {['profile', 'settings', 'review'].map((step, index) => (
-              <div
-                key={step}
-                className={`h-1 flex-1 rounded-full ${
-                  ['profile', 'settings', 'review'].indexOf(currentStep) >= index ? 'bg-primary' : 'bg-muted'
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* Step 1: Profile */}
-          {currentStep === 'profile' && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="mb-2 font-semibold">Employee Profile</h3>
-                <p className="text-sm text-muted-foreground">Update employee information</p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="department">Department</Label>
-                    <Input id="department" value={department} onChange={(e) => setDepartment(e.target.value)} />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
-                    <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} />
-                  </div>
-
-                  <div className="col-span-2 space-y-2">
-                    <Label htmlFor="employment-type">Employment Type</Label>
-                    <Input
-                      id="employment-type"
-                      value={employmentType}
-                      onChange={(e) => setEmploymentType(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 2: Settings */}
-          {currentStep === 'settings' && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="mb-2 font-semibold">Employment Settings</h3>
-                <p className="text-sm text-muted-foreground">Update wage and preferences</p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="hourly-wage">Hourly Wage (USD)</Label>
-                  <Input
-                    id="hourly-wage"
-                    type="number"
-                    value={hourlyWage}
-                    onChange={(e) => setHourlyWage(e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="primary-wallet">Primary Wallet</Label>
-                  <Input
-                    id="primary-wallet"
-                    value={primaryWallet}
-                    onChange={(e) => setPrimaryWallet(e.target.value)}
-                    placeholder="Employee payout wallet"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="tags">Tags (comma-separated)</Label>
-                  <Input id="tags" value={tags} onChange={(e) => setTags(e.target.value)} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Review */}
-          {currentStep === 'review' && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="mb-2 font-semibold">Review & Confirm</h3>
-                <p className="text-sm text-muted-foreground">Verify all changes before saving</p>
-              </div>
-
-              <Card className="bg-muted/50">
-                <CardContent className="space-y-3 pt-6">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Name</span>
-                    <span className="font-medium">{name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Email</span>
-                    <span className="font-medium">{email}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Department</span>
-                    <span className="font-medium">{department}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Employment Type</span>
-                    <span className="font-medium">{employmentType}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Primary Wallet</span>
-                    <span className="font-mono text-xs">{primaryWallet || '—'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Hourly Wage</span>
-                    <span className="font-medium">{hourlyWage ? `$${hourlyWage}` : '—'}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+          <EditEmployeeProgress currentStep={currentStep} />
+          {currentStep === 'profile' && <EditEmployeeProfileStep formState={formState} setFormField={setFormField} />}
+          {currentStep === 'settings' && <EditEmployeeSettingsStep formState={formState} setFormField={setFormField} />}
+          {currentStep === 'review' && <EditEmployeeReviewStep formState={formState} />}
 
           {/* Action buttons */}
           <div className="flex gap-3 border-t border-border pt-6">
