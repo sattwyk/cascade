@@ -1,4 +1,5 @@
 import { cookies, headers } from 'next/headers';
+import { unstable_rethrow } from 'next/navigation';
 
 import { eq } from 'drizzle-orm';
 
@@ -106,6 +107,7 @@ export async function getUserRole(): Promise<UserRole> {
       return roleCookie;
     }
   } catch (error) {
+    unstable_rethrow(error);
     console.error('[auth] Failed to resolve user role', error);
   }
 
