@@ -1,15 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
+import type { UiWalletAccount } from '@wallet-ui/react';
+import { address } from 'gill';
 import { AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useSolana } from '@/components/solana/use-solana';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { useCloseStreamMutation } from '@/features/cascade/data-access/use-close-stream-mutation';
+import { useDashboardStreamsQuery } from '@/features/dashboard/data-access/use-dashboard-streams-query';
+import type { DashboardStream } from '@/types/stream';
 
 interface CloseStreamModalProps {
   isOpen: boolean;
@@ -19,15 +25,107 @@ interface CloseStreamModalProps {
 
 export function CloseStreamModal({ isOpen, onClose, streamId }: CloseStreamModalProps) {
   const [acknowledged, setAcknowledged] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { account, connected } = useSolana();
+  const { data: streams } = useDashboardStreamsQuery({});
 
-  const rentRefund = 0.002;
+  const stream = useMemo(() => {
+    if (!streamId || !streams) return null;
+    return streams.find((streamItem) => streamItem.id === streamId);
+  }, [streamId, streams]);
 
-  const resetForm = () => {
+  const handleClose = () => {
     setAcknowledged(false);
+    onClose();
   };
 
+  if (!account) {
+    return (
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Close Stream
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <p className="text-sm text-muted-foreground">Connect your employer wallet to close a stream.</p>
+            <div className="flex gap-3 border-t border-border pt-6">
+              <Button variant="outline" onClick={handleClose} className="flex-1 bg-transparent">
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (!stream) {
+    return (
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Close Stream
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <p className="text-sm text-muted-foreground">Stream not found. Please select a valid stream.</p>
+            <div className="flex gap-3 border-t border-border pt-6">
+              <Button variant="outline" onClick={handleClose} className="flex-1 bg-transparent">
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return (
+    <CloseStreamModalContent
+      isOpen={isOpen}
+      onClose={handleClose}
+      stream={stream}
+      account={account}
+      connected={connected}
+      acknowledged={acknowledged}
+      setAcknowledged={setAcknowledged}
+    />
+  );
+}
+
+type CloseStreamModalContentProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  stream: DashboardStream;
+  account: UiWalletAccount;
+  connected: boolean;
+  acknowledged: boolean;
+  setAcknowledged: (value: boolean) => void;
+};
+
+function CloseStreamModalContent({
+  isOpen,
+  onClose,
+  stream,
+  account,
+  connected,
+  acknowledged,
+  setAcknowledged,
+}: CloseStreamModalContentProps) {
+  const closeStreamMutation = useCloseStreamMutation({ account });
+
   const handleSubmit = async () => {
+    if (!connected) {
+      toast.error('Wallet not connected', {
+        description: 'Please connect your wallet to continue.',
+      });
+      return;
+    }
+
     if (!acknowledged) {
       toast.error('Acknowledgment required', {
         description: 'Please confirm you understand this action is permanent.',
@@ -35,28 +133,39 @@ export function CloseStreamModal({ isOpen, onClose, streamId }: CloseStreamModal
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      toast.success('Stream closed successfully!', {
-        description: `Stream ${streamId ?? 'unknown'} closed. ~${rentRefund} SOL rent refund has been processed and returned to your wallet.`,
+    if (!stream.employeeWallet) {
+      toast.error('Missing employee wallet', {
+        description: 'Stream record is missing employee wallet metadata.',
       });
-      resetForm();
+      return;
+    }
+
+    try {
+      const result = await closeStreamMutation.mutateAsync({
+        employee: address(stream.employeeWallet),
+        employerTokenAccount: address(stream.employerTokenAccount),
+        stream: address(stream.streamAddress),
+        vault: address(stream.vaultAddress),
+      });
+
+      console.log('[close-stream] signature', result.signature);
+      setAcknowledged(false);
       onClose();
     } catch (error) {
-      console.error('Failed to close stream', { streamId, error });
+      console.error('Failed to close stream', { streamId: stream.id, error });
       toast.error('Failed to close stream', {
-        description: 'Please try again or contact support.',
+        description: error instanceof Error ? error.message : 'Please try again or contact support.',
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   const handleClose = () => {
-    resetForm();
+    setAcknowledged(false);
     onClose();
   };
+
+  const isSubmitting = closeStreamMutation.isPending;
+  const statusLabel = stream.status;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -69,38 +178,32 @@ export function CloseStreamModal({ isOpen, onClose, streamId }: CloseStreamModal
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Warning message */}
           <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4">
             <p className="text-sm text-destructive">
-              Closing a stream is permanent and cannot be reversed. The stream PDA will be closed and rent will be
-              refunded.
+              Closing a stream is permanent. Any remaining vault balance will be swept back to your treasury token
+              account, then the stream and vault PDAs will be closed.
             </p>
           </div>
 
-          {/* Conditions */}
           <Card className="bg-muted/50">
             <CardContent className="space-y-2 pt-6">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Vault Balance</p>
-                <p className="font-semibold">$0.00</p>
+                <p className="text-sm text-muted-foreground">Employee</p>
+                <p className="font-semibold">{stream.employeeName}</p>
               </div>
               <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Stream Status</p>
-                <p className="font-semibold">Inactive</p>
+                <p className="text-sm text-muted-foreground">Status</p>
+                <p className="font-semibold capitalize">{statusLabel}</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Vault Balance</p>
+                <p className="font-semibold">
+                  {stream.vaultBalance.toFixed(6)} {stream.mintLabel}
+                </p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Rent refund */}
-          <Card>
-            <CardContent className="pt-6">
-              <p className="mb-2 text-sm text-muted-foreground">Rent Refund</p>
-              <p className="text-lg font-bold">~{rentRefund} SOL</p>
-              <p className="mt-1 text-xs text-muted-foreground">Will be returned to your wallet</p>
-            </CardContent>
-          </Card>
-
-          {/* Acknowledgment */}
           <div className="flex items-start gap-3 rounded-lg border border-border p-3">
             <Checkbox
               id="acknowledge"
@@ -112,9 +215,8 @@ export function CloseStreamModal({ isOpen, onClose, streamId }: CloseStreamModal
             </Label>
           </div>
 
-          {/* Action buttons */}
           <div className="flex gap-3 border-t border-border pt-6">
-            <Button variant="outline" onClick={handleClose} className="flex-1 bg-transparent">
+            <Button variant="outline" onClick={handleClose} className="flex-1 bg-transparent" disabled={isSubmitting}>
               Cancel
             </Button>
             <Button

@@ -15,6 +15,7 @@ import { useWalletUiSignAndSendWithFallback } from './use-wallet-ui-sign-and-sen
 
 export type CloseStreamInput = {
   employee: Address;
+  employerTokenAccount: Address;
   stream?: Address;
   vault?: Address;
 };
@@ -35,6 +36,7 @@ export function useCloseStreamMutation({ account }: { account: UiWalletAccount }
           employer: signer,
           stream: streamAddress,
           vault: input.vault,
+          employerTokenAccount: input.employerTokenAccount,
         });
 
         if (!instruction) {
