@@ -5,4 +5,5 @@ import { createCodamaConfig } from './src/create-codama-config.js';
 export default createCodamaConfig({
   clientJs: 'anchor/src/client/js/generated',
   idl: 'target/idl/cascade.json',
+  rendererModule: './src/renderers-js-legacy.js',
 });
