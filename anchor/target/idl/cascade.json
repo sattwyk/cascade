@@ -9,13 +9,24 @@
   "instructions": [
     {
       "name": "close_stream",
-      "discriminator": [255, 241, 196, 212, 95, 93, 160, 89],
+      "discriminator": [
+        255,
+        241,
+        196,
+        212,
+        95,
+        93,
+        160,
+        89
+      ],
       "accounts": [
         {
           "name": "employer",
           "writable": true,
           "signer": true,
-          "relations": ["stream"]
+          "relations": [
+            "stream"
+          ]
         },
         {
           "name": "stream",
@@ -24,7 +35,14 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [115, 116, 114, 101, 97, 109]
+                "value": [
+                  115,
+                  116,
+                  114,
+                  101,
+                  97,
+                  109
+                ]
               },
               {
                 "kind": "account",
@@ -45,7 +63,13 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [118, 97, 117, 108, 116]
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
               },
               {
                 "kind": "account",
@@ -53,6 +77,10 @@
               }
             ]
           }
+        },
+        {
+          "name": "employer_token_account",
+          "writable": true
         },
         {
           "name": "token_program",
@@ -63,7 +91,16 @@
     },
     {
       "name": "create_stream",
-      "discriminator": [71, 188, 111, 127, 108, 40, 229, 158],
+      "discriminator": [
+        71,
+        188,
+        111,
+        127,
+        108,
+        40,
+        229,
+        158
+      ],
       "accounts": [
         {
           "name": "employer",
@@ -83,7 +120,14 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [115, 116, 114, 101, 97, 109]
+                "value": [
+                  115,
+                  116,
+                  114,
+                  101,
+                  97,
+                  109
+                ]
               },
               {
                 "kind": "account",
@@ -103,7 +147,13 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [118, 97, 117, 108, 116]
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
               },
               {
                 "kind": "account",
@@ -142,7 +192,16 @@
     },
     {
       "name": "employer_emergency_withdraw",
-      "discriminator": [53, 243, 175, 174, 220, 22, 246, 211],
+      "discriminator": [
+        53,
+        243,
+        175,
+        174,
+        220,
+        22,
+        246,
+        211
+      ],
       "accounts": [
         {
           "name": "employer",
@@ -156,7 +215,14 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [115, 116, 114, 101, 97, 109]
+                "value": [
+                  115,
+                  116,
+                  114,
+                  101,
+                  97,
+                  109
+                ]
               },
               {
                 "kind": "account",
@@ -173,7 +239,9 @@
         {
           "name": "vault",
           "writable": true,
-          "relations": ["stream"]
+          "relations": [
+            "stream"
+          ]
         },
         {
           "name": "employer_token_account",
@@ -188,7 +256,16 @@
     },
     {
       "name": "refresh_activity",
-      "discriminator": [55, 172, 115, 3, 200, 89, 189, 250],
+      "discriminator": [
+        55,
+        172,
+        115,
+        3,
+        200,
+        89,
+        189,
+        250
+      ],
       "accounts": [
         {
           "name": "employee",
@@ -202,7 +279,14 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [115, 116, 114, 101, 97, 109]
+                "value": [
+                  115,
+                  116,
+                  114,
+                  101,
+                  97,
+                  109
+                ]
               },
               {
                 "kind": "account",
@@ -221,7 +305,16 @@
     },
     {
       "name": "top_up_stream",
-      "discriminator": [12, 244, 26, 215, 160, 204, 9, 151],
+      "discriminator": [
+        12,
+        244,
+        26,
+        215,
+        160,
+        204,
+        9,
+        151
+      ],
       "accounts": [
         {
           "name": "employer",
@@ -235,7 +328,14 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [115, 116, 114, 101, 97, 109]
+                "value": [
+                  115,
+                  116,
+                  114,
+                  101,
+                  97,
+                  109
+                ]
               },
               {
                 "kind": "account",
@@ -252,7 +352,9 @@
         {
           "name": "vault",
           "writable": true,
-          "relations": ["stream"]
+          "relations": [
+            "stream"
+          ]
         },
         {
           "name": "employer_token_account",
@@ -272,7 +374,16 @@
     },
     {
       "name": "withdraw",
-      "discriminator": [183, 18, 70, 156, 148, 109, 161, 34],
+      "discriminator": [
+        183,
+        18,
+        70,
+        156,
+        148,
+        109,
+        161,
+        34
+      ],
       "accounts": [
         {
           "name": "employee",
@@ -286,7 +397,14 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [115, 116, 114, 101, 97, 109]
+                "value": [
+                  115,
+                  116,
+                  114,
+                  101,
+                  97,
+                  109
+                ]
               },
               {
                 "kind": "account",
@@ -303,7 +421,9 @@
         {
           "name": "vault",
           "writable": true,
-          "relations": ["stream"]
+          "relations": [
+            "stream"
+          ]
         },
         {
           "name": "employee_token_account",
@@ -325,7 +445,16 @@
   "accounts": [
     {
       "name": "PaymentStream",
-      "discriminator": [124, 85, 193, 22, 93, 1, 143, 75]
+      "discriminator": [
+        124,
+        85,
+        193,
+        22,
+        93,
+        1,
+        143,
+        75
+      ]
     }
   ],
   "errors": [
@@ -371,13 +500,18 @@
     },
     {
       "code": 6008,
-      "name": "VaultNotEmpty",
-      "msg": "Vault must be empty before closing stream"
+      "name": "InvalidTimestamp",
+      "msg": "Invalid timestamp detected"
     },
     {
       "code": 6009,
-      "name": "InvalidTimestamp",
-      "msg": "Invalid timestamp detected"
+      "name": "UnsupportedMintDecimals",
+      "msg": "Only 6-decimal stablecoin mints are supported"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidTokenAccount",
+      "msg": "Provided token account does not match expected owner or mint"
     }
   ],
   "types": [

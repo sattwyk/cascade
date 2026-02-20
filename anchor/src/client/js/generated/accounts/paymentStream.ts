@@ -6,145 +6,41 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import {
-  assertAccountExists,
-  assertAccountsExist,
-  combineCodec,
-  decodeAccount,
-  fetchEncodedAccount,
-  fetchEncodedAccounts,
-  fixDecoderSize,
-  fixEncoderSize,
-  getAddressDecoder,
-  getAddressEncoder,
-  getBooleanDecoder,
-  getBooleanEncoder,
-  getBytesDecoder,
-  getBytesEncoder,
-  getI64Decoder,
-  getI64Encoder,
-  getStructDecoder,
-  getStructEncoder,
-  getU64Decoder,
-  getU64Encoder,
-  getU8Decoder,
-  getU8Encoder,
-  transformEncoder,
-  type Account,
-  type Address,
-  type EncodedAccount,
-  type FetchAccountConfig,
-  type FetchAccountsConfig,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
-  type MaybeAccount,
-  type MaybeEncodedAccount,
-  type ReadonlyUint8Array,
-} from 'gill';
+import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBooleanDecoder, getBooleanEncoder, getBytesDecoder, getBytesEncoder, getI64Decoder, getI64Encoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from 'gill';
 
-export const PAYMENT_STREAM_DISCRIMINATOR = new Uint8Array([
-  124, 85, 193, 22, 93, 1, 143, 75,
-]);
+export const PAYMENT_STREAM_DISCRIMINATOR = new Uint8Array([124, 85, 193, 22, 93, 1, 143, 75]);
 
-export function getPaymentStreamDiscriminatorBytes() {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(
-    PAYMENT_STREAM_DISCRIMINATOR
-  );
-}
+export function getPaymentStreamDiscriminatorBytes() { return fixEncoderSize(getBytesEncoder(), 8).encode(PAYMENT_STREAM_DISCRIMINATOR); }
 
-export type PaymentStream = {
-  discriminator: ReadonlyUint8Array;
-  employer: Address;
-  employee: Address;
-  mint: Address;
-  vault: Address;
-  hourlyRate: bigint;
-  totalDeposited: bigint;
-  withdrawnAmount: bigint;
-  createdAt: bigint;
-  employeeLastActivityAt: bigint;
-  isActive: boolean;
-  bump: number;
-};
+export type PaymentStream = { discriminator: ReadonlyUint8Array; employer: Address; employee: Address; mint: Address; vault: Address; hourlyRate: bigint; totalDeposited: bigint; withdrawnAmount: bigint; createdAt: bigint; employeeLastActivityAt: bigint; isActive: boolean; bump: number;  };
 
-export type PaymentStreamArgs = {
-  employer: Address;
-  employee: Address;
-  mint: Address;
-  vault: Address;
-  hourlyRate: number | bigint;
-  totalDeposited: number | bigint;
-  withdrawnAmount: number | bigint;
-  createdAt: number | bigint;
-  employeeLastActivityAt: number | bigint;
-  isActive: boolean;
-  bump: number;
-};
+export type PaymentStreamArgs = { employer: Address; employee: Address; mint: Address; vault: Address; hourlyRate: number | bigint; totalDeposited: number | bigint; withdrawnAmount: number | bigint; createdAt: number | bigint; employeeLastActivityAt: number | bigint; isActive: boolean; bump: number;  };
 
+/** Gets the encoder for {@link PaymentStreamArgs} account data. */
 export function getPaymentStreamEncoder(): FixedSizeEncoder<PaymentStreamArgs> {
-  return transformEncoder(
-    getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['employer', getAddressEncoder()],
-      ['employee', getAddressEncoder()],
-      ['mint', getAddressEncoder()],
-      ['vault', getAddressEncoder()],
-      ['hourlyRate', getU64Encoder()],
-      ['totalDeposited', getU64Encoder()],
-      ['withdrawnAmount', getU64Encoder()],
-      ['createdAt', getI64Encoder()],
-      ['employeeLastActivityAt', getI64Encoder()],
-      ['isActive', getBooleanEncoder()],
-      ['bump', getU8Encoder()],
-    ]),
-    (value) => ({ ...value, discriminator: PAYMENT_STREAM_DISCRIMINATOR })
-  );
+    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['employer', getAddressEncoder()], ['employee', getAddressEncoder()], ['mint', getAddressEncoder()], ['vault', getAddressEncoder()], ['hourlyRate', getU64Encoder()], ['totalDeposited', getU64Encoder()], ['withdrawnAmount', getU64Encoder()], ['createdAt', getI64Encoder()], ['employeeLastActivityAt', getI64Encoder()], ['isActive', getBooleanEncoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: PAYMENT_STREAM_DISCRIMINATOR }));
 }
 
+/** Gets the decoder for {@link PaymentStream} account data. */
 export function getPaymentStreamDecoder(): FixedSizeDecoder<PaymentStream> {
-  return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['employer', getAddressDecoder()],
-    ['employee', getAddressDecoder()],
-    ['mint', getAddressDecoder()],
-    ['vault', getAddressDecoder()],
-    ['hourlyRate', getU64Decoder()],
-    ['totalDeposited', getU64Decoder()],
-    ['withdrawnAmount', getU64Decoder()],
-    ['createdAt', getI64Decoder()],
-    ['employeeLastActivityAt', getI64Decoder()],
-    ['isActive', getBooleanDecoder()],
-    ['bump', getU8Decoder()],
-  ]);
+    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['employer', getAddressDecoder()], ['employee', getAddressDecoder()], ['mint', getAddressDecoder()], ['vault', getAddressDecoder()], ['hourlyRate', getU64Decoder()], ['totalDeposited', getU64Decoder()], ['withdrawnAmount', getU64Decoder()], ['createdAt', getI64Decoder()], ['employeeLastActivityAt', getI64Decoder()], ['isActive', getBooleanDecoder()], ['bump', getU8Decoder()]]);
 }
 
-export function getPaymentStreamCodec(): FixedSizeCodec<
-  PaymentStreamArgs,
-  PaymentStream
-> {
-  return combineCodec(getPaymentStreamEncoder(), getPaymentStreamDecoder());
+/** Gets the codec for {@link PaymentStream} account data. */
+export function getPaymentStreamCodec(): FixedSizeCodec<PaymentStreamArgs, PaymentStream> {
+    return combineCodec(getPaymentStreamEncoder(), getPaymentStreamDecoder());
 }
 
-export function decodePaymentStream<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>
-): Account<PaymentStream, TAddress>;
-export function decodePaymentStream<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>
-): MaybeAccount<PaymentStream, TAddress>;
-export function decodePaymentStream<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
-): Account<PaymentStream, TAddress> | MaybeAccount<PaymentStream, TAddress> {
-  return decodeAccount(
-    encodedAccount as MaybeEncodedAccount<TAddress>,
-    getPaymentStreamDecoder()
-  );
+export function decodePaymentStream<TAddress extends string = string>(encodedAccount: EncodedAccount<TAddress>): Account<PaymentStream, TAddress>;
+export function decodePaymentStream<TAddress extends string = string>(encodedAccount: MaybeEncodedAccount<TAddress>): MaybeAccount<PaymentStream, TAddress>;
+export function decodePaymentStream<TAddress extends string = string>(encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>): Account<PaymentStream, TAddress> | MaybeAccount<PaymentStream, TAddress> {
+  return decodeAccount(encodedAccount as MaybeEncodedAccount<TAddress>, getPaymentStreamDecoder());
 }
 
 export async function fetchPaymentStream<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<Account<PaymentStream, TAddress>> {
   const maybeAccount = await fetchMaybePaymentStream(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -154,7 +50,7 @@ export async function fetchPaymentStream<TAddress extends string = string>(
 export async function fetchMaybePaymentStream<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<MaybeAccount<PaymentStream, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodePaymentStream(maybeAccount);
@@ -163,13 +59,9 @@ export async function fetchMaybePaymentStream<TAddress extends string = string>(
 export async function fetchAllPaymentStream(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<Account<PaymentStream>[]> {
-  const maybeAccounts = await fetchAllMaybePaymentStream(
-    rpc,
-    addresses,
-    config
-  );
+  const maybeAccounts = await fetchAllMaybePaymentStream(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
   return maybeAccounts;
 }
@@ -177,7 +69,7 @@ export async function fetchAllPaymentStream(
 export async function fetchAllMaybePaymentStream(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<MaybeAccount<PaymentStream>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodePaymentStream(maybeAccount));

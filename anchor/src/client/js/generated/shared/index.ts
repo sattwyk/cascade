@@ -6,17 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import {
-  AccountRole,
-  isProgramDerivedAddress,
-  isTransactionSigner as kitIsTransactionSigner,
-  type AccountMeta,
-  type AccountSignerMeta,
-  type Address,
-  type ProgramDerivedAddress,
-  type TransactionSigner,
-  upgradeRoleToSigner,
-} from 'gill';
+import { AccountRole, isProgramDerivedAddress, isTransactionSigner as kitIsTransactionSigner, type AccountMeta, type AccountSignerMeta, type Address, type ProgramDerivedAddress, type TransactionSigner, upgradeRoleToSigner } from 'gill';
 
 /**
  * Asserts that the given value is not null or undefined.
@@ -34,17 +24,12 @@ export function expectSome<T>(value: T | null | undefined): T {
  * @internal
  */
 export function expectAddress<T extends string = string>(
-  value:
-    | Address<T>
-    | ProgramDerivedAddress<T>
-    | TransactionSigner<T>
-    | null
-    | undefined
+  value: Address<T> | ProgramDerivedAddress<T> | TransactionSigner<T> | null | undefined
 ): Address<T> {
   if (!value) {
     throw new Error('Expected a Address.');
   }
-  if (typeof value === 'object' && 'address' in value) {
+  if (typeof value === 'object' && "address" in value) {
     return value.address;
   }
   if (Array.isArray(value)) {
@@ -58,12 +43,7 @@ export function expectAddress<T extends string = string>(
  * @internal
  */
 export function expectProgramDerivedAddress<T extends string = string>(
-  value:
-    | Address<T>
-    | ProgramDerivedAddress<T>
-    | TransactionSigner<T>
-    | null
-    | undefined
+  value: Address<T> | ProgramDerivedAddress<T> | TransactionSigner<T> | null | undefined
 ): ProgramDerivedAddress<T> {
   if (!value || !Array.isArray(value) || !isProgramDerivedAddress(value)) {
     throw new Error('Expected a ProgramDerivedAddress.');
@@ -76,12 +56,7 @@ export function expectProgramDerivedAddress<T extends string = string>(
  * @internal
  */
 export function expectTransactionSigner<T extends string = string>(
-  value:
-    | Address<T>
-    | ProgramDerivedAddress<T>
-    | TransactionSigner<T>
-    | null
-    | undefined
+  value: Address<T> | ProgramDerivedAddress<T> | TransactionSigner<T> | null | undefined
 ): TransactionSigner<T> {
   if (!value || !isTransactionSigner(value)) {
     throw new Error('Expected a TransactionSigner.');
@@ -93,23 +68,12 @@ export function expectTransactionSigner<T extends string = string>(
  * Defines an instruction account to resolve.
  * @internal
  */
-export type ResolvedAccount<
-  T extends string = string,
-  U extends
-    | Address<T>
-    | ProgramDerivedAddress<T>
-    | TransactionSigner<T>
-    | null =
-    | Address<T>
-    | ProgramDerivedAddress<T>
-    | TransactionSigner<T>
-    | null,
-> = {
+export type ResolvedAccount<T extends string = string, U extends Address<T> | ProgramDerivedAddress<T> | TransactionSigner<T> | null = Address<T> | ProgramDerivedAddress<T> | TransactionSigner<T> | null> = {
   isWritable: boolean;
   value: U;
 };
 
-/**
+ /**
  * Defines an instruction that stores additional bytes on-chain.
  * @internal
  */
@@ -118,47 +82,28 @@ export type InstructionWithByteDelta = {
 };
 
 /**
- * Get account metas and signers from resolved accounts.
- * @internal
- */
+* Get account metas and signers from resolved accounts.
+* @internal
+*/
 export function getAccountMetaFactory(
   programAddress: Address,
-  optionalAccountStrategy: 'omitted' | 'programId'
+  optionalAccountStrategy: 'omitted' | 'programId',
 ) {
-  return (
-    account: ResolvedAccount
-  ): AccountMeta | AccountSignerMeta | undefined => {
+  return (account: ResolvedAccount): AccountMeta | AccountSignerMeta | undefined => {
     if (!account.value) {
       if (optionalAccountStrategy === 'omitted') return;
-      return Object.freeze({
-        address: programAddress,
-        role: AccountRole.READONLY,
-      });
+      return Object.freeze({ address: programAddress, role: AccountRole.READONLY });
     }
 
-    const writableRole = account.isWritable
-      ? AccountRole.WRITABLE
-      : AccountRole.READONLY;
+    const writableRole = account.isWritable ? AccountRole.WRITABLE : AccountRole.READONLY;
     return Object.freeze({
       address: expectAddress(account.value),
-      role: isTransactionSigner(account.value)
-        ? upgradeRoleToSigner(writableRole)
-        : writableRole,
-      ...(isTransactionSigner(account.value) ? { signer: account.value } : {}),
+      role: isTransactionSigner(account.value) ? upgradeRoleToSigner(writableRole) : writableRole,
+      ...(isTransactionSigner(account.value) ? { signer: account.value } : {})
     });
   };
 }
 
-export function isTransactionSigner<TAddress extends string = string>(
-  value:
-    | Address<TAddress>
-    | ProgramDerivedAddress<TAddress>
-    | TransactionSigner<TAddress>
-): value is TransactionSigner<TAddress> {
-  return (
-    !!value &&
-    typeof value === 'object' &&
-    'address' in value &&
-    kitIsTransactionSigner(value)
-  );
+export function isTransactionSigner<TAddress extends string = string>(value: Address<TAddress> | ProgramDerivedAddress<TAddress> | TransactionSigner<TAddress>): value is TransactionSigner<TAddress> {
+  return !!value && typeof value === 'object' && 'address' in value && kitIsTransactionSigner(value);
 }

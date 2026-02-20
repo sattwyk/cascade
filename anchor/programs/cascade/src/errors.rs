@@ -26,9 +26,12 @@ pub enum ErrorCode {
     #[msg("Stream is still active and cannot be closed")]
     StreamStillActive,
 
-    #[msg("Vault must be empty before closing stream")]
-    VaultNotEmpty,
-
     #[msg("Invalid timestamp detected")]
     InvalidTimestamp,
+
+    #[msg("Only 6-decimal stablecoin mints are supported")]
+    UnsupportedMintDecimals,
+
+    #[msg("Provided token account does not match expected owner or mint")]
+    InvalidTokenAccount,
 }

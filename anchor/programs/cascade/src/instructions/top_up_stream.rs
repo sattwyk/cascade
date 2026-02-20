@@ -46,7 +46,11 @@ pub struct TopUpStream<'info> {
     #[account(mut)]
     pub vault: Account<'info, TokenAccount>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = employer_token_account.owner == employer.key() @ ErrorCode::InvalidTokenAccount,
+        constraint = employer_token_account.mint == stream.mint @ ErrorCode::InvalidTokenAccount
+    )]
     pub employer_token_account: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,

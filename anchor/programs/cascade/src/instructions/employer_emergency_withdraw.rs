@@ -21,10 +21,7 @@ pub fn employer_emergency_withdraw(ctx: Context<EmployerEmergencyWithdraw>) -> R
         ErrorCode::EmployeeStillActive
     );
 
-    let remaining_balance = stream
-        .total_deposited
-        .checked_sub(stream.withdrawn_amount)
-        .ok_or(ErrorCode::InsufficientBalance)?;
+    let withdrawable_vault_balance = ctx.accounts.vault.amount;
 
     // Transfer remaining balance back to employer
     let employer_key = stream.employer.key();
@@ -37,14 +34,16 @@ pub fn employer_emergency_withdraw(ctx: Context<EmployerEmergencyWithdraw>) -> R
     ];
     let signer = &[&seeds[..]];
 
-    let cpi_accounts = Transfer {
-        from: ctx.accounts.vault.to_account_info(),
-        to: ctx.accounts.employer_token_account.to_account_info(),
-        authority: stream.to_account_info(),
-    };
-    let cpi_program = ctx.accounts.token_program.to_account_info();
-    let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts).with_signer(signer);
-    token::transfer(cpi_ctx, remaining_balance)?;
+    if withdrawable_vault_balance > 0 {
+        let cpi_accounts = Transfer {
+            from: ctx.accounts.vault.to_account_info(),
+            to: ctx.accounts.employer_token_account.to_account_info(),
+            authority: stream.to_account_info(),
+        };
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts).with_signer(signer);
+        token::transfer(cpi_ctx, withdrawable_vault_balance)?;
+    }
 
     // Mark stream as inactive
     stream.is_active = false;
@@ -68,7 +67,11 @@ pub struct EmployerEmergencyWithdraw<'info> {
     #[account(mut)]
     pub vault: Account<'info, TokenAccount>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = employer_token_account.owner == employer.key() @ ErrorCode::InvalidTokenAccount,
+        constraint = employer_token_account.mint == stream.mint @ ErrorCode::InvalidTokenAccount
+    )]
     pub employer_token_account: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,

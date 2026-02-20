@@ -2,6 +2,8 @@ use crate::state::PaymentStream;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
+const SUPPORTED_STABLECOIN_DECIMALS: u8 = 6;
+
 pub fn create_stream(
     ctx: Context<CreateStream>,
     hourly_rate: u64,
@@ -9,6 +11,11 @@ pub fn create_stream(
 ) -> Result<()> {
     let stream = &mut ctx.accounts.stream;
     let clock = Clock::get()?;
+
+    require!(
+        ctx.accounts.mint.decimals == SUPPORTED_STABLECOIN_DECIMALS,
+        crate::errors::ErrorCode::UnsupportedMintDecimals
+    );
 
     stream.employer = ctx.accounts.employer.key();
     stream.employee = ctx.accounts.employee.key();
@@ -48,7 +55,7 @@ pub struct CreateStream<'info> {
     #[account(
         init,
         payer = employer,
-        space = 8 + PaymentStream::INIT_SPACE,
+        space = PaymentStream::DISCRIMINATOR.len() + PaymentStream::INIT_SPACE,
         seeds = [b"stream", employer.key().as_ref(), employee.key().as_ref()],
         bump
     )]
@@ -64,7 +71,11 @@ pub struct CreateStream<'info> {
     )]
     pub vault: Account<'info, TokenAccount>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        token::mint = mint,
+        token::authority = employer
+    )]
     pub employer_token_account: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,

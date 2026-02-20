@@ -80,7 +80,11 @@ pub struct Withdraw<'info> {
     #[account(mut)]
     pub vault: Account<'info, TokenAccount>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = employee_token_account.owner == employee.key() @ ErrorCode::InvalidTokenAccount,
+        constraint = employee_token_account.mint == stream.mint @ ErrorCode::InvalidTokenAccount
+    )]
     pub employee_token_account: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,
