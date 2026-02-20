@@ -49,6 +49,72 @@ interface EmployeeDashboardOverviewProps {
   initialData: EmployeeDashboardOverviewData;
 }
 
+function DashboardHeader({
+  isRefreshingActivity,
+  onRefresh,
+}: {
+  isRefreshingActivity: boolean;
+  onRefresh: () => Promise<void>;
+}) {
+  return (
+    <div className="flex items-start justify-between">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground">Track your payment streams, earnings, and activity</p>
+      </div>
+      <Button variant="outline" className="gap-2" onClick={() => void onRefresh()} disabled={isRefreshingActivity}>
+        <RefreshCw className={`h-4 w-4 ${isRefreshingActivity ? 'animate-spin' : ''}`} />
+        Refresh Activity
+      </Button>
+    </div>
+  );
+}
+
+function DashboardStatsCards({ stats }: { stats: EmployeeDashboardOverviewData['stats'] }) {
+  return (
+    <div className="grid gap-4 md:grid-cols-3">
+      <Card>
+        <CardHeader className="pb-2 sm:pb-3">
+          <CardTitle className="flex items-center gap-2 text-xs font-medium sm:text-sm">
+            <DollarSign className="h-3 w-3 shrink-0 sm:h-4 sm:w-4" />
+            <span className="truncate">Total Earned</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xl font-bold sm:text-2xl">${stats.totalEarned.toFixed(AMOUNT_DECIMALS)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">All-time earnings</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2 sm:pb-3">
+          <CardTitle className="flex items-center gap-2 text-xs font-medium sm:text-sm">
+            <TrendingUp className="h-3 w-3 shrink-0 sm:h-4 sm:w-4" />
+            <span className="truncate">Available to Withdraw</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xl font-bold sm:text-2xl">${stats.availableToWithdraw.toFixed(AMOUNT_DECIMALS)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Ready to withdraw</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2 sm:pb-3">
+          <CardTitle className="flex items-center gap-2 text-xs font-medium sm:text-sm">
+            <Clock className="h-3 w-3 shrink-0 sm:h-4 sm:w-4" />
+            <span className="truncate">Active Streams</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xl font-bold sm:text-2xl">{stats.activeStreams}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Payment streams</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export function EmployeeDashboardOverview({ initialData }: EmployeeDashboardOverviewProps) {
   const { account, connected, cluster } = useSolana();
   const clusterMoniker = cluster.id.replace('solana:', '') as SolanaClusterMoniker;
@@ -93,7 +159,6 @@ function EmployeeDashboardOverviewInner({
     mintAddress: string | null;
     availableBalance: number;
   } | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [tickerNow, setTickerNow] = useState(() => Date.now());
 
   const { data = initialData, isFetching } = useEmployeeDashboardOverviewQuery({ initialData });
@@ -134,40 +199,40 @@ function EmployeeDashboardOverviewInner({
   };
 
   // TODO: it throws error when there's no active streams
-  const handleRefreshActivity = useCallback(async () => {
+  const handleRefreshActivity = useCallback(() => {
     const currentData = latestDataRef.current;
     const activeStream = currentData.streams.find((stream) => stream.status === 'active');
     if (!activeStream) {
       const error = new Error('No active streams available to refresh.');
       toast.error(error.message);
-      throw error;
+      return Promise.reject(error);
     }
     if (!activeStream.employerWallet) {
       const error = new Error('Missing employer wallet for this stream.');
       toast.error(error.message);
-      throw error;
+      return Promise.reject(error);
     }
 
-    setIsRefreshing(true);
-    try {
-      await refreshActivityAsync({
-        employer: activeStream.employerWallet,
-        streamId: activeStream.id,
-        streamAddress: activeStream.streamAddress,
+    setIsRefreshingActivity(true);
+
+    return refreshActivityAsync({
+      employer: activeStream.employerWallet,
+      streamId: activeStream.id,
+      streamAddress: activeStream.streamAddress,
+    })
+      .then(() => {
+        triggerRefresh();
+        toast.success('Activity refreshed successfully');
+      })
+      .catch((error) => {
+        console.error('Refresh failed:', error);
+        // Error toast handled by mutation; no duplicate toast here.
+        throw error;
+      })
+      .finally(() => {
+        setIsRefreshingActivity(false);
       });
-      triggerRefresh();
-      toast.success('Activity refreshed successfully');
-    } catch (error) {
-      console.error('Refresh failed:', error);
-      // Error toast handled by mutation; no duplicate toast here.
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [refreshActivityAsync, triggerRefresh]);
-
-  useEffect(() => {
-    setIsRefreshingActivity(isRefreshPending || isRefreshing);
-  }, [isRefreshPending, isRefreshing, setIsRefreshingActivity]);
+  }, [refreshActivityAsync, setIsRefreshingActivity, triggerRefresh]);
 
   useEffect(() => {
     return () => {
@@ -180,63 +245,12 @@ function EmployeeDashboardOverviewInner({
     return () => setRefreshActivityHandler(null);
   }, [handleRefreshActivity, setRefreshActivityHandler]);
 
-  const isRefreshingActivity = isRefreshing || isFetching || isRefreshPending;
+  const isRefreshingActivity = isFetching || isRefreshPending;
 
   return (
     <div className="space-y-8">
-      {/* Page Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">Track your payment streams, earnings, and activity</p>
-        </div>
-        <Button variant="outline" className="gap-2" onClick={handleRefreshActivity} disabled={isRefreshingActivity}>
-          <RefreshCw className={`h-4 w-4 ${isRefreshingActivity ? 'animate-spin' : ''}`} />
-          Refresh Activity
-        </Button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2 sm:pb-3">
-            <CardTitle className="flex items-center gap-2 text-xs font-medium sm:text-sm">
-              <DollarSign className="h-3 w-3 shrink-0 sm:h-4 sm:w-4" />
-              <span className="truncate">Total Earned</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xl font-bold sm:text-2xl">${stats.totalEarned.toFixed(AMOUNT_DECIMALS)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">All-time earnings</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2 sm:pb-3">
-            <CardTitle className="flex items-center gap-2 text-xs font-medium sm:text-sm">
-              <TrendingUp className="h-3 w-3 shrink-0 sm:h-4 sm:w-4" />
-              <span className="truncate">Available to Withdraw</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xl font-bold sm:text-2xl">${stats.availableToWithdraw.toFixed(AMOUNT_DECIMALS)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Ready to withdraw</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2 sm:pb-3">
-            <CardTitle className="flex items-center gap-2 text-xs font-medium sm:text-sm">
-              <Clock className="h-3 w-3 shrink-0 sm:h-4 sm:w-4" />
-              <span className="truncate">Active Streams</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xl font-bold sm:text-2xl">{stats.activeStreams}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Payment streams</p>
-          </CardContent>
-        </Card>
-      </div>
+      <DashboardHeader isRefreshingActivity={isRefreshingActivity} onRefresh={handleRefreshActivity} />
+      <DashboardStatsCards stats={stats} />
 
       {/* Active Streams Section */}
       <Card className="p-6">
