@@ -16,6 +16,7 @@ import {
   useFormState,
   useWatch,
   type SubmitHandler,
+  type UseFormReturn,
 } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -138,6 +139,7 @@ function buildTimezoneOptions(resolvedTimezone: string | undefined, now: Date): 
 const TimezoneSelect = memo(function TimezoneSelect({ options }: { options: TimezoneOption[] }) {
   const { control } = useFormContext<OnboardingFormData>();
   const [open, setOpen] = React.useState(false);
+  const timezoneListId = React.useId();
 
   return (
     <Controller
@@ -151,6 +153,7 @@ const TimezoneSelect = memo(function TimezoneSelect({ options }: { options: Time
                 variant="outline"
                 role="combobox"
                 aria-expanded={open}
+                aria-controls={timezoneListId}
                 aria-invalid={!!fieldState.error}
                 className={cn('w-full justify-between font-normal', !field.value && 'text-muted-foreground')}
               >
@@ -161,7 +164,7 @@ const TimezoneSelect = memo(function TimezoneSelect({ options }: { options: Time
             <PopoverContent className="w-full p-0" align="start">
               <Command>
                 <CommandInput placeholder="Search timezone..." />
-                <CommandList>
+                <CommandList id={timezoneListId}>
                   <CommandEmpty>No timezone found.</CommandEmpty>
                   <CommandGroup>
                     {options.map((opt) => (
@@ -587,6 +590,166 @@ const ComplianceStep = memo(function ComplianceStep({ showValidation }: { showVa
   );
 });
 
+type OnboardingLayoutProps = {
+  methods: UseFormReturn<OnboardingFormData>;
+  handleValidSubmit: SubmitHandler<OnboardingFormData>;
+  showValidationFeedback: boolean;
+  isFormValid: boolean;
+  sectionStatuses: Array<{ id: SectionId; title: string; description: string; isComplete: boolean }>;
+  connected: boolean;
+  accountAddress: string | null;
+  clusterLabel: string;
+  walletProvider: string;
+  openWalletDrawer: () => void;
+  handleDisconnect: () => Promise<void>;
+  timezoneOptions: TimezoneOption[];
+  onSendVerificationCode: () => void;
+  onVerifyCode: () => void;
+  isSendingCode: boolean;
+  isVerifyingCode: boolean;
+  hasRequestedVerification: boolean;
+  isCompleting: boolean;
+  isWalletDrawerOpen: boolean;
+  setIsWalletDrawerOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  wallets: ReturnType<typeof useWalletUi>['wallets'];
+  activeWalletName: string | null;
+  handleWalletConnected: () => void;
+};
+
+function OnboardingLayout({
+  methods,
+  handleValidSubmit,
+  showValidationFeedback,
+  isFormValid,
+  sectionStatuses,
+  connected,
+  accountAddress,
+  clusterLabel,
+  walletProvider,
+  openWalletDrawer,
+  handleDisconnect,
+  timezoneOptions,
+  onSendVerificationCode,
+  onVerifyCode,
+  isSendingCode,
+  isVerifyingCode,
+  hasRequestedVerification,
+  isCompleting,
+  isWalletDrawerOpen,
+  setIsWalletDrawerOpen,
+  wallets,
+  activeWalletName,
+  handleWalletConnected,
+}: OnboardingLayoutProps) {
+  return (
+    <FormProvider {...methods}>
+      <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-10">
+        <form className="space-y-10" onSubmit={methods.handleSubmit(handleValidSubmit)} noValidate>
+          <header className="space-y-3">
+            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">First-time setup</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+              Complete your Cascade onboarding
+            </h1>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Every section below is required. Once finished, you&apos;ll unlock payroll automations, invitations, and
+              reporting across the dashboard.
+            </p>
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+              <span>Onboarding required</span>
+            </div>
+          </header>
+
+          {showValidationFeedback && !isFormValid && (
+            <div
+              className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive"
+              role="alert"
+            >
+              Some required details are missing or need attention. Review the sections marked in red and update the
+              highlighted fields before submitting.
+            </div>
+          )}
+
+          <div className="grid gap-8 lg:grid-cols-[320px,1fr]">
+            <aside className="space-y-6 rounded-xl border border-border bg-card/60 p-6">
+              <div className="space-y-1">
+                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Checklist</p>
+                <h2 className="text-lg font-semibold text-foreground">All steps must be completed</h2>
+              </div>
+              <div className="space-y-5">
+                {sectionStatuses.map((section) => (
+                  <div key={section.id} className="flex items-start gap-4">
+                    <div
+                      className={cn(
+                        'mt-1 flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold',
+                        section.isComplete
+                          ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600'
+                          : showValidationFeedback
+                            ? 'border-destructive bg-destructive/10 text-destructive'
+                            : 'border-muted bg-muted text-muted-foreground',
+                      )}
+                    >
+                      {section.isComplete ? <Check className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">{section.title}</p>
+                      <p className="text-xs text-muted-foreground">{section.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </aside>
+
+            <section className="space-y-10">
+              <WalletStep
+                connected={connected}
+                accountAddress={accountAddress}
+                clusterLabel={clusterLabel}
+                walletProvider={walletProvider}
+                onOpenDrawer={openWalletDrawer}
+                onDisconnect={handleDisconnect}
+                showValidation={showValidationFeedback}
+              />
+
+              <OrgStep
+                timezoneOptions={timezoneOptions}
+                onSendCode={onSendVerificationCode}
+                onVerifyCode={onVerifyCode}
+                sending={isSendingCode}
+                verifying={isVerifyingCode}
+                hasRequested={hasRequestedVerification}
+              />
+
+              <TokenStep showValidation={showValidationFeedback} />
+              <ComplianceStep showValidation={showValidationFeedback} />
+            </section>
+          </div>
+
+          <footer className="flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-muted-foreground">
+              Onboarding is mandatory. Complete every step above to unlock the dashboard.
+            </p>
+            <Button disabled={!isFormValid || isCompleting} type="submit" className="gap-2">
+              {isCompleting ? 'Finishing…' : 'Complete setup'}
+            </Button>
+          </footer>
+        </form>
+      </div>
+
+      {isWalletDrawerOpen ? (
+        <WalletDrawer
+          open={isWalletDrawerOpen}
+          onOpenChange={setIsWalletDrawerOpen}
+          wallets={wallets}
+          activeWalletName={activeWalletName}
+          onConnected={handleWalletConnected}
+          onDisconnect={handleDisconnect}
+          accountAddress={accountAddress}
+        />
+      ) : null}
+    </FormProvider>
+  );
+}
+
 // ----------------------------
 // Main page
 // ----------------------------
@@ -613,8 +776,6 @@ export function OnboardingPage() {
   React.useEffect(() => {
     setTimezoneOptions(buildTimezoneOptions(resolvedTimezone || undefined, new Date()));
   }, [resolvedTimezone]);
-
-  const memoizedTimezoneOptions = useMemo(() => timezoneOptions, [timezoneOptions]);
 
   const methods = useForm<OnboardingFormData>({
     resolver: zodResolver(OnboardingFormSchema),
@@ -717,6 +878,9 @@ export function OnboardingPage() {
   const walletProvider = activeWallet?.name ?? 'Wallet';
 
   const [isWalletDrawerOpen, setIsWalletDrawerOpen] = React.useState(false);
+  const openWalletDrawer = useCallback(() => {
+    setIsWalletDrawerOpen(true);
+  }, []);
 
   const handleDisconnect = useCallback(async () => {
     try {
@@ -833,112 +997,33 @@ export function OnboardingPage() {
     [pathname, router, setAccountState, startCompleting],
   );
 
+  const hasRequestedVerification = Boolean(watch('hasRequestedVerification'));
+
   return (
-    <FormProvider {...methods}>
-      <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-10">
-        <form className="space-y-10" onSubmit={methods.handleSubmit(handleValidSubmit)} noValidate>
-          <header className="space-y-3">
-            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">First-time setup</p>
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-              Complete your Cascade onboarding
-            </h1>
-            <p className="max-w-2xl text-sm text-muted-foreground">
-              Every section below is required. Once finished, you&apos;ll unlock payroll automations, invitations, and
-              reporting across the dashboard.
-            </p>
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
-              <span>Onboarding required</span>
-            </div>
-          </header>
-
-          {showValidationFeedback && !isFormValid && (
-            <div
-              className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive"
-              role="alert"
-            >
-              Some required details are missing or need attention. Review the sections marked in red and update the
-              highlighted fields before submitting.
-            </div>
-          )}
-
-          <div className="grid gap-8 lg:grid-cols-[320px,1fr]">
-            <aside className="space-y-6 rounded-xl border border-border bg-card/60 p-6">
-              <div className="space-y-1">
-                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Checklist</p>
-                <h2 className="text-lg font-semibold text-foreground">All steps must be completed</h2>
-              </div>
-              <div className="space-y-5">
-                {sectionStatuses.map((section) => (
-                  <div key={section.id} className="flex items-start gap-4">
-                    <div
-                      className={cn(
-                        'mt-1 flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold',
-                        section.isComplete
-                          ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600'
-                          : showValidationFeedback
-                            ? 'border-destructive bg-destructive/10 text-destructive'
-                            : 'border-muted bg-muted text-muted-foreground',
-                      )}
-                    >
-                      {section.isComplete ? <Check className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">{section.title}</p>
-                      <p className="text-xs text-muted-foreground">{section.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </aside>
-
-            <section className="space-y-10">
-              <WalletStep
-                connected={connected}
-                accountAddress={account?.address ?? null}
-                clusterLabel={clusterLabel}
-                walletProvider={walletProvider}
-                onOpenDrawer={() => setIsWalletDrawerOpen(true)}
-                onDisconnect={handleDisconnect}
-                showValidation={showValidationFeedback}
-              />
-
-              <OrgStep
-                timezoneOptions={memoizedTimezoneOptions}
-                onSendCode={onSendVerificationCode}
-                onVerifyCode={onVerifyCode}
-                sending={isSendingCode}
-                verifying={isVerifyingCode}
-                hasRequested={Boolean(watch('hasRequestedVerification'))}
-              />
-
-              <TokenStep showValidation={showValidationFeedback} />
-              <ComplianceStep showValidation={showValidationFeedback} />
-            </section>
-          </div>
-
-          <footer className="flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-muted-foreground">
-              Onboarding is mandatory. Complete every step above to unlock the dashboard.
-            </p>
-            <Button disabled={!isFormValid || isCompleting} type="submit" className="gap-2">
-              {isCompleting ? 'Finishing…' : 'Complete setup'}
-            </Button>
-          </footer>
-        </form>
-      </div>
-
-      {/* Lazy-mount drawer content only when open to avoid unnecessary tree work */}
-      {isWalletDrawerOpen ? (
-        <WalletDrawer
-          open={isWalletDrawerOpen}
-          onOpenChange={setIsWalletDrawerOpen}
-          wallets={wallets}
-          activeWalletName={activeWallet?.name ?? null}
-          onConnected={handleWalletConnected}
-          onDisconnect={handleDisconnect}
-          accountAddress={account?.address ?? null}
-        />
-      ) : null}
-    </FormProvider>
+    <OnboardingLayout
+      methods={methods}
+      handleValidSubmit={handleValidSubmit}
+      showValidationFeedback={showValidationFeedback}
+      isFormValid={isFormValid}
+      sectionStatuses={sectionStatuses}
+      connected={connected}
+      accountAddress={account?.address ?? null}
+      clusterLabel={clusterLabel}
+      walletProvider={walletProvider}
+      openWalletDrawer={openWalletDrawer}
+      handleDisconnect={handleDisconnect}
+      timezoneOptions={timezoneOptions}
+      onSendVerificationCode={onSendVerificationCode}
+      onVerifyCode={onVerifyCode}
+      isSendingCode={isSendingCode}
+      isVerifyingCode={isVerifyingCode}
+      hasRequestedVerification={hasRequestedVerification}
+      isCompleting={isCompleting}
+      isWalletDrawerOpen={isWalletDrawerOpen}
+      setIsWalletDrawerOpen={setIsWalletDrawerOpen}
+      wallets={wallets}
+      activeWalletName={activeWallet?.name ?? null}
+      handleWalletConnected={handleWalletConnected}
+    />
   );
 }
