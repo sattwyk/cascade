@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { Download, Search } from 'lucide-react';
 
@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { getAuditTrail, type AuditTrailEntry } from '@/features/dashboard/actions/get-audit-trail';
+import type { AuditTrailEntry } from '@/features/dashboard/actions/get-audit-trail';
+import { useDashboardAuditTrailQuery } from '@/features/dashboard/data-access/use-dashboard-audit-trail-query';
 import { getAccountStateConfig } from '@/lib/config/account-states';
 
 import { useDashboard } from '../dashboard-context';
@@ -20,47 +21,43 @@ const categoryColors: Record<AuditTrailEntry['category'], string> = {
   organization: 'bg-purple-100 text-purple-800',
   system: 'bg-gray-100 text-gray-800',
 };
+const EMPTY_AUDIT_ENTRIES: AuditTrailEntry[] = [];
 
 interface AuditTrailTabProps {
   organizationId: string;
   initialEntries?: AuditTrailEntry[];
 }
 
-export function AuditTrailTab({ organizationId, initialEntries = [] }: AuditTrailTabProps) {
+export function AuditTrailTab({ organizationId, initialEntries = EMPTY_AUDIT_ENTRIES }: AuditTrailTabProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [auditEntries, setAuditEntries] = useState<AuditTrailEntry[]>(initialEntries);
-  const [loading, setLoading] = useState(false);
-  const { accountState, setupProgress, setIsCreateStreamModalOpen } = useDashboard();
+  const { accountState, setupProgress, openCreateStreamModal } = useDashboard();
   const config = getAccountStateConfig(accountState);
+  const shouldFetchAuditTrail = Boolean(organizationId) && config.showAuditTrailTab && setupProgress.streamCreated;
 
-  useEffect(() => {
-    async function fetchAuditTrail() {
-      if (!organizationId) return;
-
-      try {
-        setLoading(true);
-        const result = await getAuditTrail(organizationId, { limit: 100 });
-        setAuditEntries(result.entries);
-      } catch (error) {
-        console.error('Failed to fetch audit trail:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    if (config.showAuditTrailTab && setupProgress.streamCreated && initialEntries.length === 0) {
-      fetchAuditTrail();
-    }
-  }, [organizationId, config.showAuditTrailTab, setupProgress.streamCreated, initialEntries.length]);
-
-  const filteredAudit = auditEntries.filter((entry) => {
-    const matchesSearch =
-      entry.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      entry.performedBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      entry.details.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      entry.category.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
+  const auditTrailQuery = useDashboardAuditTrailQuery({
+    organizationId,
+    limit: 100,
+    enabled: shouldFetchAuditTrail,
+    initialData: initialEntries.length > 0 ? initialEntries : undefined,
   });
+  const auditEntries = auditTrailQuery.data ?? EMPTY_AUDIT_ENTRIES;
+  const loading = auditTrailQuery.isLoading || auditTrailQuery.isFetching;
+  const queryErrorMessage =
+    auditTrailQuery.error instanceof Error ? auditTrailQuery.error.message : 'Failed to load audit trail.';
+
+  const filteredAudit = useMemo(() => {
+    if (!searchQuery) return auditEntries;
+
+    const normalizedQuery = searchQuery.toLowerCase();
+    return auditEntries.filter((entry) => {
+      return (
+        entry.action.toLowerCase().includes(normalizedQuery) ||
+        entry.performedBy.toLowerCase().includes(normalizedQuery) ||
+        entry.details.toLowerCase().includes(normalizedQuery) ||
+        entry.category.toLowerCase().includes(normalizedQuery)
+      );
+    });
+  }, [auditEntries, searchQuery]);
 
   if (!config.showAuditTrailTab) {
     return (
@@ -91,7 +88,7 @@ export function AuditTrailTab({ organizationId, initialEntries = [] }: AuditTrai
           description="We’ll start capturing a full audit trail as soon as payroll activity begins."
           action={{
             label: 'Create Stream',
-            onClick: () => setIsCreateStreamModalOpen(true),
+            onClick: openCreateStreamModal,
           }}
         />
       </div>
@@ -137,6 +134,8 @@ export function AuditTrailTab({ organizationId, initialEntries = [] }: AuditTrai
           <div className="space-y-6">
             {loading ? (
               <p className="py-8 text-center text-muted-foreground">Loading audit trail...</p>
+            ) : auditTrailQuery.isError ? (
+              <p className="py-8 text-center text-destructive">{queryErrorMessage}</p>
             ) : filteredAudit.length === 0 ? (
               <p className="py-8 text-center text-muted-foreground">No audit entries found</p>
             ) : (

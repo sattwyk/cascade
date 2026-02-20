@@ -1,9 +1,9 @@
 'use client';
 
 import type React from 'react';
-import { useEffect } from 'react';
 
-import { usePathname, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 
 import { AppSidebar } from '@/components/dashboard/app-sidebar';
 import { useSolana } from '@/components/solana/use-solana';
@@ -13,66 +13,55 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 import { useDashboard } from './dashboard-context';
 import { DashboardHeader } from './header/dashboard-header';
-import { AddEmployeeModal } from './modals/add-employee-modal';
-import { ArchiveEmployeeModal } from './modals/archive-employee-modal';
-import { CloseStreamModal } from './modals/close-stream-modal';
-import { CreateStreamModal } from './modals/create-stream-modal';
-import { EditEmployeeModal } from './modals/edit-employee-modal';
-import { EmergencyWithdrawModal } from './modals/emergency-withdraw-modal';
-import { TopUpAccountModal } from './modals/top-up-account-modal';
-import { TopUpStreamModal } from './modals/top-up-stream-modal';
-import { ViewStreamsModal } from './modals/view-streams-modal';
 import { DashboardRightRail } from './right-rail/dashboard-right-rail';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
+const AddEmployeeModal = dynamic(() => import('./modals/add-employee-modal').then((mod) => mod.AddEmployeeModal), {
+  loading: () => null,
+  ssr: false,
+});
+const ArchiveEmployeeModal = dynamic(
+  () => import('./modals/archive-employee-modal').then((mod) => mod.ArchiveEmployeeModal),
+  { loading: () => null, ssr: false },
+);
+const CloseStreamModal = dynamic(() => import('./modals/close-stream-modal').then((mod) => mod.CloseStreamModal), {
+  loading: () => null,
+  ssr: false,
+});
+const CreateStreamModal = dynamic(() => import('./modals/create-stream-modal').then((mod) => mod.CreateStreamModal), {
+  loading: () => null,
+  ssr: false,
+});
+const EditEmployeeModal = dynamic(() => import('./modals/edit-employee-modal').then((mod) => mod.EditEmployeeModal), {
+  loading: () => null,
+  ssr: false,
+});
+const EmergencyWithdrawModal = dynamic(
+  () => import('./modals/emergency-withdraw-modal').then((mod) => mod.EmergencyWithdrawModal),
+  { loading: () => null, ssr: false },
+);
+const TopUpAccountModal = dynamic(() => import('./modals/top-up-account-modal').then((mod) => mod.TopUpAccountModal), {
+  loading: () => null,
+  ssr: false,
+});
+const TopUpStreamModal = dynamic(() => import('./modals/top-up-stream-modal').then((mod) => mod.TopUpStreamModal), {
+  loading: () => null,
+  ssr: false,
+});
+const ViewStreamsModal = dynamic(() => import('./modals/view-streams-modal').then((mod) => mod.ViewStreamsModal), {
+  loading: () => null,
+  ssr: false,
+});
+
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const isMobile = useIsMobile();
   const { account, connected } = useSolana();
 
-  const {
-    isCreateStreamModalOpen,
-    setIsCreateStreamModalOpen,
-    isAddEmployeeModalOpen,
-    setIsAddEmployeeModalOpen,
-    isTopUpModalOpen,
-    setIsTopUpModalOpen,
-    isTopUpAccountModalOpen,
-    setIsTopUpAccountModalOpen,
-    isEmergencyWithdrawModalOpen,
-    setIsEmergencyWithdrawModalOpen,
-    isCloseStreamModalOpen,
-    setIsCloseStreamModalOpen,
-    isViewStreamsModalOpen,
-    setIsViewStreamsModalOpen,
-    isEditEmployeeModalOpen,
-    setIsEditEmployeeModalOpen,
-    isArchiveEmployeeModalOpen,
-    setIsArchiveEmployeeModalOpen,
-    selectedEmployeeId,
-    selectedEmployee,
-    selectedStreamId,
-    isOnboardingRequired,
-  } = useDashboard();
-
-  const isRedirectingToOnboarding = isOnboardingRequired && pathname !== '/onboarding';
-  const isRedirectingToDashboard = !isOnboardingRequired && pathname === '/onboarding';
-
-  useEffect(() => {
-    if (isRedirectingToOnboarding) {
-      router.replace('/onboarding');
-    } else if (isRedirectingToDashboard) {
-      router.replace('/dashboard');
-    }
-  }, [isRedirectingToDashboard, isRedirectingToOnboarding, router]);
-
-  if (isRedirectingToOnboarding || isRedirectingToDashboard) {
-    return null;
-  }
+  const { activeModal, closeModal } = useDashboard();
 
   if (!connected || !account) {
     return (
@@ -112,39 +101,44 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       </SidebarInset>
 
-      <CreateStreamModal isOpen={isCreateStreamModalOpen} onClose={() => setIsCreateStreamModalOpen(false)} />
-      <AddEmployeeModal isOpen={isAddEmployeeModalOpen} onClose={() => setIsAddEmployeeModalOpen(false)} />
-      <TopUpAccountModal isOpen={isTopUpAccountModalOpen} onClose={() => setIsTopUpAccountModalOpen(false)} />
-      <TopUpStreamModal
-        isOpen={isTopUpModalOpen}
-        onClose={() => setIsTopUpModalOpen(false)}
-        streamId={selectedStreamId ?? undefined}
-      />
-      <EmergencyWithdrawModal
-        isOpen={isEmergencyWithdrawModalOpen}
-        onClose={() => setIsEmergencyWithdrawModalOpen(false)}
-        streamId={selectedStreamId ?? undefined}
-      />
-      <CloseStreamModal isOpen={isCloseStreamModalOpen} onClose={() => setIsCloseStreamModalOpen(false)} />
-
-      <ViewStreamsModal
-        isOpen={isViewStreamsModalOpen}
-        onClose={() => setIsViewStreamsModalOpen(false)}
-        employeeName={selectedEmployee?.name ?? ''}
-        employeeId={selectedEmployeeId}
-      />
-      <EditEmployeeModal
-        isOpen={isEditEmployeeModalOpen}
-        onClose={() => setIsEditEmployeeModalOpen(false)}
-        employeeId={selectedEmployeeId || ''}
-        employee={selectedEmployee ?? null}
-      />
-      <ArchiveEmployeeModal
-        isOpen={isArchiveEmployeeModalOpen}
-        onClose={() => setIsArchiveEmployeeModalOpen(false)}
-        employeeId={selectedEmployeeId || ''}
-        employeeName={selectedEmployee?.name ?? ''}
-      />
+      {activeModal.type === 'create-stream' ? (
+        <CreateStreamModal isOpen onClose={closeModal} initialEmployeeId={activeModal.employeeId} />
+      ) : null}
+      {activeModal.type === 'add-employee' ? <AddEmployeeModal isOpen onClose={closeModal} /> : null}
+      {activeModal.type === 'top-up-account' ? <TopUpAccountModal isOpen onClose={closeModal} /> : null}
+      {activeModal.type === 'top-up-stream' ? (
+        <TopUpStreamModal isOpen onClose={closeModal} streamId={activeModal.streamId} />
+      ) : null}
+      {activeModal.type === 'emergency-withdraw' ? (
+        <EmergencyWithdrawModal isOpen onClose={closeModal} streamId={activeModal.streamId} />
+      ) : null}
+      {activeModal.type === 'close-stream' ? (
+        <CloseStreamModal isOpen onClose={closeModal} streamId={activeModal.streamId} />
+      ) : null}
+      {activeModal.type === 'view-streams' ? (
+        <ViewStreamsModal
+          isOpen
+          onClose={closeModal}
+          employeeName={activeModal.employee.name}
+          employeeId={activeModal.employee.id}
+        />
+      ) : null}
+      {activeModal.type === 'edit-employee' ? (
+        <EditEmployeeModal
+          isOpen
+          onClose={closeModal}
+          employeeId={activeModal.employee.id}
+          employee={activeModal.employee}
+        />
+      ) : null}
+      {activeModal.type === 'archive-employee' ? (
+        <ArchiveEmployeeModal
+          isOpen
+          onClose={closeModal}
+          employeeId={activeModal.employee.id}
+          employeeName={activeModal.employee.name}
+        />
+      ) : null}
     </SidebarProvider>
   );
 }

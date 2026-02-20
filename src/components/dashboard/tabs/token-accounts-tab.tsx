@@ -56,7 +56,7 @@ const MOCK_TOKEN_ACCOUNTS: TokenAccount[] = [
 ];
 
 export function TokenAccountsTab() {
-  const { accountState, setupProgress, setIsTopUpAccountModalOpen } = useDashboard();
+  const { accountState, setupProgress, openTopUpAccountModal } = useDashboard();
   const config = getAccountStateConfig(accountState);
 
   const copyToClipboard = (text: string, id: string) => {
@@ -95,7 +95,7 @@ export function TokenAccountsTab() {
           description="Top up the account that will power upcoming payroll streams."
           action={{
             label: 'Top Up Account',
-            onClick: () => setIsTopUpAccountModalOpen(true),
+            onClick: openTopUpAccountModal,
           }}
         />
       </div>

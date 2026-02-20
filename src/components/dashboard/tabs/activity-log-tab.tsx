@@ -42,7 +42,7 @@ export function ActivityLogTab({ activity }: { activity: ActivityEvent[] }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | ActivityEvent['type']>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | ActivityEvent['status']>('all');
-  const { accountState, setupProgress, setIsCreateStreamModalOpen } = useDashboard();
+  const { accountState, setupProgress, openCreateStreamModal } = useDashboard();
   const config = getAccountStateConfig(accountState);
 
   const filteredActivity = useMemo(() => {
@@ -86,7 +86,7 @@ export function ActivityLogTab({ activity }: { activity: ActivityEvent[] }) {
           description="Once changes are made to your treasury or streams, they'll appear here."
           action={{
             label: 'Create Stream',
-            onClick: () => setIsCreateStreamModalOpen(true),
+            onClick: openCreateStreamModal,
             disabled: !setupProgress.walletConnected,
           }}
         />

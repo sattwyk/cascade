@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -34,14 +34,6 @@ const employeeStatusToPath: Record<EmployeeFilterStatus, string> = {
   archived: '/dashboard/employees/archived',
 };
 
-const employeeStatusToPageKey: Record<EmployeeFilterStatus, string> = {
-  all: 'directory',
-  ready: 'directory',
-  draft: 'directory',
-  invited: 'invitations',
-  archived: 'archived',
-};
-
 function deriveEmployeeStatus(pageKey?: string): EmployeeFilterStatus {
   switch (pageKey) {
     case 'invitations':
@@ -54,16 +46,9 @@ function deriveEmployeeStatus(pageKey?: string): EmployeeFilterStatus {
 }
 
 export function EmployeesTab({ filterState, employees }: EmployeesTabProps) {
-  const {
-    setIsAddEmployeeModalOpen,
-    setupProgress,
-    setIsTopUpAccountModalOpen,
-    setSelectedEmployee,
-    setSelectedEmployeeId: setDashboardSelectedEmployeeId,
-  } = useDashboard();
+  const { openAddEmployeeModal, setupProgress, openTopUpAccountModal } = useDashboard();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [optimisticPageKey, setOptimisticPageKey] = useState(filterState);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const { account } = useWalletUi();
   const walletAddress = (account?.address as Address) ?? NULL_ADDRESS;
@@ -83,22 +68,10 @@ export function EmployeesTab({ filterState, employees }: EmployeesTabProps) {
     [clientEmployees, employees],
   );
 
-  useEffect(() => {
-    setOptimisticPageKey(filterState);
-  }, [filterState]);
-
-  const filterStatus = useMemo<EmployeeFilterStatus>(
-    () => deriveEmployeeStatus(optimisticPageKey),
-    [optimisticPageKey],
-  );
+  const filterStatus = useMemo<EmployeeFilterStatus>(() => deriveEmployeeStatus(filterState), [filterState]);
 
   const handleFilterChange = (status: EmployeeFilterStatus) => {
     setSelectedEmployeeId(null);
-    setDashboardSelectedEmployeeId(null);
-    setSelectedEmployee(null);
-
-    const nextPageKey = employeeStatusToPageKey[status];
-    setOptimisticPageKey(nextPageKey);
 
     startTransition(() => {
       router.push(employeeStatusToPath[status]);
@@ -114,26 +87,12 @@ export function EmployeesTab({ filterState, employees }: EmployeesTabProps) {
   const showFundingGate = walletConnected && !tokenFundingComplete && !hasEmployees;
   const canInviteEmployees = walletConnected && tokenFundingComplete;
 
-  useEffect(() => {
-    if (!selectedEmployee) {
-      setDashboardSelectedEmployeeId(null);
-      setSelectedEmployee(null);
-      return;
-    }
-    setDashboardSelectedEmployeeId(selectedEmployee.id);
-    setSelectedEmployee(selectedEmployee);
-  }, [selectedEmployee, setDashboardSelectedEmployeeId, setSelectedEmployee]);
-
   const handleSelectEmployee = (employee: EmployeeSummary) => {
     setSelectedEmployeeId(employee.id);
-    setDashboardSelectedEmployeeId(employee.id);
-    setSelectedEmployee(employee);
   };
 
   const handleCloseDetail = () => {
     setSelectedEmployeeId(null);
-    setDashboardSelectedEmployeeId(null);
-    setSelectedEmployee(null);
   };
 
   return (
@@ -143,7 +102,7 @@ export function EmployeesTab({ filterState, employees }: EmployeesTabProps) {
           <h1 className="text-3xl font-bold">Employees</h1>
           <p className="text-muted-foreground">Manage your employee directory</p>
         </div>
-        <Button onClick={() => setIsAddEmployeeModalOpen(true)} className="gap-2" disabled={!canInviteEmployees}>
+        <Button onClick={openAddEmployeeModal} className="gap-2" disabled={!canInviteEmployees}>
           <Plus className="h-4 w-4" />
           Invite Employee
         </Button>
@@ -162,7 +121,7 @@ export function EmployeesTab({ filterState, employees }: EmployeesTabProps) {
           description="Top up the payroll token account to unlock employee invitations."
           action={{
             label: 'Top Up Account',
-            onClick: () => setIsTopUpAccountModalOpen(true),
+            onClick: openTopUpAccountModal,
           }}
         />
       ) : !hasEmployees ? (
@@ -172,7 +131,7 @@ export function EmployeesTab({ filterState, employees }: EmployeesTabProps) {
           description="Create a profile or send an invitation so you can spin up a stream."
           action={{
             label: 'Add Employee',
-            onClick: () => setIsAddEmployeeModalOpen(true),
+            onClick: openAddEmployeeModal,
           }}
         />
       ) : (
@@ -183,7 +142,7 @@ export function EmployeesTab({ filterState, employees }: EmployeesTabProps) {
             onSelectEmployee={handleSelectEmployee}
             selectedEmployeeId={selectedEmployeeId}
             employees={activeEmployees}
-            onInviteEmployee={() => setIsAddEmployeeModalOpen(true)}
+            onInviteEmployee={openAddEmployeeModal}
           />
         </div>
       )}

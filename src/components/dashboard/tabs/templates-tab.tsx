@@ -58,7 +58,7 @@ const MOCK_TEMPLATES: StreamTemplate[] = [
 
 export function TemplatesTab() {
   const [templates, setTemplates] = useState(MOCK_TEMPLATES);
-  const { accountState, setupProgress, setIsCreateStreamModalOpen } = useDashboard();
+  const { accountState, setupProgress, openCreateStreamModal } = useDashboard();
   const config = getAccountStateConfig(accountState);
 
   const deleteTemplate = (id: string) => {
@@ -94,7 +94,7 @@ export function TemplatesTab() {
           description="Launch a live payment stream to start saving configurations as reusable templates."
           action={{
             label: 'Create Stream',
-            onClick: () => setIsCreateStreamModalOpen(true),
+            onClick: openCreateStreamModal,
           }}
         />
       </div>

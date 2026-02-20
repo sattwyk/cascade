@@ -42,9 +42,9 @@ interface OverviewTabProps {
 export function OverviewTab({ initialStreams, initialActivity }: OverviewTabProps) {
   const {
     accountState,
-    setIsCreateStreamModalOpen,
-    setIsAddEmployeeModalOpen,
-    setIsTopUpAccountModalOpen,
+    openCreateStreamModal,
+    openAddEmployeeModal,
+    openTopUpAccountModal,
     setupProgress,
     completeSetupStep,
   } = useDashboard();
@@ -68,7 +68,7 @@ export function OverviewTab({ initialStreams, initialActivity }: OverviewTabProp
   const hasVaultBalance = useMemo(() => streamData.some((stream) => stream.vaultBalance > 0), [streamData]);
   const lamportsRaw = balanceQuery.data?.value;
   const solBalanceLamports = typeof lamportsRaw === 'bigint' ? lamportsRaw : BigInt(lamportsRaw ?? 0);
-  const hasSolBalance = solBalanceLamports > 0n;
+  const hasSolBalance = solBalanceLamports > BigInt(0);
   const hasTreasuryFunding = hasOnChainTokenBalance || hasSolBalance || hasVaultBalance;
   const walletConnected = setupProgress.walletConnected || Boolean(account?.address);
   const hasEmployeeRecords = employees.length > 0;
@@ -116,7 +116,7 @@ export function OverviewTab({ initialStreams, initialActivity }: OverviewTabProp
           ? undefined
           : {
               label: 'Top Up Account',
-              onClick: () => setIsTopUpAccountModalOpen(true),
+              onClick: openTopUpAccountModal,
             },
       },
       {
@@ -129,7 +129,7 @@ export function OverviewTab({ initialStreams, initialActivity }: OverviewTabProp
           ? undefined
           : {
               label: 'Add Employee',
-              onClick: () => setIsAddEmployeeModalOpen(true),
+              onClick: openAddEmployeeModal,
             },
       },
       {
@@ -142,7 +142,7 @@ export function OverviewTab({ initialStreams, initialActivity }: OverviewTabProp
           ? undefined
           : {
               label: 'Create Stream',
-              onClick: () => setIsCreateStreamModalOpen(true),
+              onClick: () => openCreateStreamModal(),
               disabled: !employeeStepComplete || !tokenFundingComplete,
             },
       },
@@ -153,9 +153,9 @@ export function OverviewTab({ initialStreams, initialActivity }: OverviewTabProp
       streamStepComplete,
       tokenFundingComplete,
       tokenFundingOptional,
-      setIsAddEmployeeModalOpen,
-      setIsCreateStreamModalOpen,
-      setIsTopUpAccountModalOpen,
+      openAddEmployeeModal,
+      openCreateStreamModal,
+      openTopUpAccountModal,
     ],
   );
 
@@ -164,20 +164,20 @@ export function OverviewTab({ initialStreams, initialActivity }: OverviewTabProp
     if (!employeeStepComplete) {
       return {
         label: 'Add Employee',
-        onClick: () => setIsAddEmployeeModalOpen(true),
+        onClick: openAddEmployeeModal,
       };
     }
     if (!streamStepComplete) {
       return {
         label: 'Create Stream',
-        onClick: () => setIsCreateStreamModalOpen(true),
+        onClick: () => openCreateStreamModal(),
         disabled: !tokenFundingComplete,
       };
     }
     return null;
   }, [
-    setIsAddEmployeeModalOpen,
-    setIsCreateStreamModalOpen,
+    openAddEmployeeModal,
+    openCreateStreamModal,
     employeeStepComplete,
     streamStepComplete,
     tokenFundingComplete,
@@ -235,7 +235,7 @@ export function OverviewTab({ initialStreams, initialActivity }: OverviewTabProp
             description="Your wallet is connected. Create your first payment stream to get started with employee payroll."
             action={{
               label: 'Create First Stream',
-              onClick: () => setIsCreateStreamModalOpen(true),
+              onClick: () => openCreateStreamModal(),
             }}
           />
         </div>
@@ -294,8 +294,8 @@ export function OverviewTab({ initialStreams, initialActivity }: OverviewTabProp
                 <div>
                   <OverviewAlerts
                     alerts={alerts}
-                    onCreateStream={() => setIsCreateStreamModalOpen(true)}
-                    onAddEmployee={() => setIsAddEmployeeModalOpen(true)}
+                    onCreateStream={() => openCreateStreamModal()}
+                    onAddEmployee={openAddEmployeeModal}
                     hasSetupProgress={setupProgress.employeeAdded}
                     isFundingReady={setupProgress.tokenAccountFunded}
                   />

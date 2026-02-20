@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useTransition } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -36,15 +36,6 @@ const mapStatusToPath: Record<StreamFilterStatus, string> = {
   'needs-attention': '/dashboard/streams/needs-attention',
 };
 
-const mapStatusToPageKey: Record<StreamFilterStatus, string> = {
-  all: 'all-streams',
-  active: 'active',
-  inactive: 'suspended',
-  closed: 'closed',
-  draft: 'drafts',
-  'needs-attention': 'needs-attention',
-};
-
 function deriveStatusFromPageKey(pageKey?: string): StreamFilterStatus {
   switch (pageKey) {
     case 'active':
@@ -66,14 +57,13 @@ export function StreamsTab({ filterState, streams }: StreamsTabProps) {
   const {
     selectedStreamId,
     setSelectedStreamId,
-    setIsCreateStreamModalOpen,
-    setIsAddEmployeeModalOpen,
-    setIsTopUpAccountModalOpen,
+    openCreateStreamModal,
+    openAddEmployeeModal,
+    openTopUpAccountModal,
     setupProgress,
   } = useDashboard();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [optimisticPageKey, setOptimisticPageKey] = useState(filterState);
   const { data: streamData = [], isFetching } = useDashboardStreamsQuery({ initialData: streams });
   const { data: employees = [] } = useDashboardEmployeesQuery();
   const { account } = useWalletUi();
@@ -88,18 +78,7 @@ export function StreamsTab({ filterState, streams }: StreamsTabProps) {
   );
   const employeeStepComplete = setupProgress.employeeAdded || hasEmployees;
 
-  useEffect(() => {
-    setOptimisticPageKey(filterState);
-  }, [filterState]);
-
-  const filterStatus = useMemo<StreamFilterStatus>(
-    () => deriveStatusFromPageKey(optimisticPageKey),
-    [optimisticPageKey],
-  );
-
-  useEffect(() => {
-    setSelectedStreamId(null);
-  }, [filterStatus, setSelectedStreamId]);
+  const filterStatus = useMemo<StreamFilterStatus>(() => deriveStatusFromPageKey(filterState), [filterState]);
 
   const selectedStream = useMemo(
     () => streamData.find((stream) => stream.id === selectedStreamId) ?? null,
@@ -114,8 +93,7 @@ export function StreamsTab({ filterState, streams }: StreamsTabProps) {
   }, [selectedStream, selectedStreamId, setSelectedStreamId]);
 
   const handleFilterChange = (status: StreamFilterStatus) => {
-    const nextPageKey = mapStatusToPageKey[status];
-    setOptimisticPageKey(nextPageKey);
+    setSelectedStreamId(null);
 
     startTransition(() => {
       router.push(mapStatusToPath[status]);
@@ -130,7 +108,7 @@ export function StreamsTab({ filterState, streams }: StreamsTabProps) {
           <p className="text-muted-foreground">Manage your payment streams</p>
         </div>
         <Button
-          onClick={() => setIsCreateStreamModalOpen(true)}
+          onClick={() => openCreateStreamModal()}
           className="gap-2"
           disabled={!employeeStepComplete || !tokenFundingComplete}
         >
@@ -152,7 +130,7 @@ export function StreamsTab({ filterState, streams }: StreamsTabProps) {
           description="Top up the default token account before creating a payment stream."
           action={{
             label: 'Top Up Account',
-            onClick: () => setIsTopUpAccountModalOpen(true),
+            onClick: openTopUpAccountModal,
           }}
         />
       ) : !employeeStepComplete ? (
@@ -162,7 +140,7 @@ export function StreamsTab({ filterState, streams }: StreamsTabProps) {
           description="Invite or create an employee profile, then assign a payment stream."
           action={{
             label: 'Add Employee',
-            onClick: () => setIsAddEmployeeModalOpen(true),
+            onClick: openAddEmployeeModal,
           }}
         />
       ) : !hasStreams ? (
@@ -172,7 +150,7 @@ export function StreamsTab({ filterState, streams }: StreamsTabProps) {
           description="Launch a live payment stream once your account is funded and an employee is ready."
           action={{
             label: 'Create Stream',
-            onClick: () => setIsCreateStreamModalOpen(true),
+            onClick: () => openCreateStreamModal(),
           }}
         />
       ) : (

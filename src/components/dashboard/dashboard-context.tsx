@@ -70,31 +70,33 @@ function resolveStateFromProgress(progress: SetupProgress, currentState: Account
   return currentState;
 }
 
+export type DashboardModalState =
+  | { type: 'none' }
+  | { type: 'create-stream'; employeeId?: string }
+  | { type: 'add-employee' }
+  | { type: 'top-up-account' }
+  | { type: 'top-up-stream'; streamId: string }
+  | { type: 'emergency-withdraw'; streamId: string }
+  | { type: 'close-stream'; streamId: string }
+  | { type: 'view-streams'; employee: EmployeeSummary }
+  | { type: 'edit-employee'; employee: EmployeeSummary }
+  | { type: 'archive-employee'; employee: EmployeeSummary };
+
 interface DashboardContextType {
   selectedStreamId: string | null;
   setSelectedStreamId: (id: string | null) => void;
-  isCreateStreamModalOpen: boolean;
-  setIsCreateStreamModalOpen: (open: boolean) => void;
-  isAddEmployeeModalOpen: boolean;
-  setIsAddEmployeeModalOpen: (open: boolean) => void;
-  isTopUpModalOpen: boolean;
-  setIsTopUpModalOpen: (open: boolean) => void;
-  isTopUpAccountModalOpen: boolean;
-  setIsTopUpAccountModalOpen: (open: boolean) => void;
-  isEmergencyWithdrawModalOpen: boolean;
-  setIsEmergencyWithdrawModalOpen: (open: boolean) => void;
-  isCloseStreamModalOpen: boolean;
-  setIsCloseStreamModalOpen: (open: boolean) => void;
-  isViewStreamsModalOpen: boolean;
-  setIsViewStreamsModalOpen: (open: boolean) => void;
-  isEditEmployeeModalOpen: boolean;
-  setIsEditEmployeeModalOpen: (open: boolean) => void;
-  isArchiveEmployeeModalOpen: boolean;
-  setIsArchiveEmployeeModalOpen: (open: boolean) => void;
-  selectedEmployeeId: string | null;
-  setSelectedEmployeeId: (id: string | null) => void;
-  selectedEmployee: EmployeeSummary | null;
-  setSelectedEmployee: (employee: EmployeeSummary | null) => void;
+  activeModal: DashboardModalState;
+  isModalOpen: boolean;
+  openCreateStreamModal: (options?: { employeeId?: string }) => void;
+  openAddEmployeeModal: () => void;
+  openTopUpAccountModal: () => void;
+  openTopUpStreamModal: (streamId: string) => void;
+  openEmergencyWithdrawModal: (streamId: string) => void;
+  openCloseStreamModal: (streamId: string) => void;
+  openViewStreamsModal: (employee: EmployeeSummary) => void;
+  openEditEmployeeModal: (employee: EmployeeSummary) => void;
+  openArchiveEmployeeModal: (employee: EmployeeSummary) => void;
+  closeModal: () => void;
   accountState: AccountState;
   setAccountState: (state: AccountState) => void;
   isOnboardingRequired: boolean;
@@ -111,17 +113,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const initialSetupProgress = deriveProgressFromState(initialAccountState, getSavedSetupProgress());
 
   const [selectedStreamId, setSelectedStreamId] = useState<string | null>(null);
-  const [isCreateStreamModalOpen, setIsCreateStreamModalOpen] = useState(false);
-  const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
-  const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
-  const [isTopUpAccountModalOpen, setIsTopUpAccountModalOpen] = useState(false);
-  const [isEmergencyWithdrawModalOpen, setIsEmergencyWithdrawModalOpen] = useState(false);
-  const [isCloseStreamModalOpen, setIsCloseStreamModalOpen] = useState(false);
-  const [isViewStreamsModalOpen, setIsViewStreamsModalOpen] = useState(false);
-  const [isEditEmployeeModalOpen, setIsEditEmployeeModalOpen] = useState(false);
-  const [isArchiveEmployeeModalOpen, setIsArchiveEmployeeModalOpen] = useState(false);
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
-  const [selectedEmployee, setSelectedEmployee] = useState<EmployeeSummary | null>(null);
+  const [activeModal, setActiveModal] = useState<DashboardModalState>({ type: 'none' });
 
   const [accountState, setAccountStateInternal] = useState<AccountState>(initialAccountState);
   const [setupProgress, setSetupProgress] = useState<SetupProgress>(initialSetupProgress);
@@ -207,14 +199,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
-    void (async () => {
-      try {
-        const snapshot = await getSetupSnapshot();
+    void getSetupSnapshot()
+      .then((snapshot) => {
         if (cancelled || !snapshot) return;
 
         const serverProgress = { ...snapshot.progress };
 
-        let mergedProgress: SetupProgress;
+        let mergedProgress: SetupProgress | null = null;
 
         setSetupProgress((prev) => {
           // Merge server progress with local progress, preferring "true" values
@@ -250,7 +241,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         });
 
         // Use merged progress (not just server progress) to determine state
-        const normalizedState = resolveStateFromProgress(mergedProgress!, snapshot.accountState);
+        const normalizedState = resolveStateFromProgress(mergedProgress ?? serverProgress, snapshot.accountState);
         lastPersistedStateRef.current = snapshot.accountState;
         setAccountStateInternal((prev) => {
           // Only update state if it's an upgrade
@@ -260,10 +251,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           }
           return prev;
         });
-      } catch (error) {
+      })
+      .catch((error) => {
         console.error('[dashboard] Failed to load setup snapshot', error);
-      }
-    })();
+      });
 
     return () => {
       cancelled = true;
@@ -274,16 +265,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     if (!isStateUpgrade(lastPersistedStateRef.current, accountState)) return;
 
     let cancelled = false;
-    void (async () => {
-      try {
-        const result = await updateAccountState(accountState);
+    void updateAccountState(accountState)
+      .then((result) => {
         if (!cancelled && result.updated) {
           lastPersistedStateRef.current = accountState;
         }
-      } catch (error) {
+      })
+      .catch((error) => {
         console.error('[dashboard] Failed to persist account state', error);
-      }
-    })();
+      });
 
     return () => {
       cancelled = true;
@@ -292,47 +282,68 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   const isOnboardingRequired = accountState === AccountState.NEW_ACCOUNT || accountState === AccountState.ONBOARDING;
 
-  const resetAllModals = () => {
-    setIsCreateStreamModalOpen(false);
-    setIsAddEmployeeModalOpen(false);
-    setIsTopUpModalOpen(false);
-    setIsTopUpAccountModalOpen(false);
-    setIsEmergencyWithdrawModalOpen(false);
-    setIsCloseStreamModalOpen(false);
-    setIsViewStreamsModalOpen(false);
-    setIsEditEmployeeModalOpen(false);
-    setIsArchiveEmployeeModalOpen(false);
-    setSelectedEmployeeId(null);
-    setSelectedEmployee(null);
-  };
+  const closeModal = useCallback(() => {
+    setActiveModal({ type: 'none' });
+  }, []);
+
+  const openCreateStreamModal = useCallback((options?: { employeeId?: string }) => {
+    setActiveModal({ type: 'create-stream', employeeId: options?.employeeId });
+  }, []);
+
+  const openAddEmployeeModal = useCallback(() => {
+    setActiveModal({ type: 'add-employee' });
+  }, []);
+
+  const openTopUpAccountModal = useCallback(() => {
+    setActiveModal({ type: 'top-up-account' });
+  }, []);
+
+  const openTopUpStreamModal = useCallback((streamId: string) => {
+    setSelectedStreamId(streamId);
+    setActiveModal({ type: 'top-up-stream', streamId });
+  }, []);
+
+  const openEmergencyWithdrawModal = useCallback((streamId: string) => {
+    setSelectedStreamId(streamId);
+    setActiveModal({ type: 'emergency-withdraw', streamId });
+  }, []);
+
+  const openCloseStreamModal = useCallback((streamId: string) => {
+    setSelectedStreamId(streamId);
+    setActiveModal({ type: 'close-stream', streamId });
+  }, []);
+
+  const openViewStreamsModal = useCallback((employee: EmployeeSummary) => {
+    setActiveModal({ type: 'view-streams', employee });
+  }, []);
+
+  const openEditEmployeeModal = useCallback((employee: EmployeeSummary) => {
+    setActiveModal({ type: 'edit-employee', employee });
+  }, []);
+
+  const openArchiveEmployeeModal = useCallback((employee: EmployeeSummary) => {
+    setActiveModal({ type: 'archive-employee', employee });
+  }, []);
+
+  const resetAllModals = closeModal;
 
   return (
     <DashboardContext.Provider
       value={{
         selectedStreamId,
         setSelectedStreamId,
-        isCreateStreamModalOpen,
-        setIsCreateStreamModalOpen,
-        isAddEmployeeModalOpen,
-        setIsAddEmployeeModalOpen,
-        isTopUpModalOpen,
-        setIsTopUpModalOpen,
-        isTopUpAccountModalOpen,
-        setIsTopUpAccountModalOpen,
-        isEmergencyWithdrawModalOpen,
-        setIsEmergencyWithdrawModalOpen,
-        isCloseStreamModalOpen,
-        setIsCloseStreamModalOpen,
-        isViewStreamsModalOpen,
-        setIsViewStreamsModalOpen,
-        isEditEmployeeModalOpen,
-        setIsEditEmployeeModalOpen,
-        isArchiveEmployeeModalOpen,
-        setIsArchiveEmployeeModalOpen,
-        selectedEmployeeId,
-        setSelectedEmployeeId,
-        selectedEmployee,
-        setSelectedEmployee,
+        activeModal,
+        isModalOpen: activeModal.type !== 'none',
+        openCreateStreamModal,
+        openAddEmployeeModal,
+        openTopUpAccountModal,
+        openTopUpStreamModal,
+        openEmergencyWithdrawModal,
+        openCloseStreamModal,
+        openViewStreamsModal,
+        openEditEmployeeModal,
+        openArchiveEmployeeModal,
+        closeModal,
         accountState,
         setAccountState,
         isOnboardingRequired,

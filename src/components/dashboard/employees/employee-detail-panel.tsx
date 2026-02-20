@@ -57,14 +57,8 @@ function formatEmploymentType(value: string | null) {
 
 export function EmployeeDetailPanel({ employee, onClose, isOpen }: EmployeeDetailPanelProps) {
   const isMobile = useIsMobile();
-  const {
-    setIsViewStreamsModalOpen,
-    setIsEditEmployeeModalOpen,
-    setIsArchiveEmployeeModalOpen,
-    setIsCreateStreamModalOpen,
-    setSelectedEmployeeId,
-    setSelectedEmployee,
-  } = useDashboard();
+  const { openViewStreamsModal, openEditEmployeeModal, openArchiveEmployeeModal, openCreateStreamModal } =
+    useDashboard();
 
   const formattedStatus = employee ? getStatusColor(employee.status) : '';
   let invitedLabel: string | null = null;
@@ -76,11 +70,9 @@ export function EmployeeDetailPanel({ employee, onClose, isOpen }: EmployeeDetai
     }
   }
 
-  const handleSelectForAction = (action: () => void) => {
+  const handleSelectForAction = (action: (selectedEmployee: EmployeeSummary) => void) => {
     if (!employee) return;
-    setSelectedEmployeeId(employee.id);
-    setSelectedEmployee(employee);
-    action();
+    action(employee);
   };
 
   if (!employee) {
@@ -197,32 +189,24 @@ export function EmployeeDetailPanel({ employee, onClose, isOpen }: EmployeeDetai
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleSelectForAction(() => setIsViewStreamsModalOpen(true))}
-                >
+                <Button variant="outline" size="sm" onClick={() => handleSelectForAction(openViewStreamsModal)}>
                   View Streams
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleSelectForAction(() => setIsEditEmployeeModalOpen(true))}
-                >
+                <Button variant="outline" size="sm" onClick={() => handleSelectForAction(openEditEmployeeModal)}>
                   Edit Details
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleSelectForAction(() => setIsCreateStreamModalOpen(true))}
+                  onClick={() =>
+                    handleSelectForAction((selectedEmployee) =>
+                      openCreateStreamModal({ employeeId: selectedEmployee.id }),
+                    )
+                  }
                 >
                   Create Stream
                 </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => handleSelectForAction(() => setIsArchiveEmployeeModalOpen(true))}
-                >
+                <Button variant="destructive" size="sm" onClick={() => handleSelectForAction(openArchiveEmployeeModal)}>
                   Archive Employee
                 </Button>
               </div>

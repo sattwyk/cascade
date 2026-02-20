@@ -29,8 +29,7 @@ type TokenTotal = {
 };
 
 export function DashboardRightRail() {
-  const { setIsTopUpAccountModalOpen, setIsAddEmployeeModalOpen, setIsCreateStreamModalOpen, setupProgress } =
-    useDashboard();
+  const { openTopUpAccountModal, openAddEmployeeModal, openCreateStreamModal, setupProgress } = useDashboard();
   const { account } = useWalletUi();
 
   const walletAddress = (account?.address as Address) ?? FALLBACK_ADDRESS;
@@ -234,7 +233,7 @@ export function DashboardRightRail() {
           <Button
             className="w-full"
             size="sm"
-            onClick={() => setIsTopUpAccountModalOpen(true)}
+            onClick={openTopUpAccountModal}
             disabled={!setupProgress.walletConnected}
           >
             <PiggyBank className="mr-2 h-4 w-4" />
@@ -245,8 +244,8 @@ export function DashboardRightRail() {
 
       <OverviewAlerts
         alerts={alerts}
-        onCreateStream={() => setIsCreateStreamModalOpen(true)}
-        onAddEmployee={() => setIsAddEmployeeModalOpen(true)}
+        onCreateStream={openCreateStreamModal}
+        onAddEmployee={openAddEmployeeModal}
         hasSetupProgress={setupProgress.employeeAdded}
         isFundingReady={setupProgress.tokenAccountFunded}
       />

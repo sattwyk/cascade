@@ -10,22 +10,18 @@ interface StreamActionButtonsProps {
 }
 
 export function StreamActionButtons({ streamId, status }: StreamActionButtonsProps) {
-  const { setIsTopUpModalOpen, setIsEmergencyWithdrawModalOpen, setIsCloseStreamModalOpen, setSelectedStreamId } =
-    useDashboard();
+  const { openTopUpStreamModal, openEmergencyWithdrawModal, openCloseStreamModal } = useDashboard();
 
   const handleTopUp = () => {
-    setSelectedStreamId(streamId);
-    setIsTopUpModalOpen(true);
+    openTopUpStreamModal(streamId);
   };
 
   const handleEmergencyWithdraw = () => {
-    setSelectedStreamId(streamId);
-    setIsEmergencyWithdrawModalOpen(true);
+    openEmergencyWithdrawModal(streamId);
   };
 
   const handleCloseStream = () => {
-    setSelectedStreamId(streamId);
-    setIsCloseStreamModalOpen(true);
+    openCloseStreamModal(streamId);
   };
 
   return (
