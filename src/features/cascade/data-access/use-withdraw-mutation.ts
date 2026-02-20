@@ -15,16 +15,17 @@ import { toastTx } from '@/components/toast-tx';
 import { EMPLOYEE_DASHBOARD_OVERVIEW_QUERY_KEY } from '@/features/employee-dashboard/data-access/use-employee-dashboard-overview-query';
 import { EMPLOYEE_WITHDRAWALS_QUERY_KEY } from '@/features/employee-dashboard/data-access/use-employee-withdrawals-query';
 
-import { derivePaymentStream, deriveVault, getErrorMessage } from './derive-cascade-pdas';
+import { derivePaymentStream, deriveVault, getErrorMessage, toBaseUnits } from './derive-cascade-pdas';
+import { fetchAndValidateMintDecimals } from './mint-decimals';
 import { useInvalidatePaymentStreamQuery } from './use-invalidate-payment-stream-query';
 import { useWalletUiSignAndSendWithFallback } from './use-wallet-ui-sign-and-send-with-fallback';
 
 const AMOUNT_DECIMALS = 6;
-const AMOUNT_SCALE = 10n ** BigInt(AMOUNT_DECIMALS);
 
-function formatTokenAmount(value: bigint) {
-  const whole = value / AMOUNT_SCALE;
-  const fraction = (value % AMOUNT_SCALE).toString().padStart(AMOUNT_DECIMALS, '0');
+function formatTokenAmount(value: bigint, decimals: number) {
+  const amountScale = 10n ** BigInt(decimals);
+  const whole = value / amountScale;
+  const fraction = (value % amountScale).toString().padStart(decimals, '0');
   return `${whole.toString()}.${fraction}`;
 }
 
@@ -32,7 +33,6 @@ export type WithdrawInput = {
   employer: Address | string;
   mintAddress: Address | string;
   amount: number;
-  amountBaseUnits: bigint;
   streamId: string;
   employee?: Address | string;
   stream?: Address | string;
@@ -120,6 +120,8 @@ export function useWithdrawMutation({ account }: { account: UiWalletAccount }) {
           : (await deriveVault(streamAddress))[0];
 
         const mintAddress = typeof input.mintAddress === 'string' ? toAddress(input.mintAddress) : input.mintAddress;
+        const mintDecimals = await fetchAndValidateMintDecimals(client.rpc, mintAddress);
+        const requestedAmountBaseUnits = toBaseUnits(input.amount, mintDecimals);
 
         const streamAccount = await fetchMaybePaymentStream(client.rpc, streamAddress);
         if (!streamAccount.exists) {
@@ -147,17 +149,18 @@ export function useWithdrawMutation({ account }: { account: UiWalletAccount }) {
             : totalEarnedUncapped;
         const availableBalance = totalEarned - streamAccount.data.withdrawnAmount;
 
-        if (input.amountBaseUnits > availableBalance) {
+        if (requestedAmountBaseUnits > availableBalance) {
           const totalDeposited = streamAccount.data.totalDeposited;
           const withdrawnAmount = streamAccount.data.withdrawnAmount;
-          const requestedLabel = formatTokenAmount(input.amountBaseUnits);
-          const availableLabel = formatTokenAmount(availableBalance > 0n ? availableBalance : 0n);
+          const requestedLabel = formatTokenAmount(requestedAmountBaseUnits, mintDecimals);
+          const availableLabel = formatTokenAmount(availableBalance > 0n ? availableBalance : 0n, mintDecimals);
 
           if (totalDeposited <= withdrawnAmount) {
             throw new Error(
               `Stream has no remaining balance to withdraw. Deposited ${formatTokenAmount(
                 totalDeposited,
-              )} tokens and already withdrawn ${formatTokenAmount(withdrawnAmount)} tokens.`,
+                mintDecimals,
+              )} tokens and already withdrawn ${formatTokenAmount(withdrawnAmount, mintDecimals)} tokens.`,
             );
           }
 
@@ -187,7 +190,7 @@ export function useWithdrawMutation({ account }: { account: UiWalletAccount }) {
           stream: streamAddress,
           vault: vaultAddress,
           employeeTokenAccount,
-          amount: input.amountBaseUnits,
+          amount: requestedAmountBaseUnits,
         });
 
         if (!withdrawInstruction) {
@@ -196,7 +199,7 @@ export function useWithdrawMutation({ account }: { account: UiWalletAccount }) {
 
         console.debug('Withdraw instruction created:', {
           stream: streamAddress,
-          amount: input.amountBaseUnits.toString(),
+          amount: requestedAmountBaseUnits.toString(),
         });
 
         const ataAccountInfo = await client.rpc.getAccountInfo(employeeTokenAccount, { encoding: 'base64' }).send();

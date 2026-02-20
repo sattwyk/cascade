@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toBaseUnits } from '@/features/cascade/data-access/derive-cascade-pdas';
 import { useWithdrawMutation } from '@/features/cascade/data-access/use-withdraw-mutation';
 
 interface WithdrawModalProps {
@@ -46,9 +45,9 @@ export function WithdrawModal({ isOpen, onClose, stream }: WithdrawModalProps) {
 
   const employerName = stream.employerName;
 
-  const maxAmountLabel = useMemo(() => `$${availableBalance.toFixed(AMOUNT_DECIMALS)}`, [availableBalance]);
+  const maxAmountLabel = `$${availableBalance.toFixed(AMOUNT_DECIMALS)}`;
 
-  const handleWithdraw = async () => {
+  const handleWithdraw = () => {
     const withdrawAmount = Number.parseFloat(amount);
     const roundedAmount = Number.isFinite(withdrawAmount) ? Number(withdrawAmount.toFixed(AMOUNT_DECIMALS)) : NaN;
 
@@ -73,25 +72,26 @@ export function WithdrawModal({ isOpen, onClose, stream }: WithdrawModalProps) {
     }
 
     setIsWithdrawing(true);
-    try {
-      await withdrawMutation.mutateAsync({
+    void withdrawMutation
+      .mutateAsync({
         employer: stream.employerWallet,
         mintAddress: stream.mintAddress,
         amount: roundedAmount,
-        amountBaseUnits: toBaseUnits(roundedAmount, AMOUNT_DECIMALS),
         streamId: stream.id,
         stream: stream.streamAddress,
         vault: stream.vaultAddress,
+      })
+      .then(() => {
+        setAmount('');
+        onClose();
+      })
+      .catch((error) => {
+        console.error('Withdrawal failed:', error);
+        // Errors are surfaced via the mutation's onError handler.
+      })
+      .finally(() => {
+        setIsWithdrawing(false);
       });
-
-      setAmount('');
-      onClose();
-    } catch (error) {
-      console.error('Withdrawal failed:', error);
-      // Errors are surfaced via the mutation's onError handler.
-    } finally {
-      setIsWithdrawing(false);
-    }
   };
 
   const handleMaxClick = () => {

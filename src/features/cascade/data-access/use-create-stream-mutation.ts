@@ -12,7 +12,8 @@ import { triggerAlertGeneration } from '@/app/dashboard/actions/workflows';
 import { toastTx } from '@/components/toast-tx';
 import { useInvalidateDashboardStreamsQuery } from '@/features/dashboard/data-access/use-invalidate-dashboard-streams-query';
 
-import { derivePaymentStream, deriveVault, getErrorMessage, toBigInt } from './derive-cascade-pdas';
+import { derivePaymentStream, deriveVault, getErrorMessage, toBaseUnits } from './derive-cascade-pdas';
+import { fetchAndValidateMintDecimals } from './mint-decimals';
 import { useInvalidatePaymentStreamQuery } from './use-invalidate-payment-stream-query';
 import { useWalletUiSignAndSendWithFallback } from './use-wallet-ui-sign-and-send-with-fallback';
 
@@ -46,6 +47,8 @@ export function useCreateStreamMutation({ account }: { account: UiWalletAccount 
           throw new Error('Stream already exists for this employee. Top up or close it before creating a new one.');
         }
 
+        const mintDecimals = await fetchAndValidateMintDecimals(client.rpc, input.mint);
+
         const instruction = await getCreateStreamInstructionAsync({
           employer: signer,
           employee: input.employee,
@@ -53,8 +56,8 @@ export function useCreateStreamMutation({ account }: { account: UiWalletAccount 
           stream: streamPda,
           vault: vaultPda,
           employerTokenAccount: input.employerTokenAccount,
-          hourlyRate: toBigInt(input.hourlyRate),
-          totalDeposit: toBigInt(input.totalDeposit),
+          hourlyRate: toBaseUnits(input.hourlyRate, mintDecimals),
+          totalDeposit: toBaseUnits(input.totalDeposit, mintDecimals),
         });
 
         // Validate instruction before signing

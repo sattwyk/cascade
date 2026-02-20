@@ -1,16 +1,18 @@
 import { useMutation } from '@tanstack/react-query';
 import { UiWalletAccount, useWalletUiSigner } from '@wallet-ui/react';
+import { useWalletUiGill } from '@wallet-ui/react-gill';
 import type { Address } from 'gill';
 import { toast } from 'sonner';
 
-import { getTopUpStreamInstruction } from '@project/anchor';
+import { fetchMaybePaymentStream, getTopUpStreamInstruction } from '@project/anchor';
 
 import { createActivityLog } from '@/app/dashboard/actions/activity-log';
 import { recordStreamTopUp } from '@/app/dashboard/actions/streams';
 import { toastTx } from '@/components/toast-tx';
 import { useInvalidateDashboardStreamsQuery } from '@/features/dashboard/data-access/use-invalidate-dashboard-streams-query';
 
-import { derivePaymentStream, deriveVault, getErrorMessage, toBigInt } from './derive-cascade-pdas';
+import { derivePaymentStream, deriveVault, getErrorMessage, toBaseUnits } from './derive-cascade-pdas';
+import { fetchAndValidateMintDecimals } from './mint-decimals';
 import { useInvalidatePaymentStreamQuery } from './use-invalidate-payment-stream-query';
 import { useWalletUiSignAndSendWithFallback } from './use-wallet-ui-sign-and-send-with-fallback';
 
@@ -25,6 +27,7 @@ export type TopUpStreamInput = {
 
 export function useTopUpStreamMutation({ account }: { account: UiWalletAccount }) {
   const signer = useWalletUiSigner({ account });
+  const client = useWalletUiGill();
   const signAndSend = useWalletUiSignAndSendWithFallback();
   const invalidatePaymentStreamQuery = useInvalidatePaymentStreamQuery();
   const invalidateDashboardStreamsQuery = useInvalidateDashboardStreamsQuery();
@@ -35,13 +38,20 @@ export function useTopUpStreamMutation({ account }: { account: UiWalletAccount }
         const employerAddress = account.address;
         const streamAddress = input.stream ?? (await derivePaymentStream(employerAddress, input.employee))[0];
         const vaultAddress = input.vault ?? (await deriveVault(streamAddress))[0];
+        const streamAccount = await fetchMaybePaymentStream(client.rpc, streamAddress);
+
+        if (!streamAccount.exists) {
+          throw new Error('Stream not found on-chain for the connected cluster.');
+        }
+
+        const mintDecimals = await fetchAndValidateMintDecimals(client.rpc, streamAccount.data.mint);
 
         const instruction = getTopUpStreamInstruction({
           employer: signer,
           stream: streamAddress,
           vault: vaultAddress,
           employerTokenAccount: input.employerTokenAccount,
-          additionalAmount: toBigInt(input.additionalAmount),
+          additionalAmount: toBaseUnits(input.additionalAmount, mintDecimals),
         });
 
         if (!instruction) {
