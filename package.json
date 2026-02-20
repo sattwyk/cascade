@@ -147,6 +147,7 @@
     },
     "onlyBuiltDependencies": [
       "@nestjs/core",
+      "@swc/core",
       "@tailwindcss/oxide",
       "bufferutil",
       "cbor-extract",
