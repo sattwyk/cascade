@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { statsigAdapter, type StatsigUser } from '@flags-sdk/statsig';
 import type { Identify } from 'flags';
 import { dedupe, flag } from 'flags/next';
