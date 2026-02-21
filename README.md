@@ -76,7 +76,7 @@ All transactions are recorded on-chain for complete transparency and auditabilit
 
 ## Quick Start
 
-The hosted version is available at [cascade.app](#) — connect your Solana wallet and you're ready to go.
+The hosted version is available at [cascade.sattwyk.com](https://cascade.sattwyk.com) — connect your Solana wallet and you're ready to go.
 
 For local development, follow the steps below.
 
@@ -99,7 +99,7 @@ This drops you into a shell with every dependency pinned and ready. No Nix? Inst
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourusername/cascade.git
+git clone https://github.com/sattwyk/cascade.git
 cd cascade
 
 # Verify toolchain, install deps, configure .env, build Anchor program
