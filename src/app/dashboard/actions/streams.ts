@@ -111,7 +111,11 @@ export async function createStreamRecord(input: CreateStreamInput) {
       createdAt: streamRecord.createdAt,
     } as const;
   } catch (error) {
-    Sentry.logger.error('Failed to create stream record', { error, input });
+    Sentry.logger.error('Failed to create stream record', {
+      error,
+      organizationId,
+      employeeId: input.employeeId,
+    });
     console.error('Failed to create stream record:', error);
     return {
       ok: false,

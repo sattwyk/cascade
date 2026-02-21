@@ -78,3 +78,5 @@ result
 result-*
 .direnv/
 .envrc
+# Sentry Config File
+.env.sentry-build-plugin

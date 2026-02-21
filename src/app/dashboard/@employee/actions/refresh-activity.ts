@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -92,6 +93,12 @@ export async function recordEmployeeActivityRefresh(input: unknown): Promise<Rec
 
     return { ok: true };
   } catch (error) {
+    Sentry.logger.error('Failed to record employee refresh activity', {
+      error,
+      streamId: parsed.data.streamId,
+      organizationId: context.organizationId,
+      employeeId: context.employeeId,
+    });
     console.error('[employee-refresh-activity] Failed to record refresh', error);
     return { ok: false, reason: 'database-error', error: 'Unable to record activity refresh. Please try again.' };
   }

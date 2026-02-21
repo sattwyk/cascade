@@ -68,13 +68,12 @@ export async function POST(request: Request) {
       user = exactMatch ?? roleMatch ?? records[0];
 
       Sentry.logger.info('Resolved user role', {
-        walletAddress,
         role: user?.role,
         organizationId: user?.organizationId,
       });
     } catch (error) {
       dbUnavailable = true;
-      Sentry.logger.error('Wallet role lookup failed', { error, walletAddress });
+      Sentry.logger.error('Wallet role lookup failed', { error });
       console.error('[auth] Wallet role lookup failed', error);
     }
   }

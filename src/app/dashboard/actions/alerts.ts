@@ -134,7 +134,13 @@ export async function createAlert(input: CreateAlertInput) {
 
     return { ok: true, alertId: alert.id, duplicate: false } as const;
   } catch (error) {
-    Sentry.logger.error('Failed to create alert', { error, input });
+    Sentry.logger.error('Failed to create alert', {
+      error,
+      streamId: input.streamId ?? null,
+      employeeId: input.employeeId ?? null,
+      type: input.type,
+      severity: input.severity,
+    });
     console.error('Failed to create alert:', error);
     return {
       ok: false,

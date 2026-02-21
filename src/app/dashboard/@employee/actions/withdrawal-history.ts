@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { and, desc, eq } from 'drizzle-orm';
 
 import { drizzleClientHttp } from '@/db';
@@ -53,6 +54,11 @@ export async function getEmployeeWithdrawalHistory(): Promise<EmployeeWithdrawal
       employerName: row.employerName ?? null,
     }));
   } catch (error) {
+    Sentry.logger.error('Failed to load employee withdrawal history', {
+      error,
+      organizationId: context.organizationId,
+      employeeId: context.employeeId,
+    });
     console.error('[employee-withdrawals] Failed to load withdrawal history', error);
     return [];
   }

@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -96,6 +97,11 @@ export async function getEmployeeStreams(input: unknown): Promise<GetEmployeeStr
       })),
     };
   } catch (error) {
+    Sentry.logger.error('Failed to load employee streams', {
+      error,
+      organizationId: organizationContext.organizationId,
+      employeeId: parsed.data.employeeId,
+    });
     console.error('[employee-streams] Failed to load employee streams', error);
     return {
       ok: false,

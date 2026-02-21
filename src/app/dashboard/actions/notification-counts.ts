@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { and, count, eq, isNull, or } from 'drizzle-orm';
 
 import { drizzleClientHttp } from '@/db';
@@ -63,6 +64,10 @@ export async function getNotificationCounts(): Promise<NotificationCounts> {
       unreadAuditItems: unreadAuditResult[0]?.count ?? 0,
     };
   } catch (error) {
+    Sentry.logger.error('Failed to fetch notification counts', {
+      error,
+      organizationId: context.organizationId,
+    });
     console.error('Error fetching notification counts:', error);
     return {
       draftStreams: 0,

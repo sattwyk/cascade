@@ -174,7 +174,11 @@ export async function updateDashboardEmployee(
       },
     });
   } catch (error) {
-    Sentry.logger.error('Failed to log employee update', { error, employeeId: existing.id, changes });
+    Sentry.logger.error('Failed to log employee update', {
+      error,
+      employeeId: existing.id,
+      changedFields: Object.keys(changes),
+    });
     console.error('[employees] Failed to log employee update', error);
   }
 
@@ -354,7 +358,7 @@ export async function inviteEmployee(input: unknown): Promise<ActionResult<Invit
     ]);
 
     Sentry.logger.info('Employee invited successfully', {
-      employeeEmail: parsed.data.email,
+      employeeId: result.employeeId,
       organizationId: context.organizationId,
     });
 
@@ -367,7 +371,7 @@ export async function inviteEmployee(input: unknown): Promise<ActionResult<Invit
       },
     };
   } catch (error) {
-    Sentry.logger.error('Failed to invite employee', { error, employeeEmail: parsed.data.email });
+    Sentry.logger.error('Failed to invite employee', { error, organizationId: context.organizationId });
     console.error('[employees] Failed to invite employee', error);
     const message =
       error instanceof Error

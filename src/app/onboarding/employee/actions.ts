@@ -2,6 +2,7 @@
 
 import { cookies } from 'next/headers';
 
+import * as Sentry from '@sentry/nextjs';
 import { start } from 'workflow/api';
 import { z } from 'zod';
 
@@ -83,6 +84,10 @@ export async function completeEmployeeOnboarding(
 
     return { ok: true, data: { redirect: '/dashboard' } };
   } catch (error) {
+    Sentry.logger.error('Unable to complete employee onboarding', {
+      error,
+      hasBackupWallet: Boolean(parsed.data.backupWallet),
+    });
     console.error('[employee-onboarding] Unable to complete onboarding', error);
     const message =
       error instanceof Error

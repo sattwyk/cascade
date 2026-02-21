@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { desc, eq, sql } from 'drizzle-orm';
 
 import { drizzleClientHttp } from '@/db';
@@ -96,16 +97,28 @@ export async function getAuditTrail(
 
     const statusHistory = statusHistoryResult.status === 'fulfilled' ? statusHistoryResult.value : [];
     if (statusHistoryResult.status === 'rejected') {
+      Sentry.logger.error('Error fetching employee status history', {
+        error: statusHistoryResult.reason,
+        organizationId,
+      });
       console.error('Error fetching employee status history:', statusHistoryResult.reason);
     }
 
     const streamEventsData = streamEventsResult.status === 'fulfilled' ? streamEventsResult.value : [];
     if (streamEventsResult.status === 'rejected') {
+      Sentry.logger.error('Error fetching stream events', {
+        error: streamEventsResult.reason,
+        organizationId,
+      });
       console.error('Error fetching stream events:', streamEventsResult.reason);
     }
 
     const orgActivity = orgActivityResult.status === 'fulfilled' ? orgActivityResult.value : [];
     if (orgActivityResult.status === 'rejected') {
+      Sentry.logger.error('Error fetching organization activity', {
+        error: orgActivityResult.reason,
+        organizationId,
+      });
       console.error('Error fetching organization activity:', orgActivityResult.reason);
     }
 
@@ -159,6 +172,11 @@ export async function getAuditTrail(
       total,
     };
   } catch (error) {
+    Sentry.logger.error('Error fetching audit trail', {
+      error,
+      organizationId,
+      category: options?.category ?? null,
+    });
     console.error('Error fetching audit trail:', error);
     return {
       entries: [],

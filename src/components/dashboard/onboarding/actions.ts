@@ -82,7 +82,6 @@ export async function requestOnboardingVerification(input: unknown): Promise<Act
     const result = await run.returnValue;
 
     Sentry.logger.info('Verification code sent successfully', {
-      email: parsed.data.email,
       sessionId: result.sessionId,
     });
     return {
@@ -93,7 +92,7 @@ export async function requestOnboardingVerification(input: unknown): Promise<Act
       },
     };
   } catch (error) {
-    Sentry.logger.error('Failed to send verification code', { error, email: parsed.data.email });
+    Sentry.logger.error('Failed to send verification code', { error });
     console.error('[onboarding] Failed to send verification code', error);
     return {
       ok: false,
@@ -114,7 +113,6 @@ export async function verifyOnboardingCode(input: unknown): Promise<ActionResult
     const result = await run.returnValue;
 
     Sentry.logger.info('Verification code verified successfully', {
-      email: parsed.data.email,
       sessionId: result.sessionId,
     });
     return {
@@ -127,7 +125,6 @@ export async function verifyOnboardingCode(input: unknown): Promise<ActionResult
   } catch (error) {
     Sentry.logger.error('Verification code verification failed', {
       error,
-      email: parsed.data.email,
       sessionId: parsed.data.sessionId,
     });
     console.error('[onboarding] Verification failed', error);
@@ -189,12 +186,15 @@ export async function completeEmployerOnboarding(input: unknown): Promise<Action
     Sentry.logger.info('Employer onboarding completed successfully', {
       organizationId: result.organizationId,
       organizationUserId: result.organizationUserId,
-      email: normalizedEmail,
     });
 
     return { ok: true, data: result };
   } catch (error) {
-    Sentry.logger.error('Employer onboarding failed', { error, payload });
+    Sentry.logger.error('Employer onboarding failed', {
+      error,
+      selectedMint: payload.selectedMint,
+      timezone: payload.timezone,
+    });
     console.error('[onboarding] Failed to complete employer onboarding', error);
     const message =
       error instanceof Error
