@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -98,6 +99,11 @@ export async function createStreamRecord(input: CreateStreamInput) {
       },
     });
 
+    Sentry.logger.info('Stream record created successfully', {
+      streamId: streamRecord.id,
+      employeeId: input.employeeId,
+    });
+
     return {
       ok: true,
       streamId: streamRecord.id,
@@ -105,6 +111,7 @@ export async function createStreamRecord(input: CreateStreamInput) {
       createdAt: streamRecord.createdAt,
     } as const;
   } catch (error) {
+    Sentry.logger.error('Failed to create stream record', { error, input });
     console.error('Failed to create stream record:', error);
     return {
       ok: false,
@@ -213,8 +220,14 @@ export async function recordStreamTopUp(input: unknown): Promise<RecordStreamTop
       },
     });
 
+    Sentry.logger.info('Stream top up recorded successfully', {
+      streamId: parsed.data.streamId,
+      amount: parsed.data.amount,
+    });
+
     return { ok: true, totalDeposited: updatedDeposited };
   } catch (error) {
+    Sentry.logger.error('Failed to record stream top up', { error, streamId: parsed.data.streamId });
     console.error('[stream-top-up] Failed to record top up', error);
     return {
       ok: false,

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+import * as Sentry from '@sentry/nextjs';
+
 import { triggerAlertGeneration } from '@/app/dashboard/actions/workflows';
 
 /**
@@ -7,9 +9,11 @@ import { triggerAlertGeneration } from '@/app/dashboard/actions/workflows';
  * POST /api/workflows/generate-alerts
  */
 export async function POST() {
+  Sentry.logger.info('Triggering manual alert generation workflow');
   const result = await triggerAlertGeneration();
 
   if (result.ok) {
+    Sentry.logger.info('Alert generation workflow started successfully', { runId: result.runId });
     return NextResponse.json({
       success: true,
       message: 'Alert generation workflow started',
@@ -17,6 +21,7 @@ export async function POST() {
     });
   }
 
+  Sentry.logger.error('Failed to start alert generation workflow', { error: result.error });
   return NextResponse.json(
     {
       success: false,

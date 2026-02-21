@@ -4,6 +4,8 @@ import { useEffect } from 'react';
 
 import Link from 'next/link';
 
+import * as Sentry from '@sentry/nextjs';
+
 type ErrorPageProps = {
   error: Error & { digest?: string };
   reset: () => void;
@@ -11,6 +13,8 @@ type ErrorPageProps = {
 
 export default function Error({ error, reset }: ErrorPageProps) {
   useEffect(() => {
+    Sentry.captureException(error);
+    Sentry.logger.error('Root error boundary caught error', { error, digest: error.digest });
     console.error(error);
   }, [error]);
 

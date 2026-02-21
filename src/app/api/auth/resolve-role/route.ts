@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
+import * as Sentry from '@sentry/nextjs';
 import { eq } from 'drizzle-orm';
 
 import { drizzleClientHttp } from '@/db';
@@ -65,8 +66,15 @@ export async function POST(request: Request) {
         : undefined;
       const roleMatch = records.find((record) => record.role === intendedRole);
       user = exactMatch ?? roleMatch ?? records[0];
+
+      Sentry.logger.info('Resolved user role', {
+        walletAddress,
+        role: user?.role,
+        organizationId: user?.organizationId,
+      });
     } catch (error) {
       dbUnavailable = true;
+      Sentry.logger.error('Wallet role lookup failed', { error, walletAddress });
       console.error('[auth] Wallet role lookup failed', error);
     }
   }

@@ -2,6 +2,10 @@
 
 import { useEffect } from 'react';
 
+import Error from 'next/error';
+
+import * as Sentry from '@sentry/nextjs';
+
 type GlobalErrorProps = {
   error: Error & { digest?: string };
   reset: () => void;
@@ -9,7 +13,8 @@ type GlobalErrorProps = {
 
 export default function GlobalError({ error, reset }: GlobalErrorProps) {
   useEffect(() => {
-    console.error(error);
+    Sentry.captureException(error);
+    Sentry.logger.error('Global error boundary caught unhandled error', { error, digest: error.digest });
   }, [error]);
 
   return (

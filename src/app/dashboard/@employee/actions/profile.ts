@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 
+import * as Sentry from '@sentry/nextjs';
 import { and, eq } from 'drizzle-orm';
 
 import { drizzleClientHttp } from '@/db';
@@ -99,6 +100,7 @@ export async function getEmployeeProfile(): Promise<ActionResult<EmployeeProfile
       },
     };
   } catch (error) {
+    Sentry.logger.error('Error fetching employee profile', { error });
     console.error('Error fetching employee profile:', error);
     return {
       ok: false,
@@ -147,11 +149,14 @@ export async function updateEmployeeProfile(data: {
 
     revalidatePath('/dashboard/profile');
 
+    Sentry.logger.info('Employee profile updated', { employeeId });
+
     return {
       ok: true,
       data: { success: true },
     };
   } catch (error) {
+    Sentry.logger.error('Error updating employee profile', { error });
     console.error('Error updating employee profile:', error);
     return {
       ok: false,
@@ -195,11 +200,14 @@ export async function leaveOrganization(): Promise<ActionResult<{ success: boole
 
     revalidatePath('/dashboard');
 
+    Sentry.logger.info('Employee left organization', { employeeId, organizationId });
+
     return {
       ok: true,
       data: { success: true },
     };
   } catch (error) {
+    Sentry.logger.error('Error leaving organization', { error });
     console.error('Error leaving organization:', error);
     return {
       ok: false,

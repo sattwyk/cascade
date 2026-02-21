@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { and, desc, eq, isNull, or } from 'drizzle-orm';
 
 import { drizzleClientHttp } from '@/db';
@@ -129,8 +130,11 @@ export async function createAlert(input: CreateAlertInput) {
       })
       .returning({ id: alerts.id });
 
+    Sentry.logger.info('Alert created successfully', { alertId: alert.id, type: input.type, severity: input.severity });
+
     return { ok: true, alertId: alert.id, duplicate: false } as const;
   } catch (error) {
+    Sentry.logger.error('Failed to create alert', { error, input });
     console.error('Failed to create alert:', error);
     return {
       ok: false,
@@ -160,8 +164,10 @@ export async function acknowledgeAlert(alertId: string) {
       })
       .where(and(eq(alerts.id, alertId), eq(alerts.organizationId, organizationId)));
 
+    Sentry.logger.info('Alert acknowledged', { alertId });
     return { ok: true } as const;
   } catch (error) {
+    Sentry.logger.error('Failed to acknowledge alert', { error, alertId });
     console.error('Failed to acknowledge alert:', error);
     return {
       ok: false,
@@ -191,8 +197,10 @@ export async function resolveAlert(alertId: string) {
       })
       .where(and(eq(alerts.id, alertId), eq(alerts.organizationId, organizationId)));
 
+    Sentry.logger.info('Alert resolved', { alertId });
     return { ok: true } as const;
   } catch (error) {
+    Sentry.logger.error('Failed to resolve alert', { error, alertId });
     console.error('Failed to resolve alert:', error);
     return {
       ok: false,
@@ -221,8 +229,10 @@ export async function dismissAlert(alertId: string) {
       })
       .where(and(eq(alerts.id, alertId), eq(alerts.organizationId, organizationId)));
 
+    Sentry.logger.info('Alert dismissed', { alertId });
     return { ok: true } as const;
   } catch (error) {
+    Sentry.logger.error('Failed to dismiss alert', { error, alertId });
     console.error('Failed to dismiss alert:', error);
     return {
       ok: false,
@@ -260,8 +270,10 @@ export async function autoResolveAlerts(streamId: string, alertTypes: AlertType[
         ),
       );
 
+    Sentry.logger.info('Auto-resolved alerts', { streamId, alertTypes });
     return { ok: true } as const;
   } catch (error) {
+    Sentry.logger.error('Failed to auto-resolve alerts', { error, streamId, alertTypes });
     console.error('Failed to auto-resolve alerts:', error);
     return { ok: false, reason: 'Failed to auto-resolve alerts' } as const;
   }

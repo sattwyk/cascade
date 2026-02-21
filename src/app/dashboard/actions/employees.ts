@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 
+import * as Sentry from '@sentry/nextjs';
 import { and, eq } from 'drizzle-orm';
 import { start } from 'workflow/api';
 import { z } from 'zod';
@@ -31,6 +32,7 @@ export async function listDashboardEmployees(): Promise<ActionResult<DashboardEm
     const employees = await getEmployeesForDashboard();
     return { ok: true, data: employees };
   } catch (error) {
+    Sentry.logger.error('Failed to load dashboard employees', { error });
     console.error('[employees] Failed to load dashboard employees', error);
     const message =
       error instanceof Error && error.message ? error.message : 'We could not load your employees. Please try again.';
@@ -172,6 +174,7 @@ export async function updateDashboardEmployee(
       },
     });
   } catch (error) {
+    Sentry.logger.error('Failed to log employee update', { error, employeeId: existing.id, changes });
     console.error('[employees] Failed to log employee update', error);
   }
 
@@ -350,6 +353,11 @@ export async function inviteEmployee(input: unknown): Promise<ActionResult<Invit
       revalidatePath('/dashboard/employees/invitations'),
     ]);
 
+    Sentry.logger.info('Employee invited successfully', {
+      employeeEmail: parsed.data.email,
+      organizationId: context.organizationId,
+    });
+
     return {
       ok: true,
       data: {
@@ -359,6 +367,7 @@ export async function inviteEmployee(input: unknown): Promise<ActionResult<Invit
       },
     };
   } catch (error) {
+    Sentry.logger.error('Failed to invite employee', { error, employeeEmail: parsed.data.email });
     console.error('[employees] Failed to invite employee', error);
     const message =
       error instanceof Error

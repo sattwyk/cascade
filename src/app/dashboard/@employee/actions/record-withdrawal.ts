@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -119,8 +120,14 @@ export async function recordEmployeeWithdrawal(input: unknown): Promise<RecordEm
       },
     });
 
+    Sentry.logger.info('Employee withdrawal recorded', { streamId: parsed.data.streamId, amount: parsed.data.amount });
     return { ok: true };
   } catch (error) {
+    Sentry.logger.error('Failed to record withdrawal', {
+      error,
+      streamId: parsed.data.streamId,
+      amount: parsed.data.amount,
+    });
     console.error('[employee-withdrawal] Failed to record withdrawal', error);
     return {
       ok: false,
