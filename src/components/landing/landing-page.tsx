@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
 import { UiWallet, useWalletUi, useWalletUiWallet } from '@wallet-ui/react';
-import { ArrowRight, Check, Loader2, Wallet, Zap } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Check, Loader2, Wallet, X, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -18,6 +18,31 @@ import { Card } from '@/components/ui/card';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { AccountState } from '@/lib/enums';
 import { cn } from '@/lib/utils';
+
+function DevnetBanner() {
+  const [dismissed, setDismissed] = useState(false);
+
+  if (dismissed) return null;
+
+  return (
+    <div className="fixed top-0 right-0 left-0 z-100 border-b border-border/60 bg-background/90 backdrop-blur-md">
+      <div className="container mx-auto flex items-center justify-center gap-3 px-4 py-2.5 text-sm">
+        <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <p className="text-muted-foreground">
+          Work in progress &mdash; running on <span className="font-semibold text-foreground">Solana devnet</span> only.
+          Not for real funds or production use.
+        </p>
+        <button
+          onClick={() => setDismissed(true)}
+          className="ml-1 shrink-0 rounded-sm p-0.5 text-muted-foreground/60 transition-colors hover:text-foreground"
+          aria-label="Dismiss banner"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function persistAccountState(state: AccountState) {
   if (typeof window === 'undefined') return;
@@ -98,8 +123,8 @@ function LandingNav({
   return (
     <nav
       className={cn(
-        'fixed top-4 left-1/2 z-50 -translate-x-1/2 transition-all duration-500',
-        scrolled ? 'top-2' : 'top-4',
+        'fixed left-1/2 z-50 -translate-x-1/2 transition-all duration-500',
+        scrolled ? 'top-12' : 'top-14',
         mounted ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0',
       )}
     >
@@ -148,7 +173,7 @@ function LandingHeroSection({
   onEmployeeCta: () => void;
 }) {
   return (
-    <section className="relative overflow-hidden px-4 pt-32 pb-32">
+    <section className="relative overflow-hidden px-4 pt-40 pb-32">
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(45%_35%_at_50%_40%,hsl(var(--primary)/0.05),transparent)]" />
 
       <div className="container mx-auto">
@@ -751,6 +776,7 @@ export const LandingPage = ({ showNewLandingMessaging = false }: LandingPageProp
 
   return (
     <div className="min-h-screen bg-background">
+      <DevnetBanner />
       <LandingNav
         scrolled={scrolled}
         mounted={mounted}
