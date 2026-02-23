@@ -186,8 +186,8 @@ Mark all items complete before production go-live:
 - [x] Localnet integration tests required in CI.
 - [x] Time-related magic numbers replaced with named constants.
 - [ ] External audit completed and all high/critical findings resolved.
-- [ ] Threat model + incident runbook + key management docs merged.
-- [ ] Upgrade authority policy implemented with multisig controls.
+- [x] Threat model + incident runbook + key management docs merged.
+- [x] Upgrade authority policy implemented with multisig controls.
 - [ ] Final dry-run performed on devnet/staging with production-like config.
 
 ## Suggested Execution Order
