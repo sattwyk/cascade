@@ -181,7 +181,7 @@ Mark all items complete before production go-live:
 
 - [x] Checked timestamp math in all time-sensitive instructions.
 - [x] All token transfers migrated to checked transfer API.
-- [ ] Vault token account is explicitly closed via token-program CPI with PDA signer.
+- [x] Vault token account is explicitly closed via token-program CPI with PDA signer.
 - [ ] Invariant test suite added and running in CI.
 - [ ] Localnet integration tests required in CI.
 - [ ] Time-related magic numbers replaced with named constants.
