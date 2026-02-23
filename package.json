@@ -9,6 +9,7 @@
     "codama:js": "codama run js -c ./anchor/codama.js",
     "ci": "pnpm run build && pnpm run lint && pnpm run format:check && pnpm run codama:js",
     "dev": "next dev",
+    "docs:sync": "bash ./scripts/sync-docs.sh",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
@@ -111,7 +112,7 @@
   "devDependencies": {
     "@codama/cli": "^1.5.0",
     "@codama/nodes-from-anchor": "^1.3.9",
-    "@codama/renderers-js": "^2.0.2",
+    "@codama/renderers-js": "^1.5.5",
     "@eslint/eslintrc": "^3.3.3",
     "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
     "@tailwindcss/postcss": "^4.2.0",

@@ -70,7 +70,6 @@ drizzle.prod.config.ts
 
 # agents
 .agents
-AGENTS.md
 .llms
 
 # Nix
