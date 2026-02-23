@@ -231,7 +231,7 @@ export function AppSidebar() {
           type="button"
           onClick={toggleSidebar}
           aria-label={state === 'collapsed' ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="absolute top-1/2 right-[-18px] z-50 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-sidebar-border bg-sidebar shadow-sm transition-all duration-300 ease-in-out hover:bg-sidebar-accent md:flex"
+          className="absolute top-1/2 -right-4.5 z-50 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-sidebar-border bg-sidebar shadow-sm transition-all duration-300 ease-in-out hover:bg-sidebar-accent md:flex"
         >
           {state === 'collapsed' ? <ChevronLeft className="size-4 rotate-180" /> : <ChevronLeft className="size-4" />}
         </button>

@@ -2,7 +2,7 @@ import { differenceInHours, parseISO } from 'date-fns';
 import { FatalError } from 'workflow';
 
 import { createAlert, type CreateAlertInput } from '@/features/alerts/server/actions/alerts';
-import { getDashboardStreams } from '@/features/streams/server/actions/streams';
+import { getDashboardStreams } from '@/features/streams/server/actions/employer-streams';
 import type { DashboardStream } from '@/types/stream';
 
 export type AlertGenerationResult = {

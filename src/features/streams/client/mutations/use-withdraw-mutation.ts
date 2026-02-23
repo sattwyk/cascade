@@ -9,11 +9,11 @@ import { fetchMaybePaymentStream, getWithdrawInstruction } from '@project/anchor
 
 import { toastTx } from '@/components/toast-tx';
 import { EMPLOYEE_DASHBOARD_OVERVIEW_QUERY_KEY } from '@/features/employees/client/queries/use-employee-dashboard-overview-query';
-import type { EmployeeDashboardOverview } from '@/features/employees/server/actions/overview';
+import type { EmployeeDashboardOverview } from '@/features/employees/server/actions/employee-dashboard-overview';
 import { createActivityLog } from '@/features/organization/server/actions/activity-log';
 import { EMPLOYEE_WITHDRAWALS_QUERY_KEY } from '@/features/streams/client/queries/use-employee-withdrawals-query';
-import { recordEmployeeWithdrawal } from '@/features/streams/server/actions/record-withdrawal';
-import type { EmployeeWithdrawal } from '@/features/streams/server/actions/withdrawal-history';
+import { recordEmployeeWithdrawal } from '@/features/streams/server/actions/employee-record-withdrawal';
+import type { EmployeeWithdrawal } from '@/features/streams/server/actions/employee-withdrawal-history';
 
 import { useInvalidatePaymentStreamQuery } from '../queries/use-invalidate-payment-stream-query';
 import { derivePaymentStream, deriveVault, getErrorMessage, toBaseUnits } from '../utils/derive-cascade-pdas';

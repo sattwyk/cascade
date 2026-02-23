@@ -1,7 +1,7 @@
 import { employerDashboardStreamsViewFlag } from '@/core/config/flags';
 import { DashboardFeatureFlagDisabled } from '@/core/ui/feature-flag-disabled';
-import { StreamsTab } from '@/features/streams/components/streams-tab';
-import { getStreamsForDashboard } from '@/features/streams/server/queries/streams';
+import { StreamsTab } from '@/features/streams/components/employer-streams-tab';
+import { getStreamsForDashboard } from '@/features/streams/server/queries/employer-list-streams';
 
 export default async function DashboardStreamsPage() {
   if (!(await employerDashboardStreamsViewFlag())) {

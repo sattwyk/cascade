@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/core/ui/dial
 import { Input } from '@/core/ui/input';
 import { Label } from '@/core/ui/label';
 import { useTopUpStreamMutation } from '@/features/streams/client/mutations/use-top-up-stream-mutation';
-import { useDashboardStreamsQuery } from '@/features/streams/client/queries/use-dashboard-streams-query';
+import { useDashboardStreamsQuery } from '@/features/streams/client/queries/use-employer-streams-query';
 import type { DashboardStream } from '@/types/stream';
 
 interface TopUpStreamModalProps {

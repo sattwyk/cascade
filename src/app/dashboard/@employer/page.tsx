@@ -3,7 +3,7 @@ import { DashboardFeatureFlagDisabled } from '@/core/ui/feature-flag-disabled';
 import { OverviewTab } from '@/features/organization/components/overview-tab';
 import { getActivityLog } from '@/features/organization/server/actions/activity-log';
 import { resolveOrganizationContext } from '@/features/organization/server/actions/organization-context';
-import { getStreamsForDashboard } from '@/features/streams/server/queries/streams';
+import { getStreamsForDashboard } from '@/features/streams/server/queries/employer-list-streams';
 
 export default async function DashboardOverviewPage() {
   if (!(await employerDashboardOverviewViewFlag())) {

@@ -13,9 +13,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/core/ui/dial
 import { Input } from '@/core/ui/input';
 import { Label } from '@/core/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/core/ui/select';
-import { useDashboardEmployeesQuery } from '@/features/employees/client/queries/use-dashboard-employees-query';
-import { useInvalidateDashboardEmployeesQuery } from '@/features/employees/client/queries/use-invalidate-dashboard-employees-query';
-import { inviteEmployee } from '@/features/employees/server/actions/employees';
+import { useDashboardEmployeesQuery } from '@/features/employees/client/queries/use-employer-employees-query';
+import { useInvalidateDashboardEmployeesQuery } from '@/features/employees/client/queries/use-invalidate-employer-employees-query';
+import { inviteEmployee } from '@/features/employees/server/actions/employer-manage-employees';
 import { useDashboard } from '@/features/organization/components/layout/employer-dashboard-context';
 
 type Step = 'profile' | 'settings' | 'review';

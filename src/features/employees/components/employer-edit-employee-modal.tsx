@@ -11,8 +11,8 @@ import { Card, CardContent } from '@/core/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/core/ui/dialog';
 import { Input } from '@/core/ui/input';
 import { Label } from '@/core/ui/label';
-import { useInvalidateDashboardEmployeesQuery } from '@/features/employees/client/queries/use-invalidate-dashboard-employees-query';
-import { updateDashboardEmployee } from '@/features/employees/server/actions/employees';
+import { useInvalidateDashboardEmployeesQuery } from '@/features/employees/client/queries/use-invalidate-employer-employees-query';
+import { updateDashboardEmployee } from '@/features/employees/server/actions/employer-manage-employees';
 import type { EmployeeSummary } from '@/types/employee';
 
 type Step = 'profile' | 'settings' | 'review';

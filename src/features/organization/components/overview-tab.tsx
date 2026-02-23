@@ -21,12 +21,12 @@ import {
 } from '@/core/utils/stream-insights';
 import { useGetBalanceQuery } from '@/features/account/client/queries/use-get-balance-query';
 import { useGetTokenAccountsQuery } from '@/features/account/client/queries/use-get-token-accounts-query';
-import { useDashboardAlertsQuery } from '@/features/alerts/client/queries/use-dashboard-alerts-query';
+import { useDashboardAlertsQuery } from '@/features/alerts/client/queries/use-employer-alerts-query';
 import { OverviewAlerts } from '@/features/alerts/components/overview-alerts';
-import { useDashboardEmployeesQuery } from '@/features/employees/client/queries/use-dashboard-employees-query';
-import { useDashboardActivityQuery } from '@/features/organization/client/queries/use-dashboard-activity-query';
+import { useDashboardEmployeesQuery } from '@/features/employees/client/queries/use-employer-employees-query';
+import { useDashboardActivityQuery } from '@/features/organization/client/queries/use-employer-activity-query';
 import type { ActivityLogEntry } from '@/features/organization/server/actions/activity-log';
-import { useDashboardStreamsQuery } from '@/features/streams/client/queries/use-dashboard-streams-query';
+import { useDashboardStreamsQuery } from '@/features/streams/client/queries/use-employer-streams-query';
 import type { DashboardStream } from '@/types/stream';
 
 import { useDashboard } from './layout/employer-dashboard-context';

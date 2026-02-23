@@ -12,7 +12,10 @@ import {
   saveSetupProgress,
   type SetupProgress,
 } from '@/core/state-persistence';
-import { completeOnboardingTask, type OnboardingTask } from '@/features/onboarding/server/actions/onboarding-tasks';
+import {
+  completeOnboardingTask,
+  type OnboardingTask,
+} from '@/features/onboarding/server/actions/employer-onboarding-tasks';
 import { getSetupSnapshot, updateAccountState } from '@/features/organization/server/actions/account-state';
 import type { EmployeeSummary } from '@/types/employee';
 

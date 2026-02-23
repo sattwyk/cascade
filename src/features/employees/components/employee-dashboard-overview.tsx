@@ -14,11 +14,11 @@ import { Button } from '@/core/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/core/ui/card';
 import { EmptyState } from '@/core/ui/empty-state';
 import { useEmployeeDashboardOverviewQuery } from '@/features/employees/client/queries/use-employee-dashboard-overview-query';
-import type { EmployeeDashboardOverview as EmployeeDashboardOverviewData } from '@/features/employees/server/actions/overview';
+import type { EmployeeDashboardOverview as EmployeeDashboardOverviewData } from '@/features/employees/server/actions/employee-dashboard-overview';
 import { useRefreshActivityMutation } from '@/features/streams/client/mutations/use-refresh-activity-mutation';
 
 import { useEmployeeDashboard } from './employee-dashboard-context';
-import { WithdrawModal } from './withdraw-modal';
+import { WithdrawModal } from './employee-withdraw-modal';
 
 const AMOUNT_DECIMALS = 6;
 const SECONDS_PER_HOUR = 3600;

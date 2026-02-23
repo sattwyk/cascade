@@ -12,9 +12,9 @@ import { hasPositiveTokenBalance, NULL_ADDRESS } from '@/core/solana/token-helpe
 import { Button } from '@/core/ui/button';
 import { EmptyState } from '@/core/ui/empty-state';
 import { useGetTokenAccountsQuery } from '@/features/account/client/queries/use-get-token-accounts-query';
-import { useDashboardEmployeesQuery } from '@/features/employees/client/queries/use-dashboard-employees-query';
+import { useDashboardEmployeesQuery } from '@/features/employees/client/queries/use-employer-employees-query';
 import { useDashboard } from '@/features/organization/components/layout/employer-dashboard-context';
-import { useDashboardStreamsQuery } from '@/features/streams/client/queries/use-dashboard-streams-query';
+import { useDashboardStreamsQuery } from '@/features/streams/client/queries/use-employer-streams-query';
 import type { DashboardStream } from '@/types/stream';
 
 import { StreamDetailDrawer } from './stream-detail-drawer';

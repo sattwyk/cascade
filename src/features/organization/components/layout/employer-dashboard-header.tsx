@@ -3,7 +3,7 @@
 import { useIsMobile } from '@/core/hooks/use-mobile';
 import { SidebarTrigger, useSidebar } from '@/core/ui/sidebar';
 import { WalletBanner } from '@/features/account/components/wallet-banner';
-import { OnboardingBanner } from '@/features/onboarding/components/onboarding-banner';
+import { OnboardingBanner } from '@/features/onboarding/components/employer-onboarding-banner';
 
 export function DashboardHeader() {
   const isMobile = useIsMobile();

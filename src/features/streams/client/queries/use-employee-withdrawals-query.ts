@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   getEmployeeWithdrawalHistory,
   type EmployeeWithdrawal,
-} from '@/features/streams/server/actions/withdrawal-history';
+} from '@/features/streams/server/actions/employee-withdrawal-history';
 
 export const EMPLOYEE_WITHDRAWALS_QUERY_KEY = ['employee-dashboard', 'withdrawals'] as const;
 

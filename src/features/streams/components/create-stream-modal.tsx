@@ -18,7 +18,7 @@ import { Input } from '@/core/ui/input';
 import { Label } from '@/core/ui/label';
 import { ellipsify } from '@/core/utils';
 import { useGetTokenAccountsQuery } from '@/features/account/client/queries/use-get-token-accounts-query';
-import { useDashboardEmployeesQuery } from '@/features/employees/client/queries/use-dashboard-employees-query';
+import { useDashboardEmployeesQuery } from '@/features/employees/client/queries/use-employer-employees-query';
 import { useDashboard } from '@/features/organization/components/layout/employer-dashboard-context';
 import { useCreateStreamMutation } from '@/features/streams/client/mutations/use-create-stream-mutation';
 import { getErrorMessage } from '@/features/streams/client/utils/derive-cascade-pdas';

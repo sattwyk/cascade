@@ -9,8 +9,8 @@ import { fetchMaybePaymentStream, getCreateStreamInstructionAsync } from '@proje
 import { toastTx } from '@/components/toast-tx';
 import { triggerAlertGeneration } from '@/features/alerts/server/actions/workflows';
 import { createActivityLog } from '@/features/organization/server/actions/activity-log';
-import { useInvalidateDashboardStreamsQuery } from '@/features/streams/client/queries/use-invalidate-dashboard-streams-query';
-import { createStreamRecord } from '@/features/streams/server/actions/streams';
+import { useInvalidateDashboardStreamsQuery } from '@/features/streams/client/queries/use-invalidate-employer-streams-query';
+import { createStreamRecord } from '@/features/streams/server/actions/employer-streams';
 
 import { useInvalidatePaymentStreamQuery } from '../queries/use-invalidate-payment-stream-query';
 import { derivePaymentStream, deriveVault, getErrorMessage, toBaseUnits } from '../utils/derive-cascade-pdas';

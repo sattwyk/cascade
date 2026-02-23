@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { getStreamActivity, type StreamActivity } from '@/features/streams/server/actions/stream-activity';
+import { getStreamActivity, type StreamActivity } from '@/features/streams/server/actions/employer-stream-activity';
 
 type UseStreamActivityQueryOptions = {
   streamId: string;

@@ -15,7 +15,7 @@ import { Checkbox } from '@/core/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/core/ui/dialog';
 import { Label } from '@/core/ui/label';
 import { useEmergencyWithdrawMutation } from '@/features/streams/client/mutations/use-emergency-withdraw-mutation';
-import { useDashboardStreamsQuery } from '@/features/streams/client/queries/use-dashboard-streams-query';
+import { useDashboardStreamsQuery } from '@/features/streams/client/queries/use-employer-streams-query';
 import type { DashboardStream } from '@/types/stream';
 
 interface EmergencyWithdrawModalProps {

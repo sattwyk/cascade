@@ -28,7 +28,7 @@ import {
   leaveOrganization,
   updateEmployeeProfile,
   type EmployeeProfile,
-} from '@/features/employees/server/actions/profile';
+} from '@/features/employees/server/actions/employee-profile';
 
 export default function EmployeeProfilePage() {
   const { account, connected } = useSolana();

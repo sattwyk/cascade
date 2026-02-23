@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 
-import { OnboardingPage } from '@/features/onboarding/components/onboarding-page';
+import { OnboardingPage } from '@/features/onboarding/components/employer-onboarding-page';
 import { DashboardProvider } from '@/features/organization/components/layout/employer-dashboard-context';
 
 const fallback = <div className="p-6 text-sm text-muted-foreground">Loading onboarding…</div>;

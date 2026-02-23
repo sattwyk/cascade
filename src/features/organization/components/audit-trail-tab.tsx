@@ -10,7 +10,7 @@ import { Button } from '@/core/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/core/ui/card';
 import { EmptyState } from '@/core/ui/empty-state';
 import { Input } from '@/core/ui/input';
-import { useDashboardAuditTrailQuery } from '@/features/organization/client/queries/use-dashboard-audit-trail-query';
+import { useDashboardAuditTrailQuery } from '@/features/organization/client/queries/use-employer-audit-trail-query';
 import { useDashboard } from '@/features/organization/components/layout/employer-dashboard-context';
 import type { AuditTrailEntry } from '@/features/organization/server/actions/get-audit-trail';
 

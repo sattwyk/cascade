@@ -12,7 +12,7 @@ import { Button } from '@/core/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/core/ui/card';
 import { useGetBalanceQuery } from '@/features/account/client/queries/use-get-balance-query';
 import { useGetTokenAccountsQuery } from '@/features/account/client/queries/use-get-token-accounts-query';
-import { useDashboardAlertsQuery } from '@/features/alerts/client/queries/use-dashboard-alerts-query';
+import { useDashboardAlertsQuery } from '@/features/alerts/client/queries/use-employer-alerts-query';
 import { OverviewAlerts } from '@/features/alerts/components/overview-alerts';
 
 import { useDashboard } from './employer-dashboard-context';

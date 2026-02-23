@@ -10,7 +10,7 @@ import { Badge } from '@/core/ui/badge';
 import { Button } from '@/core/ui/button';
 import { Card } from '@/core/ui/card';
 import { EmptyState } from '@/core/ui/empty-state';
-import { WithdrawModal } from '@/features/employees/components/withdraw-modal';
+import { WithdrawModal } from '@/features/employees/components/employee-withdraw-modal';
 
 const AMOUNT_DECIMALS = 6;
 

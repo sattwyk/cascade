@@ -4,7 +4,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 
 import { Card, CardContent } from '@/core/ui/card';
-import { useStreamActivityQuery } from '@/features/streams/client/queries/use-stream-activity-query';
+import { useStreamActivityQuery } from '@/features/streams/client/queries/use-employer-stream-activity-query';
 
 interface StreamActivityHistoryProps {
   streamId: string;

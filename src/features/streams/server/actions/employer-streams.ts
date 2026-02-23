@@ -9,7 +9,7 @@ import { streamEvents, streams } from '@/core/db/schema';
 import { toNumericString } from '@/core/numeric';
 import { createActivityLog } from '@/features/organization/server/actions/activity-log';
 import { resolveOrganizationContext } from '@/features/organization/server/actions/organization-context';
-import { getStreamsForDashboard } from '@/features/streams/server/queries/streams';
+import { getStreamsForDashboard } from '@/features/streams/server/queries/employer-list-streams';
 import type { DashboardStream } from '@/types/stream';
 
 export async function getDashboardStreams(): Promise<DashboardStream[]> {

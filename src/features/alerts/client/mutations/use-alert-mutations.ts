@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 
 import { acknowledgeAlert, dismissAlert, resolveAlert } from '@/features/alerts/server/actions/alerts';
 
-import { useInvalidateDashboardAlertsQuery } from '../queries/use-invalidate-dashboard-alerts-query';
+import { useInvalidateDashboardAlertsQuery } from '../queries/use-invalidate-employer-alerts-query';
 
 export function useAcknowledgeAlertMutation() {
   const invalidateAlerts = useInvalidateDashboardAlertsQuery();

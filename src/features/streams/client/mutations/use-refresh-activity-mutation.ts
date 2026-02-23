@@ -7,9 +7,9 @@ import { getRefreshActivityInstruction } from '@project/anchor';
 
 import { toastTx } from '@/components/toast-tx';
 import { EMPLOYEE_DASHBOARD_OVERVIEW_QUERY_KEY } from '@/features/employees/client/queries/use-employee-dashboard-overview-query';
-import type { EmployeeDashboardOverview } from '@/features/employees/server/actions/overview';
+import type { EmployeeDashboardOverview } from '@/features/employees/server/actions/employee-dashboard-overview';
 import { createActivityLog } from '@/features/organization/server/actions/activity-log';
-import { recordEmployeeActivityRefresh } from '@/features/streams/server/actions/refresh-activity';
+import { recordEmployeeActivityRefresh } from '@/features/streams/server/actions/employee-refresh-activity';
 
 import { useInvalidatePaymentStreamQuery } from '../queries/use-invalidate-payment-stream-query';
 import { derivePaymentStream, getErrorMessage } from '../utils/derive-cascade-pdas';

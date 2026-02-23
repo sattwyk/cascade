@@ -12,12 +12,12 @@ import { hasPositiveTokenBalance, NULL_ADDRESS } from '@/core/solana/token-helpe
 import { Button } from '@/core/ui/button';
 import { EmptyState } from '@/core/ui/empty-state';
 import { useGetTokenAccountsQuery } from '@/features/account/client/queries/use-get-token-accounts-query';
-import { useDashboardEmployeesQuery } from '@/features/employees/client/queries/use-dashboard-employees-query';
+import { useDashboardEmployeesQuery } from '@/features/employees/client/queries/use-employer-employees-query';
 import { useDashboard } from '@/features/organization/components/layout/employer-dashboard-context';
 import type { EmployeeSummary } from '@/types/employee';
 
-import { EmployeeDetailPanel } from './employee-detail-panel';
-import { EmployeeDirectory } from './employee-directory';
+import { EmployeeDetailPanel } from './employer-employee-detail-panel';
+import { EmployeeDirectory } from './employer-employee-directory';
 
 type EmployeeFilterStatus = 'all' | 'ready' | 'draft' | 'invited' | 'archived';
 

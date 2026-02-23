@@ -1,13 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { getEmployeeStreams, type EmployeeStreamSummary } from '@/features/streams/server/actions/employee-streams';
+import {
+  getEmployeeStreams,
+  type EmployeeStreamSummary,
+} from '@/features/streams/server/actions/employer-employee-streams';
 
 interface UseEmployeeStreamsQueryProps {
   employeeId?: string | null;
   enabled?: boolean;
 }
 
-export type { EmployeeStreamSummary } from '@/features/streams/server/actions/employee-streams';
+export type { EmployeeStreamSummary } from '@/features/streams/server/actions/employer-employee-streams';
 
 export function useEmployeeStreamsQuery({ employeeId, enabled = true }: UseEmployeeStreamsQueryProps) {
   return useQuery<EmployeeStreamSummary[]>({

@@ -1,7 +1,7 @@
 import { employerDashboardEmployeesViewFlag } from '@/core/config/flags';
 import { DashboardFeatureFlagDisabled } from '@/core/ui/feature-flag-disabled';
-import { EmployeesTab } from '@/features/employees/components/employees-tab';
-import { getEmployeesForDashboard } from '@/features/employees/server/queries/employees';
+import { EmployeesTab } from '@/features/employees/components/employer-employees-tab';
+import { getEmployeesForDashboard } from '@/features/employees/server/queries/employer-list-employees';
 
 const EMPLOYEE_FILTER_MAP: Record<string, string> = {
   all: 'directory',

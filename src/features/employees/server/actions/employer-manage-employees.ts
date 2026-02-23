@@ -14,7 +14,7 @@ import { inviteEmployeeWorkflow, type InviteEmployeeWorkflowInput } from '@/core
 import { createActivityLog } from '@/features/organization/server/actions/activity-log';
 import { resolveOrganizationContext } from '@/features/organization/server/actions/organization-context';
 
-import { getEmployeesForDashboard, type DashboardEmployee } from '../queries/employees';
+import { getEmployeesForDashboard, type DashboardEmployee } from '../queries/employer-list-employees';
 
 export type ActionResult<T> =
   | {

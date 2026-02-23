@@ -20,14 +20,15 @@ interface DashboardLayoutProps {
 }
 
 const AddEmployeeModal = dynamic(
-  () => import('@/features/employees/components/add-employee-modal').then((mod) => mod.AddEmployeeModal),
+  () => import('@/features/employees/components/employer-add-employee-modal').then((mod) => mod.AddEmployeeModal),
   {
     loading: () => null,
     ssr: false,
   },
 );
 const ArchiveEmployeeModal = dynamic(
-  () => import('@/features/employees/components/archive-employee-modal').then((mod) => mod.ArchiveEmployeeModal),
+  () =>
+    import('@/features/employees/components/employer-archive-employee-modal').then((mod) => mod.ArchiveEmployeeModal),
   { loading: () => null, ssr: false },
 );
 const CloseStreamModal = dynamic(
@@ -45,7 +46,7 @@ const CreateStreamModal = dynamic(
   },
 );
 const EditEmployeeModal = dynamic(
-  () => import('@/features/employees/components/edit-employee-modal').then((mod) => mod.EditEmployeeModal),
+  () => import('@/features/employees/components/employer-edit-employee-modal').then((mod) => mod.EditEmployeeModal),
   {
     loading: () => null,
     ssr: false,

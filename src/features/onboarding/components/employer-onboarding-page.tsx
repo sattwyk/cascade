@@ -38,7 +38,7 @@ import {
   completeEmployerOnboarding,
   requestOnboardingVerification,
   verifyOnboardingCode,
-} from '@/features/onboarding/server/actions/onboarding';
+} from '@/features/onboarding/server/actions/employer-onboarding';
 import { useDashboard } from '@/features/organization/components/layout/employer-dashboard-context';
 
 // ----------------------------

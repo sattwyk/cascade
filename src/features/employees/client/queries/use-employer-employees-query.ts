@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { listDashboardEmployees } from '@/features/employees/server/actions/employees';
+import { listDashboardEmployees } from '@/features/employees/server/actions/employer-manage-employees';
 import type { EmployeeSummary } from '@/types/employee';
 
 export function useDashboardEmployeesQuery({ enabled = true }: { enabled?: boolean } = {}) {

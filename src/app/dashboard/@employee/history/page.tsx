@@ -1,6 +1,6 @@
 import { employeeDashboardHistoryViewFlag } from '@/core/config/flags';
 import { DashboardFeatureFlagDisabled } from '@/core/ui/feature-flag-disabled';
-import { getEmployeeWithdrawalHistory } from '@/features/streams/server/actions/withdrawal-history';
+import { getEmployeeWithdrawalHistory } from '@/features/streams/server/actions/employee-withdrawal-history';
 
 import { EmployeeHistoryContent } from './employee-history-content';
 

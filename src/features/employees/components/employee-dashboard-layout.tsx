@@ -15,7 +15,7 @@ import { Button } from '@/core/ui/button';
 import { cn } from '@/core/utils';
 import { useEmployeeDashboardOverviewQuery } from '@/features/employees/client/queries/use-employee-dashboard-overview-query';
 
-import { ActivityWarningBanner } from './activity-warning-banner';
+import { ActivityWarningBanner } from './employee-activity-warning-banner';
 
 interface EmployeeDashboardLayoutProps {
   children: React.ReactNode;

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { getDashboardStreams } from '@/features/streams/server/actions/streams';
+import { getDashboardStreams } from '@/features/streams/server/actions/employer-streams';
 import type { DashboardStream } from '@/types/stream';
 
 export const DASHBOARD_STREAMS_QUERY_KEY = ['dashboard-streams'] as const;
