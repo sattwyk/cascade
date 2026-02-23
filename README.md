@@ -26,7 +26,7 @@ Cascade solves this by streaming payments hourly using Solana's blockchain, givi
 
 ## How It Works
 
-Cascade uses a smart contract (Anchor program) on Solana to create **payment streams** between employers and employees:
+Cascade uses an Anchor program on Solana to create **payment streams** between employers and employees:
 
 1. **Employer creates a stream**: Deposits funds into an escrow vault and sets an hourly rate
 2. **Funds vest continuously**: Tokens unlock hourly based on elapsed time
@@ -62,7 +62,7 @@ All transactions are recorded on-chain for complete transparency and auditabilit
 
 ### Technical Highlights
 
-- **Solana Anchor Program**: On-chain smart contract handling payment logic ([Program ID: `6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ`](https://explorer.solana.com/address/6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ))
+- **Solana Anchor Program**: On-chain program handling payment logic ([Program ID: `6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ`](https://explorer.solana.com/address/6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ))
 - **Next.js 16 App Router**: Modern React frontend with Server Components and parallel routes
 - **Gill**: Type-safe Solana web library for transactions and RPC calls
 - **Wallet UI**: Seamless multi-wallet connection with Solana mobile support
@@ -164,7 +164,7 @@ just anchor-deploy     # deploy to devnet (default)
 ```
 cascade/
 ├── anchor/                    # Solana Anchor program (Rust)
-│   ├── programs/cascade/      # Smart contract source
+│   ├── programs/cascade/      # Program source
 │   ├── tests/                 # On-chain program tests
 │   └── src/client/js/         # Generated TypeScript client
 ├── src/
@@ -178,10 +178,12 @@ cascade/
 │   │   ├── onboarding/        # Onboarding wizard components
 │   │   └── ui/                # Shadcn/ui components
 │   ├── features/              # Feature-specific logic
-│   │   ├── cascade/           # Payment stream mutations & queries
-│   │   ├── dashboard/         # Dashboard data access
-│   │   ├── employee/          # Employee management
-│   │   └── streams/           # Stream utilities
+│   │   ├── account/           # Account profile/preferences
+│   │   ├── alerts/            # Notifications and alerting UI
+│   │   ├── employees/         # Employee management
+│   │   ├── onboarding/        # Invite + verification flows
+│   │   ├── organization/      # Organization settings/activity
+│   │   └── streams/           # Stream mutations, queries, utilities
 │   ├── db/                    # Drizzle ORM schema & client
 │   ├── email/                 # React Email templates
 │   ├── workflows/             # Vercel Workflow definitions
@@ -208,7 +210,7 @@ cascade/
 ### Creating a Payment Stream (Employer)
 
 ```typescript
-import { getCreateStreamInstructionAsync } from 'anchor/src/client/js';
+import { getCreateStreamInstructionAsync } from '@project/anchor';
 
 const instruction = await getCreateStreamInstructionAsync({
   employer, // Employer wallet signer
@@ -225,7 +227,7 @@ const instruction = await getCreateStreamInstructionAsync({
 ### Withdrawing Funds (Employee)
 
 ```typescript
-import { getWithdrawInstruction } from 'anchor/src/client/js';
+import { getWithdrawInstruction } from '@project/anchor';
 
 const withdrawIx = getWithdrawInstruction({
   employee, // Employee wallet signer
@@ -312,8 +314,8 @@ pnpm test
 # Run Anchor program tests
 pnpm anchor-test
 
-# Run specific test file
-pnpm test src/features/cascade/__tests__/stream-helpers.test.ts
+# Run a specific test file
+pnpm exec vitest run anchor/tests/cascade.test.ts
 ```
 
 ### Code Quality
@@ -375,7 +377,7 @@ This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE
 
 Built with:
 
-- [Anchor](https://www.anchor-lang.com/) - Solana smart contract framework
+- [Anchor](https://www.anchor-lang.com/) - Solana program framework
 - [Gill](https://github.com/wallet-standard/gill) - Type-safe Solana web library
 - [Wallet UI](https://wallet-ui.com/) - Multi-wallet connection for Solana
 - [Next.js](https://nextjs.org/) - React framework
