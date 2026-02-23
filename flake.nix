@@ -76,7 +76,11 @@
             export PATH=$PWD/node_modules/.bin:$PATH
             
             # Enable corepack for pnpm management to ensure we use version from package.json
-            corepack enable
+            # Use a local directory for symlinks since the Nix store is read-only
+            export COREPACK_HOME=$PWD/.corepack
+            mkdir -p $PWD/.corepack-bin
+            corepack enable --install-directory=$PWD/.corepack-bin
+            export PATH=$PWD/.corepack-bin:$PATH
             corepack prepare pnpm@10.18.0 --activate
             
             # Solana local config setup

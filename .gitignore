@@ -77,5 +77,7 @@ result
 result-*
 .direnv/
 .envrc
+.corepack/
+.corepack-bin/
 # Sentry Config File
 .env.sentry-build-plugin
