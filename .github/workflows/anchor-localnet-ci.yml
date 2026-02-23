@@ -1,0 +1,47 @@
+name: Anchor Localnet CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+      - polish
+
+concurrency:
+  group: anchor-localnet-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  localnet-tests:
+    name: Anchor + Localnet Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Enable Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Run Anchor test suite (includes localnet integration lane)
+        shell: bash
+        run: |
+          nix develop --command bash -euo pipefail -c '
+            mkdir -p ~/.config/solana
+            if [ ! -f ~/.config/solana/id.json ]; then
+              solana-keygen new --no-bip39-passphrase --silent --outfile ~/.config/solana/id.json
+            fi
+
+            corepack enable
+            corepack prepare pnpm@10.18.0 --activate
+            pnpm install --frozen-lockfile
+
+            # anchor test reads Anchor.toml [scripts].test:
+            # CASCADE_RUN_LOCALNET_TESTS=1 pnpm exec vitest run
+            pnpm run anchor-test
+          '
