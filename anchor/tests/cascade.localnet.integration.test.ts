@@ -28,7 +28,7 @@ import {
   getWithdrawInstruction,
 } from '@project/anchor';
 
-import { derivePaymentStream, deriveVault } from '@/features/cascade/data-access/derive-cascade-pdas';
+import { derivePaymentStream, deriveVault } from '@/features/streams/client/utils/derive-cascade-pdas';
 
 const LOCALNET_RPC_URL =
   process.env.ANCHOR_PROVIDER_URL ?? process.env.CASCADE_SOLANA_LOCALNET_RPC ?? 'http://127.0.0.1:8899';

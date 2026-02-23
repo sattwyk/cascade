@@ -9,7 +9,7 @@ import {
   type CreateStreamInstruction,
 } from '@project/anchor';
 
-import { derivePaymentStream, deriveVault, toBaseUnits } from '@/features/cascade/data-access/derive-cascade-pdas';
+import { derivePaymentStream, deriveVault, toBaseUnits } from '@/features/streams/client/utils/derive-cascade-pdas';
 
 function getAccountAddress(accountMeta: { address?: Address } | Address): Address {
   if (typeof accountMeta === 'string') {
