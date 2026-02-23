@@ -3,6 +3,14 @@ use crate::state::PaymentStream;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
+const INACTIVITY_THRESHOLD_SECONDS: i64 = 30 * 24 * 60 * 60;
+
+fn get_employee_inactive_duration(current_timestamp: i64, employee_last_activity_at: i64) -> Option<i64> {
+    current_timestamp
+        .checked_sub(employee_last_activity_at)
+        .filter(|duration| *duration >= 0)
+}
+
 pub fn employer_emergency_withdraw(ctx: Context<EmployerEmergencyWithdraw>) -> Result<()> {
     let stream = &mut ctx.accounts.stream;
     let clock = Clock::get()?;
@@ -13,11 +21,12 @@ pub fn employer_emergency_withdraw(ctx: Context<EmployerEmergencyWithdraw>) -> R
     );
 
     // Check if 30 days have passed since employee's last activity
-    let employee_inactive_duration = clock.unix_timestamp - stream.employee_last_activity_at;
-    let thirty_days: i64 = 30 * 24 * 60 * 60;
+    let employee_inactive_duration =
+        get_employee_inactive_duration(clock.unix_timestamp, stream.employee_last_activity_at)
+            .ok_or(ErrorCode::InvalidTimestamp)?;
 
     require!(
-        employee_inactive_duration >= thirty_days,
+        employee_inactive_duration >= INACTIVITY_THRESHOLD_SECONDS,
         ErrorCode::EmployeeStillActive
     );
 
@@ -49,6 +58,23 @@ pub fn employer_emergency_withdraw(ctx: Context<EmployerEmergencyWithdraw>) -> R
     stream.is_active = false;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::get_employee_inactive_duration;
+
+    #[test]
+    fn returns_duration_when_current_timestamp_is_after_last_activity() {
+        let duration = get_employee_inactive_duration(1_000, 400);
+        assert_eq!(duration, Some(600));
+    }
+
+    #[test]
+    fn returns_none_when_last_activity_is_in_the_future() {
+        let duration = get_employee_inactive_duration(400, 1_000);
+        assert_eq!(duration, None);
+    }
 }
 
 #[derive(Accounts)]
