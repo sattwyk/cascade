@@ -1,6 +1,6 @@
 # Cascade Payment Stream Program
 
-This document explains the Cascade on-chain program (program id `6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ`) and how to interact with it from the generated TypeScript client that lives under `src/client/js`. The program implements a payroll-style streaming vault that escrows tokens on behalf of an employer and lets an employee withdraw vested earnings over time, while providing inactivity checks and emergency clawback for the employer.
+This document explains the Cascade on-chain program (program id `6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ`) and how to interact with it from the generated TypeScript client that lives under `src/client/js`. The program implements a payroll-style streaming vault that escrows tokens on behalf of an employer and lets an employee withdraw vested earnings over time, while providing inactivity checks and emergency clawback for the employer. Stream creation enforces a 6-decimal mint policy (e.g. USDC-style stablecoins).
 
 ## Core Accounts and PDAs
 
@@ -41,10 +41,11 @@ All instructions are thin wrappers in `programs/cascade/src/instructions` and th
 - **Who calls:** Employer signer.
 - **Accounts:** employer (signer, payer), employee (address only), mint, stream PDA (init), vault PDA (init), employer token account (mut), token program, system program, rent.
 - **Behaviour:**
-  1. Initializes and populates the PaymentStream PDA.
-  2. Creates the vault PDA as an SPL token account whose authority is the stream PDA.
-  3. Transfers `total_deposit` tokens from the employer’s token account into the vault.
-  4. Sets `withdrawn_amount` to 0 and timestamps both `created_at` and `employee_last_activity_at`.
+  1. Enforces `mint.decimals == 6`; otherwise returns `UnsupportedMintDecimals`.
+  2. Initializes and populates the PaymentStream PDA.
+  3. Creates the vault PDA as an SPL token account whose authority is the stream PDA.
+  4. Transfers `total_deposit` tokens from the employer’s token account into the vault.
+  5. Sets `withdrawn_amount` to 0 and timestamps both `created_at` and `employee_last_activity_at`.
 
 ### `withdraw(amount)`
 
@@ -52,10 +53,11 @@ All instructions are thin wrappers in `programs/cascade/src/instructions` and th
 - **Accounts:** employee (signer), stream PDA, vault, employee token account, token program.
 - **Behaviour:**
   1. Verifies the stream is active and owned by the signer.
-  2. Computes elapsed hours since `created_at` and multiplies by `hourly_rate` to calculate the total vested amount. The vested amount is capped at `total_deposited`.
-  3. Subtracts `withdrawn_amount` to derive the available balance and ensures `amount` does not exceed it.
-  4. Uses the stream PDA signer to transfer `amount` tokens from the vault to the employee’s token account.
-  5. Updates `withdrawn_amount` and refreshes `employee_last_activity_at`.
+  2. Verifies the destination token account is owned by the employee and uses the stream mint (`InvalidTokenAccount` on mismatch).
+  3. Computes elapsed hours since `created_at` and multiplies by `hourly_rate` to calculate the total vested amount. The vested amount is capped at `total_deposited`.
+  4. Subtracts `withdrawn_amount` to derive the available balance and ensures `amount` does not exceed it.
+  5. Uses the stream PDA signer to transfer `amount` tokens from the vault to the employee’s token account.
+  6. Updates `withdrawn_amount` and refreshes `employee_last_activity_at`.
 
 ### `refresh_activity()`
 
@@ -67,7 +69,7 @@ All instructions are thin wrappers in `programs/cascade/src/instructions` and th
 
 - **Who calls:** Employer signer.
 - **Accounts:** employer (signer), stream PDA, vault, employer token account, token program.
-- **Behaviour:** Transfers `additional_amount` tokens from the employer into the vault and increments `total_deposited`. The stream must still be active.
+- **Behaviour:** Ensures the stream is active, validates that the provided employer token account belongs to the employer and stream mint, transfers `additional_amount` into the vault, then increments `total_deposited`.
 
 ### `employer_emergency_withdraw()`
 
@@ -76,15 +78,15 @@ All instructions are thin wrappers in `programs/cascade/src/instructions` and th
 - **Behaviour:**
   1. Confirms the caller matches the recorded employer.
   2. Requires `employee_last_activity_at` to be at least 30 days in the past.
-  3. Calculates the remaining balance as `total_deposited - withdrawn_amount`.
-  4. Uses the stream PDA signer to move the remaining funds back to the employer’s token account.
+  3. Validates the destination employer token account (owner + mint) before instruction logic runs.
+  4. Reads the current `vault.amount` and, if non-zero, uses the stream PDA signer to move that full balance back to the employer’s token account.
   5. Marks the stream inactive (`is_active = false`).
 
 ### `close_stream()`
 
 - **Who calls:** Employer signer.
-- **Accounts:** employer (signer), stream PDA (`close = employer`), vault PDA (`close = employer`), token program.
-- **Behaviour:** Ensures the stream is already inactive and the vault balance is zero. When both checks pass, closes the stream and vault accounts, refunding their rent to the employer.
+- **Accounts:** employer (signer), stream PDA (`close = employer`), vault PDA (`close = employer`), employer token account, token program.
+- **Behaviour:** Ensures the stream is inactive. If the vault still has tokens, transfers the full vault balance to the validated employer token account using the stream PDA signer, then closes stream and vault accounts (rent refunded to employer).
 
 ## Lifecycle Walkthrough
 
@@ -93,7 +95,7 @@ All instructions are thin wrappers in `programs/cascade/src/instructions` and th
 3. **Keep-alive:** If the employee wants to stay active without withdrawing (e.g. during leave), they use `refresh_activity` before 30 days have elapsed.
 4. **Additional funding:** Employer can call `top_up_stream` any time the stream is still active to extend runway.
 5. **Emergency reclamation:** If the employee disappears for 30+ days, the employer can recover the remaining balance via `employer_emergency_withdraw`, which also deactivates the stream.
-6. **Clean-up:** After the vault is empty (either through withdrawals or the emergency clawback), the employer closes both PDAs with `close_stream` to reclaim rent.
+6. **Clean-up:** Once the stream is inactive, the employer can call `close_stream` to reclaim rent. If any tokens are still in the vault, `close_stream` drains them to the employer token account before closing.
 
 ## Generated TypeScript Client
 
@@ -291,14 +293,19 @@ await sendAndConfirmTransaction(signedEmergency);
 
 ### Closing the Stream
 
-After the vault balance reaches zero and the stream is marked inactive (either naturally or via emergency withdrawal), the employer can close the accounts to reclaim rent:
+After the stream is marked inactive (for example after emergency withdrawal), the employer can close the accounts to reclaim rent. If tokens remain in the vault, `close_stream` transfers them to `employerTokenAccount` before closure:
 
 ```ts
 import { createTransaction, signTransactionMessageWithSigners } from 'gill';
 
 import { getCloseStreamInstruction } from '../src/client/js';
 
-const closeIx = getCloseStreamInstruction({ employer, stream, vault });
+const closeIx = getCloseStreamInstruction({
+  employer,
+  stream,
+  vault,
+  employerTokenAccount,
+});
 
 const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
 const closeTx = createTransaction({
@@ -335,6 +342,8 @@ console.log({
 ## Operational Tips
 
 - Always make sure the employer pre-funds their SPL token account before calling `create_stream` or `top_up_stream`; otherwise the token transfer CPI will fail.
+- `create_stream` currently supports only 6-decimal mints and returns `UnsupportedMintDecimals` otherwise.
+- For `withdraw`, `top_up_stream`, `employer_emergency_withdraw`, and `close_stream`, pass token accounts whose owner and mint match the instruction constraints; otherwise `InvalidTokenAccount` is returned.
 - The 30-day inactivity window is enforced on-chain using Unix timestamps. If you need a different window, modify `thirty_days` in `employer_emergency_withdraw.rs`.
 - Encourage employees to call `refresh_activity` whenever they cannot withdraw but still want to signal presence (vacations, sabbaticals, etc.).
 - After calling `close_stream`, both the stream and vault PDAs are gone. Any subsequent instruction attempts will need a brand new stream.
