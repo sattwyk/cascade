@@ -10,6 +10,7 @@ import { getAccountStateConfig } from '@/core/config/account-states';
 import { hasPositiveTokenBalance, NULL_ADDRESS } from '@/core/solana/token-helpers';
 import { Button } from '@/core/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/core/ui/card';
+import { EmptyState } from '@/core/ui/empty-state';
 import {
   deriveOverviewMetrics,
   deriveSecondaryMetrics,
@@ -28,11 +29,10 @@ import type { ActivityLogEntry } from '@/features/organization/server/actions/ac
 import { useDashboardStreamsQuery } from '@/features/streams/client/queries/use-dashboard-streams-query';
 import type { DashboardStream } from '@/types/stream';
 
-import { useDashboard } from '../dashboard-context';
-import { EmptyState } from '../empty-state';
-import { OverviewActivityTimeline } from '../overview/overview-activity-timeline';
-import { OverviewChecklist, type OverviewChecklistStep } from '../overview/overview-checklist';
-import { OverviewMetrics } from '../overview/overview-metrics';
+import { useDashboard } from './layout/employer-dashboard-context';
+import { OverviewActivityTimeline } from './overview/overview-activity-timeline';
+import { OverviewChecklist, type OverviewChecklistStep } from './overview/overview-checklist';
+import { OverviewMetrics } from './overview/overview-metrics';
 
 interface OverviewTabProps {
   initialStreams: DashboardStream[];

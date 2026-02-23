@@ -1,6 +1,6 @@
-import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
-import { HelpTab } from '@/components/dashboard/tabs/help-tab';
 import { employerDashboardHelpViewFlag } from '@/core/config/flags';
+import { DashboardFeatureFlagDisabled } from '@/core/ui/feature-flag-disabled';
+import { HelpTab } from '@/features/organization/components/help-tab';
 
 export default async function DashboardHelpPage() {
   if (!(await employerDashboardHelpViewFlag())) {

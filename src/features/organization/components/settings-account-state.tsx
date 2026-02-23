@@ -1,9 +1,9 @@
 'use client';
 
-import { useDashboard } from '@/components/dashboard/dashboard-context';
 import { getAllAccountStates } from '@/core/config/account-states';
 import { Button } from '@/core/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/core/ui/card';
+import { useDashboard } from '@/features/organization/components/layout/employer-dashboard-context';
 
 export function SettingsAccountState() {
   const { accountState, setAccountState } = useDashboard();

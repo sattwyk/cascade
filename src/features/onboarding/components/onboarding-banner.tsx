@@ -5,8 +5,8 @@ import { usePathname } from 'next/navigation';
 
 import { ChevronRight, Rocket } from 'lucide-react';
 
-import { useDashboard } from '@/components/dashboard/dashboard-context';
 import { Button } from '@/core/ui/button';
+import { useDashboard } from '@/features/organization/components/layout/employer-dashboard-context';
 
 export function OnboardingBanner() {
   const { isOnboardingRequired } = useDashboard();

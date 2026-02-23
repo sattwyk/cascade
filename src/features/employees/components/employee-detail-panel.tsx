@@ -3,11 +3,11 @@
 import { formatDistanceToNow } from 'date-fns';
 import { Mail, MapPin, SirenIcon as StreamIcon, Tag, X } from 'lucide-react';
 
-import { useDashboard } from '@/components/dashboard/dashboard-context';
 import { useIsMobile } from '@/core/hooks/use-mobile';
 import { Badge } from '@/core/ui/badge';
 import { Button } from '@/core/ui/button';
 import { Drawer, DrawerContent, DrawerTitle } from '@/core/ui/drawer';
+import { useDashboard } from '@/features/organization/components/layout/employer-dashboard-context';
 import type { EmployeeStatus, EmployeeSummary } from '@/types/employee';
 
 interface EmployeeDetailPanelProps {

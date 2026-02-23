@@ -8,7 +8,6 @@ import { useWalletUi, type UiWalletAccount } from '@wallet-ui/react';
 import type { Address } from 'gill';
 import { toast } from 'sonner';
 
-import { useDashboard } from '@/components/dashboard/dashboard-context';
 import { AccountState } from '@/core/enums';
 import { resolveMintDisplay } from '@/core/solana/token-helpers';
 import { Badge } from '@/core/ui/badge';
@@ -20,6 +19,7 @@ import { Label } from '@/core/ui/label';
 import { ellipsify } from '@/core/utils';
 import { useGetTokenAccountsQuery } from '@/features/account/client/queries/use-get-token-accounts-query';
 import { useDashboardEmployeesQuery } from '@/features/employees/client/queries/use-dashboard-employees-query';
+import { useDashboard } from '@/features/organization/components/layout/employer-dashboard-context';
 import { useCreateStreamMutation } from '@/features/streams/client/mutations/use-create-stream-mutation';
 import { getErrorMessage } from '@/features/streams/client/utils/derive-cascade-pdas';
 import { SUPPORTED_STABLECOIN_DECIMALS } from '@/features/streams/client/utils/mint-decimals';

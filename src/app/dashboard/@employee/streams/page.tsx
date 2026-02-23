@@ -1,5 +1,5 @@
-import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
 import { employeeDashboardStreamsViewFlag } from '@/core/config/flags';
+import { DashboardFeatureFlagDisabled } from '@/core/ui/feature-flag-disabled';
 
 import EmployeeStreamsPageClient from './streams-page-client';
 

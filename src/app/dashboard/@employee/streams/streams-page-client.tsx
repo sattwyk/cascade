@@ -5,11 +5,11 @@ import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowDownToLine, TrendingUp, Wallet } from 'lucide-react';
 
-import { EmptyState } from '@/components/dashboard/empty-state';
 import { useSolana } from '@/components/solana/use-solana';
 import { Badge } from '@/core/ui/badge';
 import { Button } from '@/core/ui/button';
 import { Card } from '@/core/ui/card';
+import { EmptyState } from '@/core/ui/empty-state';
 import { WithdrawModal } from '@/features/employees/components/withdraw-modal';
 
 const AMOUNT_DECIMALS = 6;

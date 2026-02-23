@@ -8,11 +8,11 @@ import { getExplorerLink, type SolanaClusterMoniker } from 'gill';
 import { ArrowDownToLine, Clock, DollarSign, ExternalLink, RefreshCw, TrendingUp, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { EmptyState } from '@/components/dashboard/empty-state';
 import { useSolana } from '@/components/solana/use-solana';
 import { Badge } from '@/core/ui/badge';
 import { Button } from '@/core/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/core/ui/card';
+import { EmptyState } from '@/core/ui/empty-state';
 import { useEmployeeDashboardOverviewQuery } from '@/features/employees/client/queries/use-employee-dashboard-overview-query';
 import type { EmployeeDashboardOverview as EmployeeDashboardOverviewData } from '@/features/employees/server/actions/overview';
 import { useRefreshActivityMutation } from '@/features/streams/client/mutations/use-refresh-activity-mutation';

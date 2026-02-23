@@ -5,15 +5,15 @@ import type React from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 
-import { AppSidebar } from '@/components/dashboard/app-sidebar';
 import { useSolana } from '@/components/solana/use-solana';
 import { useIsMobile } from '@/core/hooks/use-mobile';
 import { Button } from '@/core/ui/button';
 import { SidebarInset, SidebarProvider } from '@/core/ui/sidebar';
 
-import { useDashboard } from './dashboard-context';
-import { DashboardHeader } from './header/dashboard-header';
-import { DashboardRightRail } from './right-rail/dashboard-right-rail';
+import { useDashboard } from './employer-dashboard-context';
+import { DashboardHeader } from './employer-dashboard-header';
+import { DashboardRightRail } from './employer-right-rail';
+import { AppSidebar } from './employer-sidebar';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;

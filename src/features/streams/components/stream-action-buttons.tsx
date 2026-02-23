@@ -1,8 +1,8 @@
 'use client';
 
-import { useDashboard } from '@/components/dashboard/dashboard-context';
 import { Button } from '@/core/ui/button';
 import { Card, CardContent } from '@/core/ui/card';
+import { useDashboard } from '@/features/organization/components/layout/employer-dashboard-context';
 
 interface StreamActionButtonsProps {
   streamId: string;

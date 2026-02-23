@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { AlertTriangle, Building2, Copy, ExternalLink, Mail, Pencil, Save, User, Wallet, X } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { EmptyState } from '@/components/dashboard/empty-state';
 import { useSolana } from '@/components/solana/use-solana';
 import { Button } from '@/core/ui/button';
 import { Card } from '@/core/ui/card';
@@ -20,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/core/ui/dialog';
+import { EmptyState } from '@/core/ui/empty-state';
 import { Input } from '@/core/ui/input';
 import { Label } from '@/core/ui/label';
 import { Skeleton } from '@/core/ui/skeleton';

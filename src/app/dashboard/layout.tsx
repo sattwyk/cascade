@@ -2,9 +2,9 @@ import { ReactNode, Suspense } from 'react';
 
 import { redirect } from 'next/navigation';
 
-import { RoleProvider } from '@/components/dashboard/role-context';
 import { getUserRole } from '@/core/auth/user-role';
 import { AccountState } from '@/core/enums';
+import { RoleProvider } from '@/features/organization/components/layout/role-context';
 import { resolveOrganizationContext } from '@/features/organization/server/actions/organization-context';
 
 import { DashboardLayoutClient } from './layout.client';

@@ -6,7 +6,6 @@ import { useWalletUi } from '@wallet-ui/react';
 import { LAMPORTS_PER_SOL, type Address } from 'gill';
 import { toast } from 'sonner';
 
-import { useDashboard } from '@/components/dashboard/dashboard-context';
 import { EURCIcon, SolanaIcon, USDCIcon, USDTIcon } from '@/components/icons';
 import { resolveMintDisplay } from '@/core/solana/token-helpers';
 import { Button } from '@/core/ui/button';
@@ -18,6 +17,7 @@ import { useRequestAirdropMutation } from '@/features/account/client/mutations/u
 import { useRequestDevTokenTopUpMutation } from '@/features/account/client/mutations/use-request-dev-token-top-up-mutation';
 import { useGetBalanceQuery } from '@/features/account/client/queries/use-get-balance-query';
 import { useGetTokenAccountsQuery } from '@/features/account/client/queries/use-get-token-accounts-query';
+import { useDashboard } from '@/features/organization/components/layout/employer-dashboard-context';
 import { createActivityLog } from '@/features/organization/server/actions/activity-log';
 
 interface TopUpAccountModalProps {

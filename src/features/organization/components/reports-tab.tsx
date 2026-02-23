@@ -2,9 +2,9 @@
 
 import { Plus } from 'lucide-react';
 
-import { useDashboard } from '@/components/dashboard/dashboard-context';
-import { EmptyState } from '@/components/dashboard/empty-state';
 import { getAccountStateConfig } from '@/core/config/account-states';
+import { EmptyState } from '@/core/ui/empty-state';
+import { useDashboard } from '@/features/organization/components/layout/employer-dashboard-context';
 
 export function ReportsTab() {
   const { accountState } = useDashboard();

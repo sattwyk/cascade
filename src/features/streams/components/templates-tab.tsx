@@ -4,12 +4,12 @@ import { useState } from 'react';
 
 import { Copy, Plus, Trash2, Zap } from 'lucide-react';
 
-import { useDashboard } from '@/components/dashboard/dashboard-context';
-import { EmptyState } from '@/components/dashboard/empty-state';
 import { getAccountStateConfig } from '@/core/config/account-states';
 import { Badge } from '@/core/ui/badge';
 import { Button } from '@/core/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/core/ui/card';
+import { EmptyState } from '@/core/ui/empty-state';
+import { useDashboard } from '@/features/organization/components/layout/employer-dashboard-context';
 
 interface StreamTemplate {
   id: string;

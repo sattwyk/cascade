@@ -15,7 +15,7 @@ import { useGetTokenAccountsQuery } from '@/features/account/client/queries/use-
 import { useDashboardAlertsQuery } from '@/features/alerts/client/queries/use-dashboard-alerts-query';
 import { OverviewAlerts } from '@/features/alerts/components/overview-alerts';
 
-import { useDashboard } from '../dashboard-context';
+import { useDashboard } from './employer-dashboard-context';
 
 const FALLBACK_ADDRESS = '11111111111111111111111111111111' as Address;
 const SOL_FORMATTER = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });

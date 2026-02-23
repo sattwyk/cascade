@@ -1,5 +1,5 @@
-import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
 import { employerDashboardActivityViewFlag } from '@/core/config/flags';
+import { DashboardFeatureFlagDisabled } from '@/core/ui/feature-flag-disabled';
 import { ActivityLogTab, type ActivityEvent } from '@/features/organization/components/activity-log-tab';
 import { getActivityLog } from '@/features/organization/server/actions/activity-log';
 

@@ -1,5 +1,5 @@
-import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
 import { employerDashboardAuditViewFlag } from '@/core/config/flags';
+import { DashboardFeatureFlagDisabled } from '@/core/ui/feature-flag-disabled';
 import { AuditTrailTab } from '@/features/organization/components/audit-trail-tab';
 import { getAuditTrail } from '@/features/organization/server/actions/get-audit-trail';
 import { resolveOrganizationContext } from '@/features/organization/server/actions/organization-context';

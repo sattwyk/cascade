@@ -8,12 +8,12 @@ import { useWalletUi } from '@wallet-ui/react';
 import type { Address } from 'gill';
 import { PiggyBank, Plus, UserPlus, Wallet } from 'lucide-react';
 
-import { useDashboard } from '@/components/dashboard/dashboard-context';
-import { EmptyState } from '@/components/dashboard/empty-state';
 import { hasPositiveTokenBalance, NULL_ADDRESS } from '@/core/solana/token-helpers';
 import { Button } from '@/core/ui/button';
+import { EmptyState } from '@/core/ui/empty-state';
 import { useGetTokenAccountsQuery } from '@/features/account/client/queries/use-get-token-accounts-query';
 import { useDashboardEmployeesQuery } from '@/features/employees/client/queries/use-dashboard-employees-query';
+import { useDashboard } from '@/features/organization/components/layout/employer-dashboard-context';
 import { useDashboardStreamsQuery } from '@/features/streams/client/queries/use-dashboard-streams-query';
 import type { DashboardStream } from '@/types/stream';
 

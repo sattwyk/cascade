@@ -5,7 +5,6 @@ import { useCallback, useMemo, useState } from 'react';
 import { CheckCircle2, ChevronRight, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { useDashboard } from '@/components/dashboard/dashboard-context';
 import { employmentTypeEnum } from '@/core/db/schema';
 import { Badge } from '@/core/ui/badge';
 import { Button } from '@/core/ui/button';
@@ -17,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useDashboardEmployeesQuery } from '@/features/employees/client/queries/use-dashboard-employees-query';
 import { useInvalidateDashboardEmployeesQuery } from '@/features/employees/client/queries/use-invalidate-dashboard-employees-query';
 import { inviteEmployee } from '@/features/employees/server/actions/employees';
+import { useDashboard } from '@/features/organization/components/layout/employer-dashboard-context';
 
 type Step = 'profile' | 'settings' | 'review';
 

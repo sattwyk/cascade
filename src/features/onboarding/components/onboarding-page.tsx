@@ -21,7 +21,6 @@ import {
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { useDashboard } from '@/components/dashboard/dashboard-context';
 import { EURCIcon, USDCIcon, USDTIcon } from '@/components/icons';
 import { AccountState } from '@/core/enums';
 import { Badge } from '@/core/ui/badge';
@@ -40,6 +39,7 @@ import {
   requestOnboardingVerification,
   verifyOnboardingCode,
 } from '@/features/onboarding/server/actions/onboarding';
+import { useDashboard } from '@/features/organization/components/layout/employer-dashboard-context';
 
 // ----------------------------
 // Types & constants

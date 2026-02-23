@@ -1,5 +1,5 @@
-import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
 import { employerDashboardStreamsViewFlag } from '@/core/config/flags';
+import { DashboardFeatureFlagDisabled } from '@/core/ui/feature-flag-disabled';
 import { StreamsTab } from '@/features/streams/components/streams-tab';
 import { getStreamsForDashboard } from '@/features/streams/server/queries/streams';
 

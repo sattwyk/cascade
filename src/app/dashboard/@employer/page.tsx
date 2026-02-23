@@ -1,6 +1,6 @@
-import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
-import { OverviewTab } from '@/components/dashboard/tabs/overview-tab';
 import { employerDashboardOverviewViewFlag } from '@/core/config/flags';
+import { DashboardFeatureFlagDisabled } from '@/core/ui/feature-flag-disabled';
+import { OverviewTab } from '@/features/organization/components/overview-tab';
 import { getActivityLog } from '@/features/organization/server/actions/activity-log';
 import { resolveOrganizationContext } from '@/features/organization/server/actions/organization-context';
 import { getStreamsForDashboard } from '@/features/streams/server/queries/streams';

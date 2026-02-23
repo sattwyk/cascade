@@ -1,5 +1,5 @@
-import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
 import { employerDashboardEmployeesViewFlag } from '@/core/config/flags';
+import { DashboardFeatureFlagDisabled } from '@/core/ui/feature-flag-disabled';
 import { EmployeesTab } from '@/features/employees/components/employees-tab';
 import { getEmployeesForDashboard } from '@/features/employees/server/queries/employees';
 

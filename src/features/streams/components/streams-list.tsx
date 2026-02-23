@@ -5,11 +5,11 @@ import { useMemo, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Filter, Plus, Search } from 'lucide-react';
 
-import { EmptyState } from '@/components/dashboard/empty-state';
 import { Badge } from '@/core/ui/badge';
 import { Button } from '@/core/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/core/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/core/ui/dropdown-menu';
+import { EmptyState } from '@/core/ui/empty-state';
 import { Input } from '@/core/ui/input';
 import type { DashboardStream } from '@/types/stream';
 

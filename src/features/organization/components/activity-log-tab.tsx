@@ -4,13 +4,13 @@ import { useMemo, useState } from 'react';
 
 import { Download, Search } from 'lucide-react';
 
-import { useDashboard } from '@/components/dashboard/dashboard-context';
-import { EmptyState } from '@/components/dashboard/empty-state';
 import { getAccountStateConfig } from '@/core/config/account-states';
 import { Badge } from '@/core/ui/badge';
 import { Button } from '@/core/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/core/ui/card';
+import { EmptyState } from '@/core/ui/empty-state';
 import { Input } from '@/core/ui/input';
+import { useDashboard } from '@/features/organization/components/layout/employer-dashboard-context';
 
 export type ActivityEvent = {
   id: string;
