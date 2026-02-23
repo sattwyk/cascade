@@ -1,6 +1,6 @@
 use crate::state::PaymentStream;
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+use anchor_spl::token::{self, Token, TokenAccount, TransferChecked};
 
 const SUPPORTED_STABLECOIN_DECIMALS: u8 = 6;
 
@@ -30,14 +30,15 @@ pub fn create_stream(
     stream.bump = ctx.bumps.stream;
 
     // Transfer USDC from employer to vault
-    let cpi_accounts = Transfer {
+    let cpi_accounts = TransferChecked {
+        mint: ctx.accounts.mint.to_account_info(),
         from: ctx.accounts.employer_token_account.to_account_info(),
         to: ctx.accounts.vault.to_account_info(),
         authority: ctx.accounts.employer.to_account_info(),
     };
     let cpi_program = ctx.accounts.token_program.to_account_info();
     let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-    token::transfer(cpi_ctx, total_deposit)?;
+    token::transfer_checked(cpi_ctx, total_deposit, ctx.accounts.mint.decimals)?;
 
     Ok(())
 }

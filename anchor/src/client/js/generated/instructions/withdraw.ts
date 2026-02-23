@@ -15,8 +15,8 @@ export const WITHDRAW_DISCRIMINATOR = new Uint8Array([183, 18, 70, 156, 148, 109
 
 export function getWithdrawDiscriminatorBytes() { return fixEncoderSize(getBytesEncoder(), 8).encode(WITHDRAW_DISCRIMINATOR); }
 
-export type WithdrawInstruction<TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS, TAccountEmployee extends string | AccountMeta<string> = string, TAccountStream extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountEmployeeTokenAccount extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
-Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountEmployee extends string ? WritableSignerAccount<TAccountEmployee> & AccountSignerMeta<TAccountEmployee> : TAccountEmployee, TAccountStream extends string ? WritableAccount<TAccountStream> : TAccountStream, TAccountVault extends string ? WritableAccount<TAccountVault> : TAccountVault, TAccountEmployeeTokenAccount extends string ? WritableAccount<TAccountEmployeeTokenAccount> : TAccountEmployeeTokenAccount, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
+export type WithdrawInstruction<TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS, TAccountEmployee extends string | AccountMeta<string> = string, TAccountStream extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountEmployeeTokenAccount extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
+Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountEmployee extends string ? WritableSignerAccount<TAccountEmployee> & AccountSignerMeta<TAccountEmployee> : TAccountEmployee, TAccountStream extends string ? WritableAccount<TAccountStream> : TAccountStream, TAccountMint extends string ? ReadonlyAccount<TAccountMint> : TAccountMint, TAccountVault extends string ? WritableAccount<TAccountVault> : TAccountVault, TAccountEmployeeTokenAccount extends string ? WritableAccount<TAccountEmployeeTokenAccount> : TAccountEmployeeTokenAccount, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
 export type WithdrawInstructionData = { discriminator: ReadonlyUint8Array; amount: bigint;  };
 
@@ -34,21 +34,22 @@ export function getWithdrawInstructionDataCodec(): FixedSizeCodec<WithdrawInstru
     return combineCodec(getWithdrawInstructionDataEncoder(), getWithdrawInstructionDataDecoder());
 }
 
-export type WithdrawInput<TAccountEmployee extends string = string, TAccountStream extends string = string, TAccountVault extends string = string, TAccountEmployeeTokenAccount extends string = string, TAccountTokenProgram extends string = string> =  {
+export type WithdrawInput<TAccountEmployee extends string = string, TAccountStream extends string = string, TAccountMint extends string = string, TAccountVault extends string = string, TAccountEmployeeTokenAccount extends string = string, TAccountTokenProgram extends string = string> =  {
   employee: TransactionSigner<TAccountEmployee>;
 stream: Address<TAccountStream>;
+mint: Address<TAccountMint>;
 vault: Address<TAccountVault>;
 employeeTokenAccount: Address<TAccountEmployeeTokenAccount>;
 tokenProgram?: Address<TAccountTokenProgram>;
 amount: WithdrawInstructionDataArgs["amount"];
 }
 
-export function getWithdrawInstruction<TAccountEmployee extends string, TAccountStream extends string, TAccountVault extends string, TAccountEmployeeTokenAccount extends string, TAccountTokenProgram extends string, TProgramAddress extends Address = typeof CASCADE_PROGRAM_ADDRESS>(input: WithdrawInput<TAccountEmployee, TAccountStream, TAccountVault, TAccountEmployeeTokenAccount, TAccountTokenProgram>, config?: { programAddress?: TProgramAddress } ): WithdrawInstruction<TProgramAddress, TAccountEmployee, TAccountStream, TAccountVault, TAccountEmployeeTokenAccount, TAccountTokenProgram> {
+export function getWithdrawInstruction<TAccountEmployee extends string, TAccountStream extends string, TAccountMint extends string, TAccountVault extends string, TAccountEmployeeTokenAccount extends string, TAccountTokenProgram extends string, TProgramAddress extends Address = typeof CASCADE_PROGRAM_ADDRESS>(input: WithdrawInput<TAccountEmployee, TAccountStream, TAccountMint, TAccountVault, TAccountEmployeeTokenAccount, TAccountTokenProgram>, config?: { programAddress?: TProgramAddress } ): WithdrawInstruction<TProgramAddress, TAccountEmployee, TAccountStream, TAccountMint, TAccountVault, TAccountEmployeeTokenAccount, TAccountTokenProgram> {
   // Program address.
 const programAddress = config?.programAddress ?? CASCADE_PROGRAM_ADDRESS;
 
  // Original accounts.
-const originalAccounts = { employee: { value: input.employee ?? null, isWritable: true }, stream: { value: input.stream ?? null, isWritable: true }, vault: { value: input.vault ?? null, isWritable: true }, employeeTokenAccount: { value: input.employeeTokenAccount ?? null, isWritable: true }, tokenProgram: { value: input.tokenProgram ?? null, isWritable: false } }
+const originalAccounts = { employee: { value: input.employee ?? null, isWritable: true }, stream: { value: input.stream ?? null, isWritable: true }, mint: { value: input.mint ?? null, isWritable: false }, vault: { value: input.vault ?? null, isWritable: true }, employeeTokenAccount: { value: input.employeeTokenAccount ?? null, isWritable: true }, tokenProgram: { value: input.tokenProgram ?? null, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -62,22 +63,23 @@ accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as A
 }
 
 const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("employee", accounts.employee), getAccountMeta("stream", accounts.stream), getAccountMeta("vault", accounts.vault), getAccountMeta("employeeTokenAccount", accounts.employeeTokenAccount), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getWithdrawInstructionDataEncoder().encode(args as WithdrawInstructionDataArgs), programAddress } as WithdrawInstruction<TProgramAddress, TAccountEmployee, TAccountStream, TAccountVault, TAccountEmployeeTokenAccount, TAccountTokenProgram>);
+return Object.freeze({ accounts: [getAccountMeta("employee", accounts.employee), getAccountMeta("stream", accounts.stream), getAccountMeta("mint", accounts.mint), getAccountMeta("vault", accounts.vault), getAccountMeta("employeeTokenAccount", accounts.employeeTokenAccount), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getWithdrawInstructionDataEncoder().encode(args as WithdrawInstructionDataArgs), programAddress } as WithdrawInstruction<TProgramAddress, TAccountEmployee, TAccountStream, TAccountMint, TAccountVault, TAccountEmployeeTokenAccount, TAccountTokenProgram>);
 }
 
 export type ParsedWithdrawInstruction<TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
 employee: TAccountMetas[0];
 stream: TAccountMetas[1];
-vault: TAccountMetas[2];
-employeeTokenAccount: TAccountMetas[3];
-tokenProgram: TAccountMetas[4];
+mint: TAccountMetas[2];
+vault: TAccountMetas[3];
+employeeTokenAccount: TAccountMetas[4];
+tokenProgram: TAccountMetas[5];
 };
 data: WithdrawInstructionData; };
 
 export function parseWithdrawInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(instruction: Instruction<TProgram> & InstructionWithAccounts<TAccountMetas> & InstructionWithData<ReadonlyUint8Array>): ParsedWithdrawInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
-  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 5 });
+  if (instruction.accounts.length < 6) {
+  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 6 });
 }
 let accountIndex = 0;
 const getNextAccount = () => {
@@ -85,5 +87,5 @@ const getNextAccount = () => {
   accountIndex += 1;
   return accountMeta;
 }
-  return { programAddress: instruction.programAddress, accounts: { employee: getNextAccount(), stream: getNextAccount(), vault: getNextAccount(), employeeTokenAccount: getNextAccount(), tokenProgram: getNextAccount() }, data: getWithdrawInstructionDataDecoder().decode(instruction.data) };
+  return { programAddress: instruction.programAddress, accounts: { employee: getNextAccount(), stream: getNextAccount(), mint: getNextAccount(), vault: getNextAccount(), employeeTokenAccount: getNextAccount(), tokenProgram: getNextAccount() }, data: getWithdrawInstructionDataDecoder().decode(instruction.data) };
 }

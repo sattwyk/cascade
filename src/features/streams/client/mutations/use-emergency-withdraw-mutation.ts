@@ -1,9 +1,10 @@
 import { useMutation } from '@tanstack/react-query';
 import { UiWalletAccount, useWalletUiSigner } from '@wallet-ui/react';
+import { useWalletUiGill } from '@wallet-ui/react-gill';
 import type { Address } from 'gill';
 import { toast } from 'sonner';
 
-import { getEmployerEmergencyWithdrawInstruction } from '@project/anchor';
+import { fetchMaybePaymentStream, getEmployerEmergencyWithdrawInstruction } from '@project/anchor';
 
 import { toastTx } from '@/components/toast-tx';
 import { createActivityLog } from '@/features/organization/server/actions/activity-log';
@@ -21,6 +22,7 @@ export type EmergencyWithdrawInput = {
 
 export function useEmergencyWithdrawMutation({ account }: { account: UiWalletAccount }) {
   const signer = useWalletUiSigner({ account });
+  const client = useWalletUiGill();
   const signAndSend = useWalletUiSignAndSendWithFallback();
   const invalidatePaymentStreamQuery = useInvalidatePaymentStreamQuery();
 
@@ -30,10 +32,16 @@ export function useEmergencyWithdrawMutation({ account }: { account: UiWalletAcc
         const employerAddress = account.address;
         const streamAddress = input.stream ?? (await derivePaymentStream(employerAddress, input.employee))[0];
         const vaultAddress = input.vault ?? (await deriveVault(streamAddress))[0];
+        const streamAccount = await fetchMaybePaymentStream(client.rpc, streamAddress);
+
+        if (!streamAccount.exists) {
+          throw new Error('Stream not found on-chain for the connected cluster.');
+        }
 
         const instruction = getEmployerEmergencyWithdrawInstruction({
           employer: signer,
           stream: streamAddress,
+          mint: streamAccount.data.mint,
           vault: vaultAddress,
           employerTokenAccount: input.employerTokenAccount,
         });

@@ -57,6 +57,12 @@
           }
         },
         {
+          "name": "mint",
+          "relations": [
+            "stream"
+          ]
+        },
+        {
           "name": "vault",
           "writable": true,
           "pda": {
@@ -237,6 +243,12 @@
           }
         },
         {
+          "name": "mint",
+          "relations": [
+            "stream"
+          ]
+        },
+        {
           "name": "vault",
           "writable": true,
           "relations": [
@@ -350,6 +362,12 @@
           }
         },
         {
+          "name": "mint",
+          "relations": [
+            "stream"
+          ]
+        },
+        {
           "name": "vault",
           "writable": true,
           "relations": [
@@ -417,6 +435,12 @@
               }
             ]
           }
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "stream"
+          ]
         },
         {
           "name": "vault",

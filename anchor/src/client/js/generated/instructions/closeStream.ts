@@ -15,8 +15,8 @@ export const CLOSE_STREAM_DISCRIMINATOR = new Uint8Array([255, 241, 196, 212, 95
 
 export function getCloseStreamDiscriminatorBytes() { return fixEncoderSize(getBytesEncoder(), 8).encode(CLOSE_STREAM_DISCRIMINATOR); }
 
-export type CloseStreamInstruction<TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS, TAccountEmployer extends string | AccountMeta<string> = string, TAccountStream extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountEmployerTokenAccount extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
-Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountEmployer extends string ? WritableSignerAccount<TAccountEmployer> & AccountSignerMeta<TAccountEmployer> : TAccountEmployer, TAccountStream extends string ? WritableAccount<TAccountStream> : TAccountStream, TAccountVault extends string ? WritableAccount<TAccountVault> : TAccountVault, TAccountEmployerTokenAccount extends string ? WritableAccount<TAccountEmployerTokenAccount> : TAccountEmployerTokenAccount, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
+export type CloseStreamInstruction<TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS, TAccountEmployer extends string | AccountMeta<string> = string, TAccountStream extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountEmployerTokenAccount extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
+Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountEmployer extends string ? WritableSignerAccount<TAccountEmployer> & AccountSignerMeta<TAccountEmployer> : TAccountEmployer, TAccountStream extends string ? WritableAccount<TAccountStream> : TAccountStream, TAccountMint extends string ? ReadonlyAccount<TAccountMint> : TAccountMint, TAccountVault extends string ? WritableAccount<TAccountVault> : TAccountVault, TAccountEmployerTokenAccount extends string ? WritableAccount<TAccountEmployerTokenAccount> : TAccountEmployerTokenAccount, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
 export type CloseStreamInstructionData = { discriminator: ReadonlyUint8Array;  };
 
@@ -34,20 +34,21 @@ export function getCloseStreamInstructionDataCodec(): FixedSizeCodec<CloseStream
     return combineCodec(getCloseStreamInstructionDataEncoder(), getCloseStreamInstructionDataDecoder());
 }
 
-export type CloseStreamAsyncInput<TAccountEmployer extends string = string, TAccountStream extends string = string, TAccountVault extends string = string, TAccountEmployerTokenAccount extends string = string, TAccountTokenProgram extends string = string> =  {
+export type CloseStreamAsyncInput<TAccountEmployer extends string = string, TAccountStream extends string = string, TAccountMint extends string = string, TAccountVault extends string = string, TAccountEmployerTokenAccount extends string = string, TAccountTokenProgram extends string = string> =  {
   employer: TransactionSigner<TAccountEmployer>;
 stream: Address<TAccountStream>;
+mint: Address<TAccountMint>;
 vault?: Address<TAccountVault>;
 employerTokenAccount: Address<TAccountEmployerTokenAccount>;
 tokenProgram?: Address<TAccountTokenProgram>;
 }
 
-export async function getCloseStreamInstructionAsync<TAccountEmployer extends string, TAccountStream extends string, TAccountVault extends string, TAccountEmployerTokenAccount extends string, TAccountTokenProgram extends string, TProgramAddress extends Address = typeof CASCADE_PROGRAM_ADDRESS>(input: CloseStreamAsyncInput<TAccountEmployer, TAccountStream, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>, config?: { programAddress?: TProgramAddress } ): Promise<CloseStreamInstruction<TProgramAddress, TAccountEmployer, TAccountStream, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>> {
+export async function getCloseStreamInstructionAsync<TAccountEmployer extends string, TAccountStream extends string, TAccountMint extends string, TAccountVault extends string, TAccountEmployerTokenAccount extends string, TAccountTokenProgram extends string, TProgramAddress extends Address = typeof CASCADE_PROGRAM_ADDRESS>(input: CloseStreamAsyncInput<TAccountEmployer, TAccountStream, TAccountMint, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>, config?: { programAddress?: TProgramAddress } ): Promise<CloseStreamInstruction<TProgramAddress, TAccountEmployer, TAccountStream, TAccountMint, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>> {
   // Program address.
 const programAddress = config?.programAddress ?? CASCADE_PROGRAM_ADDRESS;
 
  // Original accounts.
-const originalAccounts = { employer: { value: input.employer ?? null, isWritable: true }, stream: { value: input.stream ?? null, isWritable: true }, vault: { value: input.vault ?? null, isWritable: true }, employerTokenAccount: { value: input.employerTokenAccount ?? null, isWritable: true }, tokenProgram: { value: input.tokenProgram ?? null, isWritable: false } }
+const originalAccounts = { employer: { value: input.employer ?? null, isWritable: true }, stream: { value: input.stream ?? null, isWritable: true }, mint: { value: input.mint ?? null, isWritable: false }, vault: { value: input.vault ?? null, isWritable: true }, employerTokenAccount: { value: input.employerTokenAccount ?? null, isWritable: true }, tokenProgram: { value: input.tokenProgram ?? null, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -60,23 +61,24 @@ accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as A
 }
 
 const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("employer", accounts.employer), getAccountMeta("stream", accounts.stream), getAccountMeta("vault", accounts.vault), getAccountMeta("employerTokenAccount", accounts.employerTokenAccount), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getCloseStreamInstructionDataEncoder().encode({}), programAddress } as CloseStreamInstruction<TProgramAddress, TAccountEmployer, TAccountStream, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>);
+return Object.freeze({ accounts: [getAccountMeta("employer", accounts.employer), getAccountMeta("stream", accounts.stream), getAccountMeta("mint", accounts.mint), getAccountMeta("vault", accounts.vault), getAccountMeta("employerTokenAccount", accounts.employerTokenAccount), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getCloseStreamInstructionDataEncoder().encode({}), programAddress } as CloseStreamInstruction<TProgramAddress, TAccountEmployer, TAccountStream, TAccountMint, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>);
 }
 
-export type CloseStreamInput<TAccountEmployer extends string = string, TAccountStream extends string = string, TAccountVault extends string = string, TAccountEmployerTokenAccount extends string = string, TAccountTokenProgram extends string = string> =  {
+export type CloseStreamInput<TAccountEmployer extends string = string, TAccountStream extends string = string, TAccountMint extends string = string, TAccountVault extends string = string, TAccountEmployerTokenAccount extends string = string, TAccountTokenProgram extends string = string> =  {
   employer: TransactionSigner<TAccountEmployer>;
 stream: Address<TAccountStream>;
+mint: Address<TAccountMint>;
 vault: Address<TAccountVault>;
 employerTokenAccount: Address<TAccountEmployerTokenAccount>;
 tokenProgram?: Address<TAccountTokenProgram>;
 }
 
-export function getCloseStreamInstruction<TAccountEmployer extends string, TAccountStream extends string, TAccountVault extends string, TAccountEmployerTokenAccount extends string, TAccountTokenProgram extends string, TProgramAddress extends Address = typeof CASCADE_PROGRAM_ADDRESS>(input: CloseStreamInput<TAccountEmployer, TAccountStream, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>, config?: { programAddress?: TProgramAddress } ): CloseStreamInstruction<TProgramAddress, TAccountEmployer, TAccountStream, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram> {
+export function getCloseStreamInstruction<TAccountEmployer extends string, TAccountStream extends string, TAccountMint extends string, TAccountVault extends string, TAccountEmployerTokenAccount extends string, TAccountTokenProgram extends string, TProgramAddress extends Address = typeof CASCADE_PROGRAM_ADDRESS>(input: CloseStreamInput<TAccountEmployer, TAccountStream, TAccountMint, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>, config?: { programAddress?: TProgramAddress } ): CloseStreamInstruction<TProgramAddress, TAccountEmployer, TAccountStream, TAccountMint, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram> {
   // Program address.
 const programAddress = config?.programAddress ?? CASCADE_PROGRAM_ADDRESS;
 
  // Original accounts.
-const originalAccounts = { employer: { value: input.employer ?? null, isWritable: true }, stream: { value: input.stream ?? null, isWritable: true }, vault: { value: input.vault ?? null, isWritable: true }, employerTokenAccount: { value: input.employerTokenAccount ?? null, isWritable: true }, tokenProgram: { value: input.tokenProgram ?? null, isWritable: false } }
+const originalAccounts = { employer: { value: input.employer ?? null, isWritable: true }, stream: { value: input.stream ?? null, isWritable: true }, mint: { value: input.mint ?? null, isWritable: false }, vault: { value: input.vault ?? null, isWritable: true }, employerTokenAccount: { value: input.employerTokenAccount ?? null, isWritable: true }, tokenProgram: { value: input.tokenProgram ?? null, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -86,22 +88,23 @@ accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as A
 }
 
 const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("employer", accounts.employer), getAccountMeta("stream", accounts.stream), getAccountMeta("vault", accounts.vault), getAccountMeta("employerTokenAccount", accounts.employerTokenAccount), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getCloseStreamInstructionDataEncoder().encode({}), programAddress } as CloseStreamInstruction<TProgramAddress, TAccountEmployer, TAccountStream, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>);
+return Object.freeze({ accounts: [getAccountMeta("employer", accounts.employer), getAccountMeta("stream", accounts.stream), getAccountMeta("mint", accounts.mint), getAccountMeta("vault", accounts.vault), getAccountMeta("employerTokenAccount", accounts.employerTokenAccount), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getCloseStreamInstructionDataEncoder().encode({}), programAddress } as CloseStreamInstruction<TProgramAddress, TAccountEmployer, TAccountStream, TAccountMint, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>);
 }
 
 export type ParsedCloseStreamInstruction<TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
 employer: TAccountMetas[0];
 stream: TAccountMetas[1];
-vault: TAccountMetas[2];
-employerTokenAccount: TAccountMetas[3];
-tokenProgram: TAccountMetas[4];
+mint: TAccountMetas[2];
+vault: TAccountMetas[3];
+employerTokenAccount: TAccountMetas[4];
+tokenProgram: TAccountMetas[5];
 };
 data: CloseStreamInstructionData; };
 
 export function parseCloseStreamInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(instruction: Instruction<TProgram> & InstructionWithAccounts<TAccountMetas> & InstructionWithData<ReadonlyUint8Array>): ParsedCloseStreamInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
-  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 5 });
+  if (instruction.accounts.length < 6) {
+  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 6 });
 }
 let accountIndex = 0;
 const getNextAccount = () => {
@@ -109,5 +112,5 @@ const getNextAccount = () => {
   accountIndex += 1;
   return accountMeta;
 }
-  return { programAddress: instruction.programAddress, accounts: { employer: getNextAccount(), stream: getNextAccount(), vault: getNextAccount(), employerTokenAccount: getNextAccount(), tokenProgram: getNextAccount() }, data: getCloseStreamInstructionDataDecoder().decode(instruction.data) };
+  return { programAddress: instruction.programAddress, accounts: { employer: getNextAccount(), stream: getNextAccount(), mint: getNextAccount(), vault: getNextAccount(), employerTokenAccount: getNextAccount(), tokenProgram: getNextAccount() }, data: getCloseStreamInstructionDataDecoder().decode(instruction.data) };
 }

@@ -49,6 +49,7 @@ export function useTopUpStreamMutation({ account }: { account: UiWalletAccount }
         const instruction = getTopUpStreamInstruction({
           employer: signer,
           stream: streamAddress,
+          mint: streamAccount.data.mint,
           vault: vaultAddress,
           employerTokenAccount: input.employerTokenAccount,
           additionalAmount: toBaseUnits(input.additionalAmount, mintDecimals),

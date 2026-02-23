@@ -53,6 +53,7 @@ describe('cascade instruction builders', () => {
   test('closeStream requires employer token account and preserves account order', async () => {
     const employer = await generateKeyPairSigner();
     const employee = await generateKeyPairSigner();
+    const mint = (await generateKeyPairSigner()).address;
     const employerTokenAccount = (await generateKeyPairSigner()).address;
 
     const [stream] = await derivePaymentStream(employer.address, employee.address);
@@ -61,15 +62,17 @@ describe('cascade instruction builders', () => {
     const instruction = getCloseStreamInstruction({
       employer,
       stream,
+      mint,
       vault,
       employerTokenAccount,
     }) as CloseStreamInstruction;
 
-    expect(instruction.accounts).toHaveLength(5);
+    expect(instruction.accounts).toHaveLength(6);
     expect(getAccountAddress(instruction.accounts[0])).toBe(employer.address);
     expect(getAccountAddress(instruction.accounts[1])).toBe(stream);
-    expect(getAccountAddress(instruction.accounts[2])).toBe(vault);
-    expect(getAccountAddress(instruction.accounts[3])).toBe(employerTokenAccount);
+    expect(getAccountAddress(instruction.accounts[2])).toBe(mint);
+    expect(getAccountAddress(instruction.accounts[3])).toBe(vault);
+    expect(getAccountAddress(instruction.accounts[4])).toBe(employerTokenAccount);
   });
 
   test('converts UI amounts to base units using requested decimals', () => {

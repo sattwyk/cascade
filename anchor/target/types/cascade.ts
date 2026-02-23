@@ -63,6 +63,12 @@ export type Cascade = {
           }
         },
         {
+          "name": "mint",
+          "relations": [
+            "stream"
+          ]
+        },
+        {
           "name": "vault",
           "writable": true,
           "pda": {
@@ -243,6 +249,12 @@ export type Cascade = {
           }
         },
         {
+          "name": "mint",
+          "relations": [
+            "stream"
+          ]
+        },
+        {
           "name": "vault",
           "writable": true,
           "relations": [
@@ -356,6 +368,12 @@ export type Cascade = {
           }
         },
         {
+          "name": "mint",
+          "relations": [
+            "stream"
+          ]
+        },
+        {
           "name": "vault",
           "writable": true,
           "relations": [
@@ -423,6 +441,12 @@ export type Cascade = {
               }
             ]
           }
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "stream"
+          ]
         },
         {
           "name": "vault",

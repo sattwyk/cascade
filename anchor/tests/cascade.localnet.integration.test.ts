@@ -322,6 +322,7 @@ describe.runIf(shouldRunLocalnetIntegration)('cascade localnet integration: acco
     const instruction = getTopUpStreamInstruction({
       employer: fixture.employer,
       stream: fixture.stream,
+      mint: fixture.supportedMint,
       vault: fixture.vault,
       employerTokenAccount: fixture.attackerAtaForSupportedMint,
       additionalAmount: 1n,
@@ -335,6 +336,7 @@ describe.runIf(shouldRunLocalnetIntegration)('cascade localnet integration: acco
     const instruction = getWithdrawInstruction({
       employee: fixture.employee,
       stream: fixture.stream,
+      mint: fixture.supportedMint,
       vault: fixture.vault,
       employeeTokenAccount: fixture.attackerAtaForSupportedMint,
       amount: 0n,
@@ -348,6 +350,7 @@ describe.runIf(shouldRunLocalnetIntegration)('cascade localnet integration: acco
     const instruction = getCloseStreamInstruction({
       employer: fixture.employer,
       stream: fixture.stream,
+      mint: fixture.supportedMint,
       vault: fixture.vault,
       employerTokenAccount: fixture.attackerAtaForSupportedMint,
     });
@@ -361,6 +364,7 @@ describe.runIf(shouldRunLocalnetIntegration)('cascade localnet integration: acco
     const instruction = getEmployerEmergencyWithdrawInstruction({
       employer: fixture.employer,
       stream: fixture.stream,
+      mint: fixture.supportedMint,
       vault: fixture.vault,
       employerTokenAccount: fixture.attackerAtaForSupportedMint,
     });

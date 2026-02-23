@@ -1,7 +1,7 @@
 use crate::errors::ErrorCode;
 use crate::state::PaymentStream;
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+use anchor_spl::token::{self, Token, TokenAccount, TransferChecked};
 
 pub fn close_stream(ctx: Context<CloseStream>) -> Result<()> {
     let stream = &ctx.accounts.stream;
@@ -19,14 +19,15 @@ pub fn close_stream(ctx: Context<CloseStream>) -> Result<()> {
         ];
         let signer = &[&seeds[..]];
 
-        let cpi_accounts = Transfer {
+        let cpi_accounts = TransferChecked {
+            mint: ctx.accounts.mint.to_account_info(),
             from: ctx.accounts.vault.to_account_info(),
             to: ctx.accounts.employer_token_account.to_account_info(),
             authority: stream.to_account_info(),
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts).with_signer(signer);
-        token::transfer(cpi_ctx, vault_balance)?;
+        token::transfer_checked(cpi_ctx, vault_balance, ctx.accounts.mint.decimals)?;
     }
 
     Ok(())
@@ -42,9 +43,12 @@ pub struct CloseStream<'info> {
         close = employer,
         seeds = [b"stream", employer.key().as_ref(), stream.employee.as_ref()],
         bump = stream.bump,
-        has_one = employer
+        has_one = employer,
+        has_one = mint
     )]
     pub stream: Account<'info, PaymentStream>,
+
+    pub mint: Account<'info, token::Mint>,
 
     #[account(
         mut,

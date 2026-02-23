@@ -188,6 +188,7 @@ export function useWithdrawMutation({ account }: { account: UiWalletAccount }) {
         const withdrawInstruction = getWithdrawInstruction({
           employee: signer,
           stream: streamAddress,
+          mint: mintAddress,
           vault: vaultAddress,
           employeeTokenAccount,
           amount: requestedAmountBaseUnits,
