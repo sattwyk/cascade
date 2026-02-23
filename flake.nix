@@ -83,6 +83,20 @@
             export PATH=$PWD/.corepack-bin:$PATH
             corepack prepare pnpm@10.18.0 --activate
             
+            # Solana SBF SDK: the Nix store is read-only, but cargo-build-sbf
+            # needs to download platform-tools into the SDK's dependencies dir.
+            # Copy the SDK out of the store into a local writable directory.
+            _nix_sbf_sdk="$(dirname "$(which cargo-build-sbf)")/platform-tools-sdk/sbf"
+            if [ -d "$_nix_sbf_sdk" ]; then
+              mkdir -p "$PWD/.sbf-sdk"
+              if [ ! -f "$PWD/.sbf-sdk/.copied" ]; then
+                cp -R "$_nix_sbf_sdk"/* "$PWD/.sbf-sdk/"
+                chmod -R u+w "$PWD/.sbf-sdk"
+                touch "$PWD/.sbf-sdk/.copied"
+              fi
+              export SBF_SDK_PATH="$PWD/.sbf-sdk"
+            fi
+
             # Solana local config setup
             export SOLANA_HOME=~/.config/solana
             export PATH=$SOLANA_HOME/bin:$PATH

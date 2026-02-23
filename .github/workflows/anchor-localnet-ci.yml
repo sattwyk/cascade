@@ -30,6 +30,10 @@ jobs:
 
       - name: Run repository quality checks
         shell: bash
+        env:
+          # Dummy connection string so Next.js static generation doesn't crash
+          # when src/core/db/index.ts evaluates neon(process.env.DATABASE_URL)
+          DATABASE_URL: 'postgres://ci:ci@localhost:5432/ci'
         run: |
           nix develop --command bash -euo pipefail -c '
             pnpm install --frozen-lockfile

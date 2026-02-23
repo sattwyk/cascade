@@ -79,5 +79,6 @@ result-*
 .envrc
 .corepack/
 .corepack-bin/
+.sbf-sdk/
 # Sentry Config File
 .env.sentry-build-plugin
