@@ -13,7 +13,24 @@
   outputs = { self, nixpkgs, flake-utils, rust-overlay }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        overlays = [ (import rust-overlay) ];
+        # Overlay to fix solana-cli build failure caused by unused import
+        # warning in upstream Solana source (ledger/src/blockstore/error.rs).
+        # The Solana crate compiles with -D warnings, so the unused `log::*`
+        # import becomes a fatal error. This mirrors the upstream nixpkgs fix
+        # at commit 3cc5dae74c3359e3ab95b856673a0d8fd383ff72.
+        # TODO: Remove this overlay once nixos-unstable includes that fix.
+        solanaFixOverlay = final: prev: {
+          solana-cli = prev.solana-cli.overrideAttrs (oldAttrs: {
+            env = (oldAttrs.env or {}) // {
+              RUSTFLAGS = "-Amismatched_lifetime_syntaxes -Adead_code -Aunused_parens -Aunused_imports";
+            };
+          });
+        };
+
+        overlays = [
+          (import rust-overlay)
+          solanaFixOverlay
+        ];
         pkgs = import nixpkgs {
           inherit system overlays;
           config.allowUnfree = true;
