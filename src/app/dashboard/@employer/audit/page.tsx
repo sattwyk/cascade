@@ -1,8 +1,8 @@
-import { resolveOrganizationContext } from '@/app/dashboard/actions/organization-context';
 import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
-import { AuditTrailTab } from '@/components/dashboard/tabs/audit-trail-tab';
-import { getAuditTrail } from '@/features/dashboard/actions/get-audit-trail';
-import { employerDashboardAuditViewFlag } from '@/flags';
+import { employerDashboardAuditViewFlag } from '@/core/config/flags';
+import { AuditTrailTab } from '@/features/organization/components/audit-trail-tab';
+import { getAuditTrail } from '@/features/organization/server/actions/get-audit-trail';
+import { resolveOrganizationContext } from '@/features/organization/server/actions/organization-context';
 
 export default async function DashboardAuditPage() {
   if (!(await employerDashboardAuditViewFlag())) {

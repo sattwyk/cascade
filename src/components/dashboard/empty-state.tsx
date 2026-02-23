@@ -2,8 +2,8 @@
 
 import type React from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import { Button } from '@/core/ui/button';
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/core/ui/empty';
 
 interface EmptyStateProps {
   icon?: React.ReactNode;

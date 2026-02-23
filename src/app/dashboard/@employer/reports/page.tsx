@@ -1,6 +1,6 @@
 import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
-import { ReportsTab } from '@/components/dashboard/tabs/reports-tab';
-import { employerDashboardReportsViewFlag } from '@/flags';
+import { employerDashboardReportsViewFlag } from '@/core/config/flags';
+import { ReportsTab } from '@/features/organization/components/reports-tab';
 
 export default async function DashboardReportsPage() {
   if (!(await employerDashboardReportsViewFlag())) {

@@ -1,6 +1,6 @@
 import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
 import { ContactTab } from '@/components/dashboard/tabs/contact-tab';
-import { employerDashboardContactViewFlag } from '@/flags';
+import { employerDashboardContactViewFlag } from '@/core/config/flags';
 
 export default async function DashboardContactPage() {
   if (!(await employerDashboardContactViewFlag())) {

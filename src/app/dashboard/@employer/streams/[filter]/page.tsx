@@ -1,7 +1,7 @@
-import { getStreamsForDashboard } from '@/app/dashboard/data/streams';
 import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
-import { StreamsTab } from '@/components/dashboard/tabs/streams-tab';
-import { employerDashboardStreamsViewFlag } from '@/flags';
+import { employerDashboardStreamsViewFlag } from '@/core/config/flags';
+import { StreamsTab } from '@/features/streams/components/streams-tab';
+import { getStreamsForDashboard } from '@/features/streams/server/queries/streams';
 
 const STREAM_FILTER_MAP: Record<string, string> = {
   all: 'all-streams',

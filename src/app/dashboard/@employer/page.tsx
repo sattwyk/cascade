@@ -1,9 +1,9 @@
-import { getActivityLog } from '@/app/dashboard/actions/activity-log';
-import { resolveOrganizationContext } from '@/app/dashboard/actions/organization-context';
-import { getStreamsForDashboard } from '@/app/dashboard/data/streams';
 import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
 import { OverviewTab } from '@/components/dashboard/tabs/overview-tab';
-import { employerDashboardOverviewViewFlag } from '@/flags';
+import { employerDashboardOverviewViewFlag } from '@/core/config/flags';
+import { getActivityLog } from '@/features/organization/server/actions/activity-log';
+import { resolveOrganizationContext } from '@/features/organization/server/actions/organization-context';
+import { getStreamsForDashboard } from '@/features/streams/server/queries/streams';
 
 export default async function DashboardOverviewPage() {
   if (!(await employerDashboardOverviewViewFlag())) {

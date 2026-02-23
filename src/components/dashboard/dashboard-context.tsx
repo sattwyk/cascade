@@ -3,9 +3,7 @@
 import type React from 'react';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
-import { getSetupSnapshot, updateAccountState } from '@/app/dashboard/actions/account-state';
-import { completeOnboardingTask, type OnboardingTask } from '@/app/dashboard/actions/onboarding-tasks';
-import { AccountState } from '@/lib/enums';
+import { AccountState } from '@/core/enums';
 import {
   DEFAULT_SETUP_PROGRESS,
   getSavedAccountState,
@@ -13,7 +11,9 @@ import {
   saveAccountState,
   saveSetupProgress,
   type SetupProgress,
-} from '@/lib/state-persistence';
+} from '@/core/state-persistence';
+import { completeOnboardingTask, type OnboardingTask } from '@/features/onboarding/server/actions/onboarding-tasks';
+import { getSetupSnapshot, updateAccountState } from '@/features/organization/server/actions/account-state';
 import type { EmployeeSummary } from '@/types/employee';
 
 type SetupStep = keyof SetupProgress;

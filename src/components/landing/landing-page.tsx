@@ -11,13 +11,13 @@ import { UiWallet, useWalletUi, useWalletUiWallet } from '@wallet-ui/react';
 import { AlertTriangle, ArrowRight, Check, Loader2, Wallet, X, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
-import { AccountState } from '@/lib/enums';
-import { cn } from '@/lib/utils';
+import { AccountState } from '@/core/enums';
+import { Avatar, AvatarFallback, AvatarImage } from '@/core/ui/avatar';
+import { Badge } from '@/core/ui/badge';
+import { Button } from '@/core/ui/button';
+import { Card } from '@/core/ui/card';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/core/ui/drawer';
+import { cn } from '@/core/utils';
 
 function DevnetBanner() {
   const [dismissed, setDismissed] = useState(false);

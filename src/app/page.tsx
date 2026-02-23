@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 import { LandingPage } from '@/components/landing/landing-page';
-import { landingPageRefreshFlag } from '@/flags';
+import { landingPageRefreshFlag } from '@/core/config/flags';
 
 export const metadata: Metadata = {
   title: 'Cascade | Payroll that pays every hour',

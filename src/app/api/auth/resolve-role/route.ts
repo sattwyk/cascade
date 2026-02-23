@@ -4,8 +4,8 @@ import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { eq } from 'drizzle-orm';
 
-import { drizzleClientHttp } from '@/db';
-import { organizationUsers } from '@/db/schema';
+import { drizzleClientHttp } from '@/core/db';
+import { organizationUsers } from '@/core/db/schema';
 
 const hasDatabase = Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL.trim().length > 0);
 

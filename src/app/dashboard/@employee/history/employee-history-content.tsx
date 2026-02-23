@@ -5,11 +5,11 @@ import { useMemo } from 'react';
 import { type SolanaClusterMoniker } from 'gill';
 import { CircleDollarSign, LineChart, Wallet } from 'lucide-react';
 
-import type { EmployeeWithdrawal } from '@/app/dashboard/@employee/actions/withdrawal-history';
 import { useSolana } from '@/components/solana/use-solana';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { WalletDropdown } from '@/components/wallet-dropdown';
-import { useEmployeeWithdrawalsQuery } from '@/features/employee-dashboard/data-access/use-employee-withdrawals-query';
+import { WalletDropdown } from '@/components/solana/wallet-dropdown';
+import { Card, CardContent, CardHeader, CardTitle } from '@/core/ui/card';
+import { useEmployeeWithdrawalsQuery } from '@/features/streams/client/queries/use-employee-withdrawals-query';
+import type { EmployeeWithdrawal } from '@/features/streams/server/actions/withdrawal-history';
 
 import { getEmployeeHistoryColumns, type Payment } from './columns';
 import { DataTable } from './data-table';

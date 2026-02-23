@@ -1,6 +1,6 @@
 import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
-import { TemplatesTab } from '@/components/dashboard/tabs/templates-tab';
-import { employerDashboardTemplatesViewFlag } from '@/flags';
+import { employerDashboardTemplatesViewFlag } from '@/core/config/flags';
+import { TemplatesTab } from '@/features/streams/components/templates-tab';
 
 export default async function DashboardTemplatesPage() {
   if (!(await employerDashboardTemplatesViewFlag())) {

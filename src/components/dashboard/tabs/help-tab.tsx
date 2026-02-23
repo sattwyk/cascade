@@ -4,10 +4,10 @@ import { useState } from 'react';
 
 import { ExternalLink, Search } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Badge } from '@/core/ui/badge';
+import { Button } from '@/core/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/core/ui/card';
+import { Input } from '@/core/ui/input';
 
 interface HelpArticle {
   id: string;

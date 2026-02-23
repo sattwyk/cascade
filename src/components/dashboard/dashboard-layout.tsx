@@ -7,9 +7,9 @@ import { useRouter } from 'next/navigation';
 
 import { AppSidebar } from '@/components/dashboard/app-sidebar';
 import { useSolana } from '@/components/solana/use-solana';
-import { Button } from '@/components/ui/button';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/core/hooks/use-mobile';
+import { Button } from '@/core/ui/button';
+import { SidebarInset, SidebarProvider } from '@/core/ui/sidebar';
 
 import { useDashboard } from './dashboard-context';
 import { DashboardHeader } from './header/dashboard-header';
@@ -19,42 +19,63 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-const AddEmployeeModal = dynamic(() => import('./modals/add-employee-modal').then((mod) => mod.AddEmployeeModal), {
-  loading: () => null,
-  ssr: false,
-});
+const AddEmployeeModal = dynamic(
+  () => import('@/features/employees/components/add-employee-modal').then((mod) => mod.AddEmployeeModal),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
 const ArchiveEmployeeModal = dynamic(
-  () => import('./modals/archive-employee-modal').then((mod) => mod.ArchiveEmployeeModal),
+  () => import('@/features/employees/components/archive-employee-modal').then((mod) => mod.ArchiveEmployeeModal),
   { loading: () => null, ssr: false },
 );
-const CloseStreamModal = dynamic(() => import('./modals/close-stream-modal').then((mod) => mod.CloseStreamModal), {
-  loading: () => null,
-  ssr: false,
-});
-const CreateStreamModal = dynamic(() => import('./modals/create-stream-modal').then((mod) => mod.CreateStreamModal), {
-  loading: () => null,
-  ssr: false,
-});
-const EditEmployeeModal = dynamic(() => import('./modals/edit-employee-modal').then((mod) => mod.EditEmployeeModal), {
-  loading: () => null,
-  ssr: false,
-});
+const CloseStreamModal = dynamic(
+  () => import('@/features/streams/components/close-stream-modal').then((mod) => mod.CloseStreamModal),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
+const CreateStreamModal = dynamic(
+  () => import('@/features/streams/components/create-stream-modal').then((mod) => mod.CreateStreamModal),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
+const EditEmployeeModal = dynamic(
+  () => import('@/features/employees/components/edit-employee-modal').then((mod) => mod.EditEmployeeModal),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
 const EmergencyWithdrawModal = dynamic(
-  () => import('./modals/emergency-withdraw-modal').then((mod) => mod.EmergencyWithdrawModal),
+  () => import('@/features/streams/components/emergency-withdraw-modal').then((mod) => mod.EmergencyWithdrawModal),
   { loading: () => null, ssr: false },
 );
-const TopUpAccountModal = dynamic(() => import('./modals/top-up-account-modal').then((mod) => mod.TopUpAccountModal), {
-  loading: () => null,
-  ssr: false,
-});
-const TopUpStreamModal = dynamic(() => import('./modals/top-up-stream-modal').then((mod) => mod.TopUpStreamModal), {
-  loading: () => null,
-  ssr: false,
-});
-const ViewStreamsModal = dynamic(() => import('./modals/view-streams-modal').then((mod) => mod.ViewStreamsModal), {
-  loading: () => null,
-  ssr: false,
-});
+const TopUpAccountModal = dynamic(
+  () => import('@/features/account/components/top-up-account-modal').then((mod) => mod.TopUpAccountModal),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
+const TopUpStreamModal = dynamic(
+  () => import('@/features/streams/components/top-up-stream-modal').then((mod) => mod.TopUpStreamModal),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
+const ViewStreamsModal = dynamic(
+  () => import('@/features/streams/components/view-streams-modal').then((mod) => mod.ViewStreamsModal),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import * as Sentry from '@sentry/nextjs';
 
-import { triggerAlertGeneration } from '@/app/dashboard/actions/workflows';
+import { triggerAlertGeneration } from '@/features/alerts/server/actions/workflows';
 
 /**
  * API endpoint to manually trigger alert generation workflow

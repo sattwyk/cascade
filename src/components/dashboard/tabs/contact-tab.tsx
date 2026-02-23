@@ -5,11 +5,11 @@ import { useState } from 'react';
 
 import { Mail, MessageSquare, Phone } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/core/ui/badge';
+import { Button } from '@/core/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/core/ui/card';
+import { Input } from '@/core/ui/input';
+import { Textarea } from '@/core/ui/textarea';
 
 export function ContactTab() {
   const [formData, setFormData] = useState({

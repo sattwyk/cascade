@@ -1,6 +1,6 @@
 import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
-import { TokenAccountsTab } from '@/components/dashboard/tabs/token-accounts-tab';
-import { employerDashboardTokenAccountsViewFlag } from '@/flags';
+import { employerDashboardTokenAccountsViewFlag } from '@/core/config/flags';
+import { TokenAccountsTab } from '@/features/account/components/token-accounts-tab';
 
 export default async function DashboardTokenAccountsPage() {
   if (!(await employerDashboardTokenAccountsViewFlag())) {

@@ -6,16 +6,16 @@ import { useWalletUi } from '@wallet-ui/react';
 import { LAMPORTS_PER_SOL, type Address } from 'gill';
 import { PiggyBank, Sparkles, Wallet } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useGetBalanceQuery } from '@/features/account/data-access/use-get-balance-query';
-import { useGetTokenAccountsQuery } from '@/features/account/data-access/use-get-token-accounts-query';
-import { useDashboardAlertsQuery } from '@/features/dashboard/data-access/use-dashboard-alerts-query';
-import { resolveMintDisplay } from '@/lib/solana/token-helpers';
+import { resolveMintDisplay } from '@/core/solana/token-helpers';
+import { Badge } from '@/core/ui/badge';
+import { Button } from '@/core/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/core/ui/card';
+import { useGetBalanceQuery } from '@/features/account/client/queries/use-get-balance-query';
+import { useGetTokenAccountsQuery } from '@/features/account/client/queries/use-get-token-accounts-query';
+import { useDashboardAlertsQuery } from '@/features/alerts/client/queries/use-dashboard-alerts-query';
+import { OverviewAlerts } from '@/features/alerts/components/overview-alerts';
 
 import { useDashboard } from '../dashboard-context';
-import { OverviewAlerts } from '../overview/overview-alerts';
 
 const FALLBACK_ADDRESS = '11111111111111111111111111111111' as Address;
 const SOL_FORMATTER = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });

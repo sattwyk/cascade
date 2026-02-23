@@ -2,10 +2,10 @@
 
 import { Check } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { Badge } from '@/core/ui/badge';
+import { Button } from '@/core/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/core/ui/card';
+import { cn } from '@/core/utils';
 
 type ChecklistAction = {
   label: string;

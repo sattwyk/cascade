@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 
 import { DashboardProvider } from '@/components/dashboard/dashboard-context';
 import { useRole } from '@/components/dashboard/role-context';
-import { EmployeeDashboardProvider } from '@/components/employee-dashboard/employee-dashboard-context';
+import { EmployeeDashboardProvider } from '@/features/employees/components/employee-dashboard-context';
 
 const dashboardFallback = <div className="p-6 text-sm text-muted-foreground">Loading dashboard...</div>;
 

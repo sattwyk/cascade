@@ -1,7 +1,7 @@
-import { getEmployeeDashboardOverview } from '@/app/dashboard/@employee/actions/overview';
 import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
-import { EmployeeDashboardOverview } from '@/components/employee-dashboard/employee-dashboard-overview';
-import { employeeDashboardOverviewViewFlag } from '@/flags';
+import { employeeDashboardOverviewViewFlag } from '@/core/config/flags';
+import { EmployeeDashboardOverview } from '@/features/employees/components/employee-dashboard-overview';
+import { getEmployeeDashboardOverview } from '@/features/employees/server/actions/overview';
 
 export default async function EmployeeOverviewPage() {
   if (!(await employeeDashboardOverviewViewFlag())) {

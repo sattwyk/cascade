@@ -1,9 +1,9 @@
 import { AlertCircle, Book, ExternalLink, MessageCircle } from 'lucide-react';
 
 import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { employeeDashboardHelpViewFlag } from '@/flags';
+import { employeeDashboardHelpViewFlag } from '@/core/config/flags';
+import { Button } from '@/core/ui/button';
+import { Card } from '@/core/ui/card';
 
 const helpTopics = [
   {

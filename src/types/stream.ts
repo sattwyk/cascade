@@ -1,4 +1,4 @@
-import type { StreamState } from '@/lib/enums';
+import type { StreamState } from '@/core/enums';
 
 export interface DashboardStream {
   id: string;

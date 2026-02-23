@@ -34,8 +34,8 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
   useSidebar,
-} from '@/components/ui/sidebar';
-import { useNotificationCountsQuery } from '@/features/dashboard/data-access/use-notification-counts-query';
+} from '@/core/ui/sidebar';
+import { useNotificationCountsQuery } from '@/features/organization/client/queries/use-notification-counts-query';
 
 type NavigationItem = {
   title: string;

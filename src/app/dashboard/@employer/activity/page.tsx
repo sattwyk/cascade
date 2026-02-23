@@ -1,7 +1,7 @@
-import { getActivityLog } from '@/app/dashboard/actions/activity-log';
 import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
-import { ActivityLogTab, type ActivityEvent } from '@/components/dashboard/tabs/activity-log-tab';
-import { employerDashboardActivityViewFlag } from '@/flags';
+import { employerDashboardActivityViewFlag } from '@/core/config/flags';
+import { ActivityLogTab, type ActivityEvent } from '@/features/organization/components/activity-log-tab';
+import { getActivityLog } from '@/features/organization/server/actions/activity-log';
 
 const STREAM_CATEGORY_MAP: Record<string, ActivityEvent['type']> = {
   stream_created: 'stream',

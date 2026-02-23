@@ -4,10 +4,10 @@ import { useMemo, useState } from 'react';
 
 import { ChevronDown } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { TimelineEvent } from '@/lib/dashboard/stream-insights';
+import { Badge } from '@/core/ui/badge';
+import { Button } from '@/core/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/core/ui/card';
+import type { TimelineEvent } from '@/core/utils/stream-insights';
 
 const CATEGORY_COLOR_MAP: Record<TimelineEvent['category'], string> = {
   Funding: 'bg-blue-500/10 text-blue-700',

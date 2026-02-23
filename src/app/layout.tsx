@@ -11,7 +11,7 @@ import Script from 'next/script';
 
 import { AppProviders } from '@/components/app-providers';
 import { ReactScan } from '@/components/react-scan';
-import { Toaster } from '@/components/ui/sonner';
+import { Toaster } from '@/core/ui/sonner';
 
 // Initialize fonts
 const geist = Geist({

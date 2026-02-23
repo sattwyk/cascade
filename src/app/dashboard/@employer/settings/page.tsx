@@ -1,6 +1,6 @@
 import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
-import { SettingsTab } from '@/components/dashboard/tabs/settings-tab';
-import { employerDashboardSettingsViewFlag } from '@/flags';
+import { employerDashboardSettingsViewFlag } from '@/core/config/flags';
+import { SettingsTab } from '@/features/organization/components/settings-tab';
 
 export default async function DashboardSettingsPage() {
   if (!(await employerDashboardSettingsViewFlag())) {

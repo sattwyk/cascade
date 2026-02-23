@@ -2,9 +2,9 @@
 
 import { HelpCircle } from 'lucide-react';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import type { OverviewMetric } from '@/lib/dashboard/stream-insights';
+import { Card, CardContent, CardHeader, CardTitle } from '@/core/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/core/ui/tooltip';
+import type { OverviewMetric } from '@/core/utils/stream-insights';
 
 interface MetricCardProps {
   label: string;

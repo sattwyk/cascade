@@ -6,16 +6,10 @@ import { useWalletUi } from '@wallet-ui/react';
 import type { Address } from 'gill';
 import { AlertCircle, TrendingDown, Users, Zap } from 'lucide-react';
 
-import type { ActivityLogEntry } from '@/app/dashboard/actions/activity-log';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useGetBalanceQuery } from '@/features/account/data-access/use-get-balance-query';
-import { useGetTokenAccountsQuery } from '@/features/account/data-access/use-get-token-accounts-query';
-import { useDashboardActivityQuery } from '@/features/dashboard/data-access/use-dashboard-activity-query';
-import { useDashboardAlertsQuery } from '@/features/dashboard/data-access/use-dashboard-alerts-query';
-import { useDashboardEmployeesQuery } from '@/features/dashboard/data-access/use-dashboard-employees-query';
-import { useDashboardStreamsQuery } from '@/features/dashboard/data-access/use-dashboard-streams-query';
-import { getAccountStateConfig } from '@/lib/config/account-states';
+import { getAccountStateConfig } from '@/core/config/account-states';
+import { hasPositiveTokenBalance, NULL_ADDRESS } from '@/core/solana/token-helpers';
+import { Button } from '@/core/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/core/ui/card';
 import {
   deriveOverviewMetrics,
   deriveSecondaryMetrics,
@@ -23,14 +17,20 @@ import {
   type OverviewMetric,
   type SecondaryMetric,
   type TimelineEvent,
-} from '@/lib/dashboard/stream-insights';
-import { hasPositiveTokenBalance, NULL_ADDRESS } from '@/lib/solana/token-helpers';
+} from '@/core/utils/stream-insights';
+import { useGetBalanceQuery } from '@/features/account/client/queries/use-get-balance-query';
+import { useGetTokenAccountsQuery } from '@/features/account/client/queries/use-get-token-accounts-query';
+import { useDashboardAlertsQuery } from '@/features/alerts/client/queries/use-dashboard-alerts-query';
+import { OverviewAlerts } from '@/features/alerts/components/overview-alerts';
+import { useDashboardEmployeesQuery } from '@/features/employees/client/queries/use-dashboard-employees-query';
+import { useDashboardActivityQuery } from '@/features/organization/client/queries/use-dashboard-activity-query';
+import type { ActivityLogEntry } from '@/features/organization/server/actions/activity-log';
+import { useDashboardStreamsQuery } from '@/features/streams/client/queries/use-dashboard-streams-query';
 import type { DashboardStream } from '@/types/stream';
 
 import { useDashboard } from '../dashboard-context';
 import { EmptyState } from '../empty-state';
 import { OverviewActivityTimeline } from '../overview/overview-activity-timeline';
-import { OverviewAlerts } from '../overview/overview-alerts';
 import { OverviewChecklist, type OverviewChecklistStep } from '../overview/overview-checklist';
 import { OverviewMetrics } from '../overview/overview-metrics';
 

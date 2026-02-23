@@ -1,7 +1,7 @@
-import { getEmployeesForDashboard } from '@/app/dashboard/data/employees';
 import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
-import { EmployeesTab } from '@/components/dashboard/tabs/employees-tab';
-import { employerDashboardEmployeesViewFlag } from '@/flags';
+import { employerDashboardEmployeesViewFlag } from '@/core/config/flags';
+import { EmployeesTab } from '@/features/employees/components/employees-tab';
+import { getEmployeesForDashboard } from '@/features/employees/server/queries/employees';
 
 export default async function DashboardEmployeesPage() {
   if (!(await employerDashboardEmployeesViewFlag())) {

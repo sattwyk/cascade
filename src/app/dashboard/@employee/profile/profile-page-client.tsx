@@ -9,8 +9,8 @@ import { toast } from 'sonner';
 
 import { EmptyState } from '@/components/dashboard/empty-state';
 import { useSolana } from '@/components/solana/use-solana';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Button } from '@/core/ui/button';
+import { Card } from '@/core/ui/card';
 import {
   Dialog,
   DialogClose,
@@ -19,12 +19,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
-
-import { getEmployeeProfile, leaveOrganization, updateEmployeeProfile, type EmployeeProfile } from '../actions/profile';
+} from '@/core/ui/dialog';
+import { Input } from '@/core/ui/input';
+import { Label } from '@/core/ui/label';
+import { Skeleton } from '@/core/ui/skeleton';
+import {
+  getEmployeeProfile,
+  leaveOrganization,
+  updateEmployeeProfile,
+  type EmployeeProfile,
+} from '@/features/employees/server/actions/profile';
 
 export default function EmployeeProfilePage() {
   const { account, connected } = useSolana();

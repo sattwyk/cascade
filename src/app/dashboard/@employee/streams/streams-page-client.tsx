@@ -6,11 +6,11 @@ import { formatDistanceToNow } from 'date-fns';
 import { ArrowDownToLine, TrendingUp, Wallet } from 'lucide-react';
 
 import { EmptyState } from '@/components/dashboard/empty-state';
-import { WithdrawModal } from '@/components/employee-dashboard/modals/withdraw-modal';
 import { useSolana } from '@/components/solana/use-solana';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Badge } from '@/core/ui/badge';
+import { Button } from '@/core/ui/button';
+import { Card } from '@/core/ui/card';
+import { WithdrawModal } from '@/features/employees/components/withdraw-modal';
 
 const AMOUNT_DECIMALS = 6;
 

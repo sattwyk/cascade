@@ -1,5 +1,5 @@
 import { DashboardFeatureFlagDisabled } from '@/components/dashboard/feature-flag-disabled';
-import { employeeDashboardProfileViewFlag } from '@/flags';
+import { employeeDashboardProfileViewFlag } from '@/core/config/flags';
 
 import EmployeeProfilePageClient from './profile-page-client';
 

@@ -1,10 +1,9 @@
 'use client';
 
-import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
-import { useIsMobile } from '@/hooks/use-mobile';
-
-import { OnboardingBanner } from './onboarding-banner';
-import { WalletBanner } from './wallet-banner';
+import { useIsMobile } from '@/core/hooks/use-mobile';
+import { SidebarTrigger, useSidebar } from '@/core/ui/sidebar';
+import { WalletBanner } from '@/features/account/components/wallet-banner';
+import { OnboardingBanner } from '@/features/onboarding/components/onboarding-banner';
 
 export function DashboardHeader() {
   const isMobile = useIsMobile();

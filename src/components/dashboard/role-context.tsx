@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useMemo, useState } from 'react';
 
-import type { UserRole } from '@/lib/auth/user-role';
+import type { UserRole } from '@/core/auth/user-role';
 
 type RoleContextValue = {
   role: UserRole;
