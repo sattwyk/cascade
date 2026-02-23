@@ -184,7 +184,7 @@ Mark all items complete before production go-live:
 - [x] Vault token account is explicitly closed via token-program CPI with PDA signer.
 - [x] Invariant test suite added and running in CI.
 - [x] Localnet integration tests required in CI.
-- [ ] Time-related magic numbers replaced with named constants.
+- [x] Time-related magic numbers replaced with named constants.
 - [ ] External audit completed and all high/critical findings resolved.
 - [ ] Threat model + incident runbook + key management docs merged.
 - [ ] Upgrade authority policy implemented with multisig controls.

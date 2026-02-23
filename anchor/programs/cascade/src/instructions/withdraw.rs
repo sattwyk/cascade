@@ -3,6 +3,8 @@ use crate::state::PaymentStream;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, TransferChecked};
 
+const SECONDS_PER_HOUR: i64 = 60 * 60;
+
 pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
     let stream = &mut ctx.accounts.stream;
     let clock = Clock::get()?;
@@ -20,7 +22,7 @@ pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
         .checked_sub(stream.created_at)
         .ok_or(ErrorCode::InvalidTimestamp)?;
 
-    let hours_elapsed = seconds_elapsed / 3600;
+    let hours_elapsed = seconds_elapsed / SECONDS_PER_HOUR;
     let total_earned_uncapped = (hours_elapsed as u64)
         .checked_mul(stream.hourly_rate)
         .ok_or(ErrorCode::MathOverflow)?;
