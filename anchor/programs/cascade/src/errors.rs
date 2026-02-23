@@ -34,4 +34,10 @@ pub enum ErrorCode {
 
     #[msg("Provided token account does not match expected owner or mint")]
     InvalidTokenAccount,
+
+    #[msg("Stream accounting invariant violated")]
+    InvalidStreamAccounting,
+
+    #[msg("Vault balance is lower than stream accounting expects")]
+    VaultBalanceInvariantViolated,
 }

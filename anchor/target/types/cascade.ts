@@ -542,6 +542,16 @@ export type Cascade = {
       "code": 6010,
       "name": "invalidTokenAccount",
       "msg": "Provided token account does not match expected owner or mint"
+    },
+    {
+      "code": 6011,
+      "name": "invalidStreamAccounting",
+      "msg": "Stream accounting invariant violated"
+    },
+    {
+      "code": 6012,
+      "name": "vaultBalanceInvariantViolated",
+      "msg": "Vault balance is lower than stream accounting expects"
     }
   ],
   "types": [

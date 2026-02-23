@@ -11,6 +11,7 @@ import {
 } from 'gill';
 import { getCreateAccountInstruction } from 'gill/programs';
 import {
+  fetchMaybeToken,
   getAssociatedTokenAccountAddress,
   getCreateAssociatedTokenIdempotentInstruction,
   getInitializeMint2Instruction,
@@ -21,6 +22,7 @@ import {
 import { beforeAll, describe, expect, test } from 'vitest';
 
 import {
+  fetchPaymentStream,
   getCloseStreamInstruction,
   getCreateStreamInstructionAsync,
   getEmployerEmergencyWithdrawInstruction,
@@ -49,6 +51,17 @@ type LocalnetFixture = {
   employerAtaForSupportedMint: Address;
   employerAtaForUnsupportedMint: Address;
   attackerAtaForSupportedMint: Address;
+  stream: Address;
+  vault: Address;
+};
+
+type InvariantFixture = {
+  client: ReturnType<typeof createSolanaClient>;
+  employer: TransactionSigner;
+  employee: TransactionSigner;
+  mint: Address;
+  employerTokenAccount: Address;
+  employeeTokenAccount: Address;
   stream: Address;
   vault: Address;
 };
@@ -215,6 +228,32 @@ async function mintToOwner(
   return ata;
 }
 
+function createDeterministicRandom(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state ^= state << 13;
+    state ^= state >>> 17;
+    state ^= state << 5;
+    state >>>= 0;
+    return state;
+  };
+}
+
+async function assertStreamAndVaultInvariants(fixture: InvariantFixture) {
+  const streamAccount = await fetchPaymentStream(fixture.client.rpc, fixture.stream);
+  const vaultAccount = await fetchMaybeToken(fixture.client.rpc, fixture.vault);
+
+  expect(vaultAccount.exists).toBe(true);
+  expect(streamAccount.data.withdrawnAmount <= streamAccount.data.totalDeposited).toBe(true);
+
+  if (!vaultAccount.exists) {
+    return;
+  }
+
+  const expectedVaultBalance = streamAccount.data.totalDeposited - streamAccount.data.withdrawnAmount;
+  expect(vaultAccount.data.amount).toBe(expectedVaultBalance);
+}
+
 describe.runIf(shouldRunLocalnetIntegration)('cascade localnet integration: account constraints', () => {
   let fixture: LocalnetFixture;
 
@@ -373,4 +412,104 @@ describe.runIf(shouldRunLocalnetIntegration)('cascade localnet integration: acco
     assertFailureMatches(failure, INVALID_TOKEN_ACCOUNT_PATTERN, 'invalid token account failure');
     expect(failure.details).not.toMatch(EMPLOYEE_STILL_ACTIVE_PATTERN);
   });
+});
+
+describe.runIf(shouldRunLocalnetIntegration)('cascade localnet integration: stream accounting invariants', () => {
+  let fixture: InvariantFixture;
+
+  beforeAll(async () => {
+    const client = createSolanaClient({ urlOrMoniker: LOCALNET_RPC_URL });
+    const airdrop = airdropFactory(client);
+
+    const employer = await generateKeyPairSigner();
+    const employee = await generateKeyPairSigner();
+
+    await Promise.all([
+      airdrop({
+        recipientAddress: employer.address,
+        lamports: lamports(4_000_000_000n),
+        commitment: 'confirmed',
+      }),
+      airdrop({
+        recipientAddress: employee.address,
+        lamports: lamports(2_000_000_000n),
+        commitment: 'confirmed',
+      }),
+    ]);
+
+    const mint = await createMint(client, employer, { decimals: 6 });
+    const employerTokenAccount = await mintToOwner(client, employer, mint, employer.address, 250_000_000n);
+    const employeeTokenAccount = await getAssociatedTokenAccountAddress(mint, employee.address, TOKEN_PROGRAM_ADDRESS);
+    const createEmployeeAtaInstruction = getCreateAssociatedTokenIdempotentInstruction({
+      payer: employer,
+      ata: employeeTokenAccount,
+      owner: employee.address,
+      mint,
+      tokenProgram: TOKEN_PROGRAM_ADDRESS,
+    });
+    await sendInstructions(client, employer, createEmployeeAtaInstruction);
+
+    const [stream] = await derivePaymentStream(employer.address, employee.address);
+    const [vault] = await deriveVault(stream);
+    const createStreamInstruction = await getCreateStreamInstructionAsync({
+      employer,
+      employee: employee.address,
+      mint,
+      employerTokenAccount,
+      stream,
+      vault,
+      hourlyRate: 1_000_000n,
+      totalDeposit: 20_000_000n,
+    });
+    await sendInstructions(client, employer, createStreamInstruction);
+
+    fixture = {
+      client,
+      employer,
+      employee,
+      mint,
+      employerTokenAccount,
+      employeeTokenAccount,
+      stream,
+      vault,
+    };
+  }, 180_000);
+
+  test('maintains stream and vault invariants across randomized top-ups and withdrawals', async () => {
+    const operationCount = 24;
+    const maxTopUpAmount = 900_000;
+    const minTopUpAmount = 1_000;
+    const nextRandom = createDeterministicRandom(0xcafe42);
+
+    await assertStreamAndVaultInvariants(fixture);
+
+    for (let operationIndex = 0; operationIndex < operationCount; operationIndex += 1) {
+      const runTopUp = (nextRandom() & 1) === 0;
+
+      if (runTopUp) {
+        const additionalAmount = BigInt(nextRandom() % maxTopUpAmount) + BigInt(minTopUpAmount);
+        const topUpInstruction = getTopUpStreamInstruction({
+          employer: fixture.employer,
+          stream: fixture.stream,
+          mint: fixture.mint,
+          vault: fixture.vault,
+          employerTokenAccount: fixture.employerTokenAccount,
+          additionalAmount,
+        });
+        await sendInstructions(fixture.client, fixture.employer, topUpInstruction);
+      } else {
+        const withdrawInstruction = getWithdrawInstruction({
+          employee: fixture.employee,
+          stream: fixture.stream,
+          mint: fixture.mint,
+          vault: fixture.vault,
+          employeeTokenAccount: fixture.employeeTokenAccount,
+          amount: 0n,
+        });
+        await sendInstructions(fixture.client, fixture.employee, withdrawInstruction);
+      }
+
+      await assertStreamAndVaultInvariants(fixture);
+    }
+  }, 180_000);
 });

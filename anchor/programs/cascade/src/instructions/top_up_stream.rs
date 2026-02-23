@@ -11,6 +11,7 @@ pub fn top_up_stream(ctx: Context<TopUpStream>, additional_amount: u64) -> Resul
         ctx.accounts.employer.key() == stream.employer,
         ErrorCode::UnauthorizedEmployer
     );
+    stream.assert_accounting_invariant()?;
 
     // Transfer additional USDC from employer to vault
     let cpi_accounts = TransferChecked {
@@ -27,6 +28,7 @@ pub fn top_up_stream(ctx: Context<TopUpStream>, additional_amount: u64) -> Resul
         .total_deposited
         .checked_add(additional_amount)
         .ok_or(ErrorCode::MathOverflow)?;
+    stream.assert_accounting_invariant()?;
 
     Ok(())
 }

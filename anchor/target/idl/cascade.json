@@ -536,6 +536,16 @@
       "code": 6010,
       "name": "InvalidTokenAccount",
       "msg": "Provided token account does not match expected owner or mint"
+    },
+    {
+      "code": 6011,
+      "name": "InvalidStreamAccounting",
+      "msg": "Stream accounting invariant violated"
+    },
+    {
+      "code": 6012,
+      "name": "VaultBalanceInvariantViolated",
+      "msg": "Vault balance is lower than stream accounting expects"
     }
   ],
   "types": [

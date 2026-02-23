@@ -12,6 +12,7 @@ pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
         ctx.accounts.employee.key() == stream.employee,
         ErrorCode::UnauthorizedEmployee
     );
+    stream.assert_accounting_invariant()?;
 
     // Calculate total earned based on time elapsed
     let seconds_elapsed = clock
@@ -61,6 +62,7 @@ pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
         .checked_add(amount)
         .ok_or(ErrorCode::MathOverflow)?;
     stream.employee_last_activity_at = clock.unix_timestamp;
+    stream.assert_accounting_invariant()?;
 
     Ok(())
 }

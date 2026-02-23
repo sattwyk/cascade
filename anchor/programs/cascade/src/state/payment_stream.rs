@@ -1,3 +1,4 @@
+use crate::errors::ErrorCode;
 use anchor_lang::prelude::*;
 
 #[account]
@@ -14,4 +15,20 @@ pub struct PaymentStream {
     pub employee_last_activity_at: i64,
     pub is_active: bool,
     pub bump: u8,
+}
+
+impl PaymentStream {
+    pub fn assert_accounting_invariant(&self) -> Result<()> {
+        require!(
+            self.withdrawn_amount <= self.total_deposited,
+            ErrorCode::InvalidStreamAccounting
+        );
+        Ok(())
+    }
+
+    pub fn expected_vault_balance(&self) -> Result<u64> {
+        self.total_deposited
+            .checked_sub(self.withdrawn_amount)
+            .ok_or(ErrorCode::InvalidStreamAccounting.into())
+    }
 }
