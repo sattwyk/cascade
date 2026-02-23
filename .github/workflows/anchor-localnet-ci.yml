@@ -32,8 +32,6 @@ jobs:
         shell: bash
         run: |
           nix develop --command bash -euo pipefail -c '
-            corepack enable
-            corepack prepare pnpm@10.18.0 --activate
             pnpm install --frozen-lockfile
             pnpm run ci
           '
@@ -62,8 +60,6 @@ jobs:
               solana-keygen new --no-bip39-passphrase --silent --outfile ~/.config/solana/id.json
             fi
 
-            corepack enable
-            corepack prepare pnpm@10.18.0 --activate
             pnpm install --frozen-lockfile
 
             # anchor test reads Anchor.toml [scripts].test:
