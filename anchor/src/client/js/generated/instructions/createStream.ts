@@ -6,9 +6,10 @@
  * @see https://github.com/codama-idl/codama
  */
 
+import { SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError } from '@solana/errors';
+import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { combineCodec, fixDecoderSize, fixEncoderSize, getAddressEncoder, getBytesDecoder, getBytesEncoder, getProgramDerivedAddress, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from 'gill';
 import { CASCADE_PROGRAM_ADDRESS } from '../programs';
-import { expectAddress, getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const CREATE_STREAM_DISCRIMINATOR = new Uint8Array([71, 188, 111, 127, 108, 40, 229, 158]);
 
@@ -53,7 +54,7 @@ const programAddress = config?.programAddress ?? CASCADE_PROGRAM_ADDRESS;
 
  // Original accounts.
 const originalAccounts = { employer: { value: input.employer ?? null, isWritable: true }, employee: { value: input.employee ?? null, isWritable: false }, mint: { value: input.mint ?? null, isWritable: false }, stream: { value: input.stream ?? null, isWritable: true }, vault: { value: input.vault ?? null, isWritable: true }, employerTokenAccount: { value: input.employerTokenAccount ?? null, isWritable: true }, tokenProgram: { value: input.tokenProgram ?? null, isWritable: false }, systemProgram: { value: input.systemProgram ?? null, isWritable: false }, rent: { value: input.rent ?? null, isWritable: false } }
-const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedAccount>;
+const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
 // Original args.
@@ -62,10 +63,10 @@ const args = { ...input,  };
 
 // Resolve default values.
 if (!accounts.stream.value) {
-accounts.stream.value = await getProgramDerivedAddress({ programAddress, seeds: [getBytesEncoder().encode(new Uint8Array([115, 116, 114, 101, 97, 109])), getAddressEncoder().encode(expectAddress(accounts.employer.value)), getAddressEncoder().encode(expectAddress(accounts.employee.value))] });
+accounts.stream.value = await getProgramDerivedAddress({ programAddress, seeds: [getBytesEncoder().encode(new Uint8Array([115, 116, 114, 101, 97, 109])), getAddressEncoder().encode(getAddressFromResolvedInstructionAccount("employer", accounts.employer.value)), getAddressEncoder().encode(getAddressFromResolvedInstructionAccount("employee", accounts.employee.value))] });
 }
 if (!accounts.vault.value) {
-accounts.vault.value = await getProgramDerivedAddress({ programAddress, seeds: [getBytesEncoder().encode(new Uint8Array([118, 97, 117, 108, 116])), getAddressEncoder().encode(expectAddress(accounts.stream.value))] });
+accounts.vault.value = await getProgramDerivedAddress({ programAddress, seeds: [getBytesEncoder().encode(new Uint8Array([118, 97, 117, 108, 116])), getAddressEncoder().encode(getAddressFromResolvedInstructionAccount("stream", accounts.stream.value))] });
 }
 if (!accounts.tokenProgram.value) {
 accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
@@ -78,7 +79,7 @@ accounts.rent.value = 'SysvarRent111111111111111111111111111111111' as Address<'
 }
 
 const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta(accounts.employer), getAccountMeta(accounts.employee), getAccountMeta(accounts.mint), getAccountMeta(accounts.stream), getAccountMeta(accounts.vault), getAccountMeta(accounts.employerTokenAccount), getAccountMeta(accounts.tokenProgram), getAccountMeta(accounts.systemProgram), getAccountMeta(accounts.rent)], data: getCreateStreamInstructionDataEncoder().encode(args as CreateStreamInstructionDataArgs), programAddress } as CreateStreamInstruction<TProgramAddress, TAccountEmployer, TAccountEmployee, TAccountMint, TAccountStream, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram, TAccountSystemProgram, TAccountRent>);
+return Object.freeze({ accounts: [getAccountMeta("employer", accounts.employer), getAccountMeta("employee", accounts.employee), getAccountMeta("mint", accounts.mint), getAccountMeta("stream", accounts.stream), getAccountMeta("vault", accounts.vault), getAccountMeta("employerTokenAccount", accounts.employerTokenAccount), getAccountMeta("tokenProgram", accounts.tokenProgram), getAccountMeta("systemProgram", accounts.systemProgram), getAccountMeta("rent", accounts.rent)], data: getCreateStreamInstructionDataEncoder().encode(args as CreateStreamInstructionDataArgs), programAddress } as CreateStreamInstruction<TProgramAddress, TAccountEmployer, TAccountEmployee, TAccountMint, TAccountStream, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram, TAccountSystemProgram, TAccountRent>);
 }
 
 export type CreateStreamInput<TAccountEmployer extends string = string, TAccountEmployee extends string = string, TAccountMint extends string = string, TAccountStream extends string = string, TAccountVault extends string = string, TAccountEmployerTokenAccount extends string = string, TAccountTokenProgram extends string = string, TAccountSystemProgram extends string = string, TAccountRent extends string = string> =  {
@@ -101,7 +102,7 @@ const programAddress = config?.programAddress ?? CASCADE_PROGRAM_ADDRESS;
 
  // Original accounts.
 const originalAccounts = { employer: { value: input.employer ?? null, isWritable: true }, employee: { value: input.employee ?? null, isWritable: false }, mint: { value: input.mint ?? null, isWritable: false }, stream: { value: input.stream ?? null, isWritable: true }, vault: { value: input.vault ?? null, isWritable: true }, employerTokenAccount: { value: input.employerTokenAccount ?? null, isWritable: true }, tokenProgram: { value: input.tokenProgram ?? null, isWritable: false }, systemProgram: { value: input.systemProgram ?? null, isWritable: false }, rent: { value: input.rent ?? null, isWritable: false } }
-const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedAccount>;
+const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
 // Original args.
@@ -120,7 +121,7 @@ accounts.rent.value = 'SysvarRent111111111111111111111111111111111' as Address<'
 }
 
 const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta(accounts.employer), getAccountMeta(accounts.employee), getAccountMeta(accounts.mint), getAccountMeta(accounts.stream), getAccountMeta(accounts.vault), getAccountMeta(accounts.employerTokenAccount), getAccountMeta(accounts.tokenProgram), getAccountMeta(accounts.systemProgram), getAccountMeta(accounts.rent)], data: getCreateStreamInstructionDataEncoder().encode(args as CreateStreamInstructionDataArgs), programAddress } as CreateStreamInstruction<TProgramAddress, TAccountEmployer, TAccountEmployee, TAccountMint, TAccountStream, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram, TAccountSystemProgram, TAccountRent>);
+return Object.freeze({ accounts: [getAccountMeta("employer", accounts.employer), getAccountMeta("employee", accounts.employee), getAccountMeta("mint", accounts.mint), getAccountMeta("stream", accounts.stream), getAccountMeta("vault", accounts.vault), getAccountMeta("employerTokenAccount", accounts.employerTokenAccount), getAccountMeta("tokenProgram", accounts.tokenProgram), getAccountMeta("systemProgram", accounts.systemProgram), getAccountMeta("rent", accounts.rent)], data: getCreateStreamInstructionDataEncoder().encode(args as CreateStreamInstructionDataArgs), programAddress } as CreateStreamInstruction<TProgramAddress, TAccountEmployer, TAccountEmployee, TAccountMint, TAccountStream, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram, TAccountSystemProgram, TAccountRent>);
 }
 
 export type ParsedCreateStreamInstruction<TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
@@ -139,8 +140,7 @@ data: CreateStreamInstructionData; };
 
 export function parseCreateStreamInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(instruction: Instruction<TProgram> & InstructionWithAccounts<TAccountMetas> & InstructionWithData<ReadonlyUint8Array>): ParsedCreateStreamInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 9) {
-  // TODO: Coded error.
-  throw new Error('Not enough accounts');
+  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 9 });
 }
 let accountIndex = 0;
 const getNextAccount = () => {

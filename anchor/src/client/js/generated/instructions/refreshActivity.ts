@@ -6,9 +6,10 @@
  * @see https://github.com/codama-idl/codama
  */
 
+import { SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError } from '@solana/errors';
+import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { combineCodec, fixDecoderSize, fixEncoderSize, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from 'gill';
 import { CASCADE_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const REFRESH_ACTIVITY_DISCRIMINATOR = new Uint8Array([55, 172, 115, 3, 200, 89, 189, 250]);
 
@@ -44,13 +45,13 @@ const programAddress = config?.programAddress ?? CASCADE_PROGRAM_ADDRESS;
 
  // Original accounts.
 const originalAccounts = { employee: { value: input.employee ?? null, isWritable: true }, stream: { value: input.stream ?? null, isWritable: true } }
-const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedAccount>;
+const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
 
 
 const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta(accounts.employee), getAccountMeta(accounts.stream)], data: getRefreshActivityInstructionDataEncoder().encode({}), programAddress } as RefreshActivityInstruction<TProgramAddress, TAccountEmployee, TAccountStream>);
+return Object.freeze({ accounts: [getAccountMeta("employee", accounts.employee), getAccountMeta("stream", accounts.stream)], data: getRefreshActivityInstructionDataEncoder().encode({}), programAddress } as RefreshActivityInstruction<TProgramAddress, TAccountEmployee, TAccountStream>);
 }
 
 export type ParsedRefreshActivityInstruction<TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
@@ -62,8 +63,7 @@ data: RefreshActivityInstructionData; };
 
 export function parseRefreshActivityInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(instruction: Instruction<TProgram> & InstructionWithAccounts<TAccountMetas> & InstructionWithData<ReadonlyUint8Array>): ParsedRefreshActivityInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
-  // TODO: Coded error.
-  throw new Error('Not enough accounts');
+  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 2 });
 }
 let accountIndex = 0;
 const getNextAccount = () => {

@@ -6,9 +6,10 @@
  * @see https://github.com/codama-idl/codama
  */
 
+import { SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError } from '@solana/errors';
+import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { combineCodec, fixDecoderSize, fixEncoderSize, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from 'gill';
 import { CASCADE_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const EMPLOYER_EMERGENCY_WITHDRAW_DISCRIMINATOR = new Uint8Array([53, 243, 175, 174, 220, 22, 246, 211]);
 
@@ -47,7 +48,7 @@ const programAddress = config?.programAddress ?? CASCADE_PROGRAM_ADDRESS;
 
  // Original accounts.
 const originalAccounts = { employer: { value: input.employer ?? null, isWritable: true }, stream: { value: input.stream ?? null, isWritable: true }, vault: { value: input.vault ?? null, isWritable: true }, employerTokenAccount: { value: input.employerTokenAccount ?? null, isWritable: true }, tokenProgram: { value: input.tokenProgram ?? null, isWritable: false } }
-const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedAccount>;
+const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
 // Resolve default values.
@@ -56,7 +57,7 @@ accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as A
 }
 
 const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta(accounts.employer), getAccountMeta(accounts.stream), getAccountMeta(accounts.vault), getAccountMeta(accounts.employerTokenAccount), getAccountMeta(accounts.tokenProgram)], data: getEmployerEmergencyWithdrawInstructionDataEncoder().encode({}), programAddress } as EmployerEmergencyWithdrawInstruction<TProgramAddress, TAccountEmployer, TAccountStream, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>);
+return Object.freeze({ accounts: [getAccountMeta("employer", accounts.employer), getAccountMeta("stream", accounts.stream), getAccountMeta("vault", accounts.vault), getAccountMeta("employerTokenAccount", accounts.employerTokenAccount), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getEmployerEmergencyWithdrawInstructionDataEncoder().encode({}), programAddress } as EmployerEmergencyWithdrawInstruction<TProgramAddress, TAccountEmployer, TAccountStream, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>);
 }
 
 export type ParsedEmployerEmergencyWithdrawInstruction<TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
@@ -71,8 +72,7 @@ data: EmployerEmergencyWithdrawInstructionData; };
 
 export function parseEmployerEmergencyWithdrawInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(instruction: Instruction<TProgram> & InstructionWithAccounts<TAccountMetas> & InstructionWithData<ReadonlyUint8Array>): ParsedEmployerEmergencyWithdrawInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 5) {
-  // TODO: Coded error.
-  throw new Error('Not enough accounts');
+  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 5 });
 }
 let accountIndex = 0;
 const getNextAccount = () => {

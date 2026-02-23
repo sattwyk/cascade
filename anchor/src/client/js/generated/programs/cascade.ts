@@ -6,30 +6,35 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { containsBytes, fixEncoderSize, getBytesEncoder, type Address, type ReadonlyUint8Array } from 'gill';
-import { type ParsedCloseStreamInstruction, type ParsedCreateStreamInstruction, type ParsedEmployerEmergencyWithdrawInstruction, type ParsedRefreshActivityInstruction, type ParsedTopUpStreamInstruction, type ParsedWithdrawInstruction } from '../instructions';
+import { SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT, SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION, SOLANA_ERROR__PROGRAM_CLIENTS__UNRECOGNIZED_INSTRUCTION_TYPE, SolanaError } from '@solana/errors';
+import { type ClientWithRpc, type ClientWithTransactionPlanning, type ClientWithTransactionSending } from '@solana/plugin-interfaces';
+import { addSelfFetchFunctions, addSelfPlanAndSendFunctions, type SelfFetchFunctions, type SelfPlanAndSendFunctions } from '@solana/program-client-core';
+import { type GetAccountInfoApi, type GetMultipleAccountsApi } from '@solana/rpc-api';
+import { assertIsInstructionWithAccounts, containsBytes, fixEncoderSize, getBytesEncoder, type Address, type Instruction, type InstructionWithData, type ReadonlyUint8Array } from 'gill';
+import { getPaymentStreamCodec, type PaymentStream, type PaymentStreamArgs } from '../accounts';
+import { getCloseStreamInstructionAsync, getCreateStreamInstructionAsync, getEmployerEmergencyWithdrawInstruction, getRefreshActivityInstruction, getTopUpStreamInstruction, getWithdrawInstruction, parseCloseStreamInstruction, parseCreateStreamInstruction, parseEmployerEmergencyWithdrawInstruction, parseRefreshActivityInstruction, parseTopUpStreamInstruction, parseWithdrawInstruction, type CloseStreamAsyncInput, type CreateStreamAsyncInput, type EmployerEmergencyWithdrawInput, type ParsedCloseStreamInstruction, type ParsedCreateStreamInstruction, type ParsedEmployerEmergencyWithdrawInstruction, type ParsedRefreshActivityInstruction, type ParsedTopUpStreamInstruction, type ParsedWithdrawInstruction, type RefreshActivityInput, type TopUpStreamInput, type WithdrawInput } from '../instructions';
 
 export const CASCADE_PROGRAM_ADDRESS = '6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ' as Address<'6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ'>;
 
 export enum CascadeAccount { PaymentStream }
 
 export function identifyCascadeAccount(account: { data: ReadonlyUint8Array } | ReadonlyUint8Array): CascadeAccount {
-const data = 'data' in account ? account.data : account;
-if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([124, 85, 193, 22, 93, 1, 143, 75])), 0)) { return CascadeAccount.PaymentStream; }
-throw new Error("The provided account could not be identified as a cascade account.")
+    const data = 'data' in account ? account.data : account;
+    if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([124, 85, 193, 22, 93, 1, 143, 75])), 0)) { return CascadeAccount.PaymentStream; }
+    throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT, { accountData: data, programName: "cascade" });
 }
 
 export enum CascadeInstruction { CloseStream, CreateStream, EmployerEmergencyWithdraw, RefreshActivity, TopUpStream, Withdraw }
 
 export function identifyCascadeInstruction(instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array): CascadeInstruction {
-const data = 'data' in instruction ? instruction.data : instruction;
-if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([255, 241, 196, 212, 95, 93, 160, 89])), 0)) { return CascadeInstruction.CloseStream; }
+    const data = 'data' in instruction ? instruction.data : instruction;
+    if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([255, 241, 196, 212, 95, 93, 160, 89])), 0)) { return CascadeInstruction.CloseStream; }
 if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([71, 188, 111, 127, 108, 40, 229, 158])), 0)) { return CascadeInstruction.CreateStream; }
 if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([53, 243, 175, 174, 220, 22, 246, 211])), 0)) { return CascadeInstruction.EmployerEmergencyWithdraw; }
 if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([55, 172, 115, 3, 200, 89, 189, 250])), 0)) { return CascadeInstruction.RefreshActivity; }
 if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([12, 244, 26, 215, 160, 204, 9, 151])), 0)) { return CascadeInstruction.TopUpStream; }
 if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([183, 18, 70, 156, 148, 109, 161, 34])), 0)) { return CascadeInstruction.Withdraw; }
-throw new Error("The provided instruction could not be identified as a cascade instruction.")
+    throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION, { instructionData: data, programName: "cascade" });
 }
 
 export type ParsedCascadeInstruction<TProgram extends string = '6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ'> =
@@ -39,3 +44,40 @@ export type ParsedCascadeInstruction<TProgram extends string = '6erxegH47t73aQjW
 | { instructionType: CascadeInstruction.RefreshActivity } & ParsedRefreshActivityInstruction<TProgram>
 | { instructionType: CascadeInstruction.TopUpStream } & ParsedTopUpStreamInstruction<TProgram>
 | { instructionType: CascadeInstruction.Withdraw } & ParsedWithdrawInstruction<TProgram>
+
+
+        export function parseCascadeInstruction<TProgram extends string>(
+            instruction: Instruction<TProgram> 
+                & InstructionWithData<ReadonlyUint8Array>
+        ): ParsedCascadeInstruction<TProgram> {
+            const instructionType = identifyCascadeInstruction(instruction);
+            switch (instructionType) {
+                case CascadeInstruction.CloseStream: { assertIsInstructionWithAccounts(instruction);
+return { instructionType: CascadeInstruction.CloseStream, ...parseCloseStreamInstruction(instruction) }; }
+case CascadeInstruction.CreateStream: { assertIsInstructionWithAccounts(instruction);
+return { instructionType: CascadeInstruction.CreateStream, ...parseCreateStreamInstruction(instruction) }; }
+case CascadeInstruction.EmployerEmergencyWithdraw: { assertIsInstructionWithAccounts(instruction);
+return { instructionType: CascadeInstruction.EmployerEmergencyWithdraw, ...parseEmployerEmergencyWithdrawInstruction(instruction) }; }
+case CascadeInstruction.RefreshActivity: { assertIsInstructionWithAccounts(instruction);
+return { instructionType: CascadeInstruction.RefreshActivity, ...parseRefreshActivityInstruction(instruction) }; }
+case CascadeInstruction.TopUpStream: { assertIsInstructionWithAccounts(instruction);
+return { instructionType: CascadeInstruction.TopUpStream, ...parseTopUpStreamInstruction(instruction) }; }
+case CascadeInstruction.Withdraw: { assertIsInstructionWithAccounts(instruction);
+return { instructionType: CascadeInstruction.Withdraw, ...parseWithdrawInstruction(instruction) }; }
+                default: throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__UNRECOGNIZED_INSTRUCTION_TYPE, { instructionType: instructionType as string, programName: "cascade" });
+            }
+        }
+
+export type CascadePlugin = { accounts: CascadePluginAccounts; instructions: CascadePluginInstructions; }
+
+export type CascadePluginAccounts = { paymentStream: ReturnType<typeof getPaymentStreamCodec> & SelfFetchFunctions<PaymentStreamArgs, PaymentStream>; }
+
+export type CascadePluginInstructions = { closeStream: (input: CloseStreamAsyncInput) => ReturnType<typeof getCloseStreamInstructionAsync> & SelfPlanAndSendFunctions; createStream: (input: CreateStreamAsyncInput) => ReturnType<typeof getCreateStreamInstructionAsync> & SelfPlanAndSendFunctions; employerEmergencyWithdraw: (input: EmployerEmergencyWithdrawInput) => ReturnType<typeof getEmployerEmergencyWithdrawInstruction> & SelfPlanAndSendFunctions; refreshActivity: (input: RefreshActivityInput) => ReturnType<typeof getRefreshActivityInstruction> & SelfPlanAndSendFunctions; topUpStream: (input: TopUpStreamInput) => ReturnType<typeof getTopUpStreamInstruction> & SelfPlanAndSendFunctions; withdraw: (input: WithdrawInput) => ReturnType<typeof getWithdrawInstruction> & SelfPlanAndSendFunctions; }
+
+export type CascadePluginRequirements = ClientWithRpc<GetAccountInfoApi & GetMultipleAccountsApi> & ClientWithTransactionPlanning & ClientWithTransactionSending
+
+export function cascadeProgram() {
+    return <T extends CascadePluginRequirements>(client: T) => {
+        return { ...client, cascade: <CascadePlugin>{ accounts: { paymentStream: addSelfFetchFunctions(client, getPaymentStreamCodec()) }, instructions: { closeStream: input => addSelfPlanAndSendFunctions(client, getCloseStreamInstructionAsync(input)), createStream: input => addSelfPlanAndSendFunctions(client, getCreateStreamInstructionAsync(input)), employerEmergencyWithdraw: input => addSelfPlanAndSendFunctions(client, getEmployerEmergencyWithdrawInstruction(input)), refreshActivity: input => addSelfPlanAndSendFunctions(client, getRefreshActivityInstruction(input)), topUpStream: input => addSelfPlanAndSendFunctions(client, getTopUpStreamInstruction(input)), withdraw: input => addSelfPlanAndSendFunctions(client, getWithdrawInstruction(input)) } } };
+    };
+}

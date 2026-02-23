@@ -6,9 +6,10 @@
  * @see https://github.com/codama-idl/codama
  */
 
+import { SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError } from '@solana/errors';
+import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { combineCodec, fixDecoderSize, fixEncoderSize, getAddressEncoder, getBytesDecoder, getBytesEncoder, getProgramDerivedAddress, getStructDecoder, getStructEncoder, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from 'gill';
 import { CASCADE_PROGRAM_ADDRESS } from '../programs';
-import { expectAddress, getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const CLOSE_STREAM_DISCRIMINATOR = new Uint8Array([255, 241, 196, 212, 95, 93, 160, 89]);
 
@@ -47,19 +48,19 @@ const programAddress = config?.programAddress ?? CASCADE_PROGRAM_ADDRESS;
 
  // Original accounts.
 const originalAccounts = { employer: { value: input.employer ?? null, isWritable: true }, stream: { value: input.stream ?? null, isWritable: true }, vault: { value: input.vault ?? null, isWritable: true }, employerTokenAccount: { value: input.employerTokenAccount ?? null, isWritable: true }, tokenProgram: { value: input.tokenProgram ?? null, isWritable: false } }
-const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedAccount>;
+const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
 // Resolve default values.
 if (!accounts.vault.value) {
-accounts.vault.value = await getProgramDerivedAddress({ programAddress, seeds: [getBytesEncoder().encode(new Uint8Array([118, 97, 117, 108, 116])), getAddressEncoder().encode(expectAddress(accounts.stream.value))] });
+accounts.vault.value = await getProgramDerivedAddress({ programAddress, seeds: [getBytesEncoder().encode(new Uint8Array([118, 97, 117, 108, 116])), getAddressEncoder().encode(getAddressFromResolvedInstructionAccount("stream", accounts.stream.value))] });
 }
 if (!accounts.tokenProgram.value) {
 accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
 }
 
 const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta(accounts.employer), getAccountMeta(accounts.stream), getAccountMeta(accounts.vault), getAccountMeta(accounts.employerTokenAccount), getAccountMeta(accounts.tokenProgram)], data: getCloseStreamInstructionDataEncoder().encode({}), programAddress } as CloseStreamInstruction<TProgramAddress, TAccountEmployer, TAccountStream, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>);
+return Object.freeze({ accounts: [getAccountMeta("employer", accounts.employer), getAccountMeta("stream", accounts.stream), getAccountMeta("vault", accounts.vault), getAccountMeta("employerTokenAccount", accounts.employerTokenAccount), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getCloseStreamInstructionDataEncoder().encode({}), programAddress } as CloseStreamInstruction<TProgramAddress, TAccountEmployer, TAccountStream, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>);
 }
 
 export type CloseStreamInput<TAccountEmployer extends string = string, TAccountStream extends string = string, TAccountVault extends string = string, TAccountEmployerTokenAccount extends string = string, TAccountTokenProgram extends string = string> =  {
@@ -76,7 +77,7 @@ const programAddress = config?.programAddress ?? CASCADE_PROGRAM_ADDRESS;
 
  // Original accounts.
 const originalAccounts = { employer: { value: input.employer ?? null, isWritable: true }, stream: { value: input.stream ?? null, isWritable: true }, vault: { value: input.vault ?? null, isWritable: true }, employerTokenAccount: { value: input.employerTokenAccount ?? null, isWritable: true }, tokenProgram: { value: input.tokenProgram ?? null, isWritable: false } }
-const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedAccount>;
+const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
 // Resolve default values.
@@ -85,7 +86,7 @@ accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as A
 }
 
 const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta(accounts.employer), getAccountMeta(accounts.stream), getAccountMeta(accounts.vault), getAccountMeta(accounts.employerTokenAccount), getAccountMeta(accounts.tokenProgram)], data: getCloseStreamInstructionDataEncoder().encode({}), programAddress } as CloseStreamInstruction<TProgramAddress, TAccountEmployer, TAccountStream, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>);
+return Object.freeze({ accounts: [getAccountMeta("employer", accounts.employer), getAccountMeta("stream", accounts.stream), getAccountMeta("vault", accounts.vault), getAccountMeta("employerTokenAccount", accounts.employerTokenAccount), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getCloseStreamInstructionDataEncoder().encode({}), programAddress } as CloseStreamInstruction<TProgramAddress, TAccountEmployer, TAccountStream, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>);
 }
 
 export type ParsedCloseStreamInstruction<TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
@@ -100,8 +101,7 @@ data: CloseStreamInstructionData; };
 
 export function parseCloseStreamInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(instruction: Instruction<TProgram> & InstructionWithAccounts<TAccountMetas> & InstructionWithData<ReadonlyUint8Array>): ParsedCloseStreamInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 5) {
-  // TODO: Coded error.
-  throw new Error('Not enough accounts');
+  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 5 });
 }
 let accountIndex = 0;
 const getNextAccount = () => {

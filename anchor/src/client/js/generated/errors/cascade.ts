@@ -6,7 +6,8 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { isProgramError, type Address, type SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM, type SolanaError } from 'gill';
+import { type SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM, type SolanaError } from '@solana/errors';
+import { isProgramError, type Address } from 'gill';
 import { CASCADE_PROGRAM_ADDRESS } from '../programs';
 
 /** StreamInactive: This stream is no longer active */
