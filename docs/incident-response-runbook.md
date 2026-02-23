@@ -1,5 +1,7 @@
 # Cascade Incident Response Runbook
 
+Status note (updated February 23, 2026): this runbook aligns with the current production gating docs (`docs/production.md`, `docs/production-dry-run.md`) and CI workflow (`.github/workflows/anchor-localnet-ci.yml`).
+
 This runbook is for a solo/duo-maintained project. It prioritizes fast containment, clear evidence capture, and safe recovery.
 
 ## Incident Levels
@@ -15,7 +17,7 @@ This runbook is for a solo/duo-maintained project. It prioritizes fast containme
 
 ## Detection Signals
 
-- CI failures in localnet integration/invariant suites.
+- CI failures in `Anchor Localnet CI` (`quality-checks`, `localnet-tests`).
 - Spike in onchain errors (`InvalidStreamAccounting`, `VaultBalanceInvariantViolated`, constraint failures).
 - Suspicious upgrade-authority activity.
 - User-reported abnormal behavior.

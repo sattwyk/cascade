@@ -1,5 +1,7 @@
 # Withdrawal Feature Analysis & Recommendations
 
+Status note (updated February 23, 2026): this is an analysis snapshot, not a strict runbook. It should be read alongside current implementation in `src/features/streams/client/mutations/use-withdraw-mutation.ts` and related server actions.
+
 ## Executive Summary
 
 The withdrawal feature is **functionally working** - on-chain transactions succeed and funds transfer correctly. However, there are UX and data consistency issues related to the database sync process.
@@ -130,7 +132,7 @@ queryClient.setQueryData(EMPLOYEE_DASHBOARD_OVERVIEW_QUERY_KEY, (previous) => ({
 
 #### 1. Add Stream Sync Mechanism
 
-**Problem**: Streams created on-chain aren't automatically mirrored to DB
+**Problem**: stream metadata can become temporarily desynced when create/persist flows do not complete (for example, missing context needed by persistence actions).
 
 **Suggested Solutions**:
 
@@ -150,18 +152,16 @@ export async function syncStreamsFromChain() {
 }
 ```
 
-**Option B**: Webhook on stream creation
+**Option B**: Trigger server-side persistence directly from the create flow
 
 ```typescript
-// In your create-stream mutation
+// In your create-stream success path
 onSuccess: async (result) => {
-  await fetch('/api/webhooks/stream-created', {
-    method: 'POST',
-    body: JSON.stringify({
-      streamAddress: result.streamAddress,
-      employerWallet: result.employer,
-      // ... other data
-    }),
+  await createStreamRecord({
+    streamAddress: result.streamAddress,
+    vaultAddress: result.vaultAddress,
+    employeeId: result.input.employeeId,
+    // ... other fields
   });
 };
 ```
@@ -356,7 +356,7 @@ Consider adding these analytics:
    - Verify no more double-toast
    - Check employer activity logs appear
 
-2. **This Week**: Implement stream sync mechanism (Option A or B above)
+2. **This Week**: tighten persistence guarantees for create + withdraw paths and monitor desync cases
 
 3. **This Month**: Add balance alerts and withdrawal limits
 

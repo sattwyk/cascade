@@ -1,423 +1,167 @@
 # Testing Employer Activity Logs
 
-## Overview
+Status note (updated February 23, 2026): this guide reflects the current stream mutation and activity-log implementation in `src/features/streams` and `src/features/organization`.
 
-As of the latest implementation, both withdrawal and refresh-activity operations now create **dual activity logs**:
+## Scope
 
-1. Employee-facing log (for employee dashboard)
-2. Employer-facing log (for employer dashboard)
+This runbook validates that employee actions produce both:
 
----
+1. Employee-facing activity entries
+2. Employer-facing activity entries (tagged with `metadata.visibleToEmployer = true`)
 
-## How to Verify
+Covered actions:
 
-### Step 1: Perform a Withdrawal
+- `stream_withdrawn`
+- `stream_refresh_activity`
 
-1. Navigate to employee dashboard
-2. Click "Withdraw" on any active stream
-3. Enter an amount and confirm
-4. Sign the transaction in your wallet
+## Source of Truth in Code
 
-### Step 2: Check Database Logs
+- Activity write action: `src/features/organization/server/actions/activity-log.ts`
+- Employer dashboard activity page: `src/app/dashboard/@employer/activity/page.tsx`
+- Withdrawal mutation logging: `src/features/streams/client/mutations/use-withdraw-mutation.ts`
+- Refresh mutation logging: `src/features/streams/client/mutations/use-refresh-activity-mutation.ts`
+
+## Expected Logging Behavior
+
+For each withdrawal/refresh attempt, the client mutation attempts two writes via `createActivityLog(...)`:
+
+1. Employee perspective entry
+2. Employer perspective entry
+
+The employer entry is differentiated by:
+
+- `metadata.visibleToEmployer: true`
+- Employer-oriented title/description text
+
+Status values are stored in metadata:
+
+- `success`
+- `failed`
+- `cancelled`
+
+## Manual Verification Flow
+
+### 1) Trigger employee actions
+
+From an employee session on an active stream:
+
+1. Run a successful withdrawal.
+2. Trigger one failed or cancelled withdrawal.
+3. Run a successful refresh activity.
+4. Trigger one failed or cancelled refresh activity.
+
+### 2) Verify in database
+
+Use SQL to verify dual entries exist.
 
 ```sql
--- View all withdrawal activities
 SELECT
   id,
+  activity_type,
   title,
   description,
   actor_type,
   actor_address,
   occurred_at,
-  metadata->'visibleToEmployer' as employer_visible,
-  metadata->'status' as status,
-  metadata->'amount' as amount
+  metadata->>'status' AS status,
+  metadata->>'visibleToEmployer' AS visible_to_employer,
+  metadata->>'streamAddress' AS stream_address
 FROM organization_activity
-WHERE activity_type = 'stream_withdrawn'
+WHERE activity_type IN ('stream_withdrawn', 'stream_refresh_activity')
 ORDER BY occurred_at DESC
-LIMIT 10;
+LIMIT 50;
 ```
 
-**Expected Results**: For each withdrawal, you should see **2 rows**:
-
-| title                | description                                | employer_visible | status  |
-| -------------------- | ------------------------------------------ | ---------------- | ------- |
-| Withdrawal completed | You withdrew 50.00 tokens                  | null             | success |
-| Employee withdrawal  | Employee withdrew 50.00 tokens from stream | true             | success |
-
----
-
-### Step 3: View in Employer Dashboard
-
-**Option A: Using the API endpoint**
-
-```bash
-curl http://localhost:3000/api/activity-log \
-  -H "Cookie: cascade-user-email=employer@example.com"
-```
-
-**Option B: Navigate to employer dashboard**
+You should see pairs for each action:
 
-1. Sign in as employer
-2. Go to Activity Feed (usually at `/dashboard/activity`)
-3. Look for entries with:
-   - Title: "Employee withdrawal"
-   - Description: "Employee withdrew X tokens from stream"
-
----
+- One row with `visible_to_employer` null/false (employee-facing)
+- One row with `visible_to_employer = true` (employer-facing)
 
-## Activity Log Schema
+### 3) Verify in dashboard UI
 
-### Employee-Facing Log
+There is no `/api/activity-log` route in the current app.
 
-```json
-{
-  "id": "uuid-1",
-  "organizationId": "org-uuid",
-  "streamId": "stream-uuid",
-  "employeeId": "employee-uuid",
-  "actorType": "employee",
-  "actorAddress": "EmployeeWalletAddress...",
-  "activityType": "stream_withdrawn",
-  "title": "Withdrawal completed",
-  "description": "You withdrew 50.00 tokens",
-  "signature": "TransactionSignature...",
-  "occurredAt": "2025-10-31T12:34:56Z",
-  "metadata": {
-    "amount": 50.0,
-    "streamAddress": "StreamPDA...",
-    "signature": "TransactionSignature...",
-    "actor": "employee",
-    "status": "success"
-  }
-}
-```
+Use the activity page rendered by:
 
-### Employer-Facing Log
+- `src/app/dashboard/@employer/activity/page.tsx`
 
-```json
-{
-  "id": "uuid-2",
-  "organizationId": "org-uuid",
-  "streamId": "stream-uuid",
-  "employeeId": "employee-uuid",
-  "actorType": "employee", // Still employee, but visible to employer
-  "actorAddress": "EmployeeWalletAddress...",
-  "activityType": "stream_withdrawn",
-  "title": "Employee withdrawal",
-  "description": "Employee withdrew 50.00 tokens from stream",
-  "signature": "TransactionSignature...",
-  "occurredAt": "2025-10-31T12:34:56Z",
-  "metadata": {
-    "amount": 50.0,
-    "streamAddress": "StreamPDA...",
-    "signature": "TransactionSignature...",
-    "actor": "employee",
-    "visibleToEmployer": true, // 👈 Key differentiator
-    "status": "success"
-  }
-}
-```
+Route:
 
----
+- `/dashboard/activity`
+- If disabled, enable feature flag `dashboard_employer_activity_view`.
 
-## All Activity Types Covered
+Expected:
 
-### ✅ Withdrawal Success
+- Employer-facing entries appear with employee-oriented titles such as:
+  - `Employee withdrawal`
+  - `Employee refreshed activity`
+  - `Employee withdrawal failed`
+  - `Employee cancelled activity refresh`
 
-- **Employee sees**: "Withdrawal completed" / "You withdrew X tokens"
-- **Employer sees**: "Employee withdrawal" / "Employee withdrew X tokens from stream"
-
-### ✅ Withdrawal Failed
-
-- **Employee sees**: "Withdrawal failed" / [error message]
-- **Employer sees**: "Employee withdrawal failed" / "Employee withdrawal attempt failed: [error]"
-
-### ✅ Withdrawal Cancelled
+## Canonical Event/Title Matrix
 
-- **Employee sees**: "Withdrawal cancelled"
-- **Employer sees**: "Employee cancelled withdrawal" / "Employee cancelled a withdrawal attempt of X tokens"
-
-### ✅ Refresh Activity Success
+### Withdraw (`stream_withdrawn`)
 
-- **Employee sees**: "Activity refreshed" / "You refreshed your activity timer"
-- **Employer sees**: "Employee refreshed activity" / "Employee confirmed they are still actively working"
+- Success:
+  - Employee: `Withdrawal completed`
+  - Employer: `Employee withdrawal`
+- Failed:
+  - Employee: `Withdrawal failed`
+  - Employer: `Employee withdrawal failed`
+- Cancelled:
+  - Employee: `Withdrawal cancelled`
+  - Employer: `Employee cancelled withdrawal`
 
-### ✅ Refresh Activity Failed
+### Refresh (`stream_refresh_activity`)
 
-- **Employee sees**: "Activity refresh failed" / [error message]
-- **Employer sees**: "Employee activity refresh failed" / [error]
+- Success:
+  - Employee: `Activity refreshed`
+  - Employer: `Employee refreshed activity`
+- Failed:
+  - Employee: `Activity refresh failed`
+  - Employer: `Employee activity refresh failed`
+- Cancelled:
+  - Employee: `Activity refresh cancelled`
+  - Employer: `Employee cancelled activity refresh`
 
-### ✅ Refresh Activity Cancelled
+## Targeted SQL Assertions
 
-- **Employee sees**: "Activity refresh cancelled"
-- **Employer sees**: "Employee cancelled activity refresh" / "Employee cancelled an activity refresh attempt"
-
----
-
-## Filtering Activity Logs
-
-### For Employee Dashboard
-
-```typescript
-// Only show employee-facing activities (no visibleToEmployer flag)
-const employeeActivities = allActivities.filter((a) => !a.metadata?.visibleToEmployer);
-```
-
-### For Employer Dashboard
-
-```typescript
-// Show employer-facing activities (has visibleToEmployer: true)
-const employerActivities = allActivities.filter((a) => a.metadata?.visibleToEmployer === true);
-```
-
-### Alternative: Use Separate Queries
-
-```typescript
-// Employee query
-const { data: employeeActivity } = useQuery({
-  queryKey: ['employee-activity', employeeId],
-  queryFn: () => getEmployeeActivity(employeeId),
-});
-
-// Employer query
-const { data: organizationActivity } = useQuery({
-  queryKey: ['organization-activity', organizationId],
-  queryFn: () => getOrganizationActivity(organizationId),
-});
-```
-
----
-
-## Status Values
-
-Each activity log includes a `status` field in metadata:
-
-- **`success`**: Operation completed successfully
-- **`failed`**: Operation failed due to error
-- **`cancelled`**: User cancelled the operation
-
-This allows filtering by status:
-
-```typescript
-// Show only successful withdrawals
-const successfulWithdrawals = activities.filter(
-  (a) => a.activityType === 'stream_withdrawn' && a.metadata?.status === 'success',
-);
-
-// Show all failed operations
-const failures = activities.filter((a) => a.metadata?.status === 'failed');
-```
-
----
-
-## UI Considerations
-
-### Employee Dashboard Activity Feed
-
-```tsx
-<ActivityList>
-  {employeeActivities.map((activity) => (
-    <ActivityItem key={activity.id}>
-      <ActivityIcon type={activity.activityType} status={activity.metadata.status} />
-      <div>
-        <h4>{activity.title}</h4>
-        <p>{activity.description}</p>
-        <time>{formatDate(activity.occurredAt)}</time>
-        {activity.signature && <ExplorerLink signature={activity.signature} />}
-      </div>
-    </ActivityItem>
-  ))}
-</ActivityList>
-```
-
-### Employer Dashboard Activity Feed
-
-```tsx
-<ActivityList>
-  {employerActivities.map((activity) => (
-    <ActivityItem key={activity.id}>
-      <ActivityIcon type={activity.activityType} status={activity.metadata.status} />
-      <div>
-        <h4>{activity.title}</h4>
-        <p>{activity.description}</p>
-        <time>{formatDate(activity.occurredAt)}</time>
-
-        {/* Show employee name if available */}
-        {activity.employeeId && <Badge>Employee: {getEmployeeName(activity.employeeId)}</Badge>}
-
-        {/* Show transaction link */}
-        {activity.signature && <ExplorerLink signature={activity.signature} />}
-
-        {/* Show status badge */}
-        <StatusBadge status={activity.metadata.status} />
-      </div>
-    </ActivityItem>
-  ))}
-</ActivityList>
-```
-
----
-
-## Testing Checklist
-
-- [ ] **Withdrawal Success**
-  - [ ] Employee log created
-  - [ ] Employer log created
-  - [ ] Both have correct status: "success"
-  - [ ] Employer log has `visibleToEmployer: true`
-  - [ ] Signature recorded in both
-
-- [ ] **Withdrawal Failed**
-  - [ ] Employee log created with error message
-  - [ ] Employer log created with error message
-  - [ ] Both have status: "failed"
-  - [ ] Error message captured
-
-- [ ] **Withdrawal Cancelled**
-  - [ ] Employee log created
-  - [ ] Employer log created
-  - [ ] Both have status: "cancelled"
-  - [ ] No error message (expected)
-
-- [ ] **Refresh Activity Success**
-  - [ ] Employee log created
-  - [ ] Employer log created
-  - [ ] Both have status: "success"
-
-- [ ] **Refresh Activity Failed**
-  - [ ] Employee log created with error
-  - [ ] Employer log created with error
-  - [ ] Both have status: "failed"
-
-- [ ] **Refresh Activity Cancelled**
-  - [ ] Employee log created
-  - [ ] Employer log created
-  - [ ] Both have status: "cancelled"
-
----
-
-## Debugging Tips
-
-### If you don't see employer logs:
-
-1. **Check database connection**
-
-   ```bash
-   echo $DATABASE_URL
-   ```
-
-2. **Verify logs are being created**
-
-   ```typescript
-   // Add temporary logging
-   const result = await createActivityLog({...});
-   console.log('Activity log created:', result);
-   ```
-
-3. **Check for errors in server logs**
-
-   ```bash
-   # Look for these messages:
-   # "[withdraw] Failed to log employer-facing withdrawal activity"
-   # "[refresh-activity] Failed to log employer-facing refresh activity"
-   ```
-
-4. **Query database directly**
-
-   ```sql
-   SELECT COUNT(*)
-   FROM organization_activity
-   WHERE metadata->>'visibleToEmployer' = 'true';
-   ```
-
-5. **Verify `createActivityLog` is being called twice**
-   - Add breakpoints in `use-withdraw-mutation.ts` at lines where `createActivityLog` is called
-   - Should see 2 calls per successful operation
-
----
-
-## Performance Considerations
-
-Each withdrawal/refresh creates **2 activity logs**. For high-volume systems:
-
-### Option 1: Batch Inserts
-
-```typescript
-// Instead of 2 separate calls:
-await Promise.all([createActivityLog(employeeLog), createActivityLog(employerLog)]);
-
-// Could batch:
-await createActivityLogs([employeeLog, employerLog]);
-```
-
-### Option 2: Use Database Triggers
+Count employer-visible rows:
 
 ```sql
--- Auto-create employer log when employee log inserted
-CREATE OR REPLACE FUNCTION create_employer_activity_mirror()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.metadata->>'visibleToEmployer' IS NULL THEN
-    INSERT INTO organization_activity (...)
-    VALUES (
-      NEW.organization_id,
-      NEW.stream_id,
-      -- ... derive employer-facing fields
-      jsonb_set(NEW.metadata, '{visibleToEmployer}', 'true'::jsonb)
-    );
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER mirror_activity_to_employer
-AFTER INSERT ON organization_activity
-FOR EACH ROW
-EXECUTE FUNCTION create_employer_activity_mirror();
+SELECT COUNT(*) AS employer_visible_count
+FROM organization_activity
+WHERE metadata->>'visibleToEmployer' = 'true'
+  AND activity_type IN ('stream_withdrawn', 'stream_refresh_activity');
 ```
 
-### Option 3: Lazy Loading
+Count by status:
 
-```typescript
-// Don't create logs immediately - queue them
-await queueActivityLog(employeeLog);
-await queueActivityLog(employerLog);
-
-// Background worker processes queue
-setInterval(async () => {
-  const batch = await getQueuedLogs(100);
-  await bulkInsertActivityLogs(batch);
-}, 5000);
+```sql
+SELECT
+  activity_type,
+  metadata->>'status' AS status,
+  COUNT(*) AS count
+FROM organization_activity
+WHERE activity_type IN ('stream_withdrawn', 'stream_refresh_activity')
+GROUP BY activity_type, metadata->>'status'
+ORDER BY activity_type, status;
 ```
 
----
+## Debugging Checklist
 
-## Future Enhancements
+1. Confirm database is enabled (`DATABASE_URL` is set).
+2. Check browser/server logs for:
+   - `[withdraw] Failed to log employer-facing withdrawal activity`
+   - `[refresh-activity] Failed to log employer-facing refresh activity`
+3. Verify the employee/employer context resolves (cookies and organization context).
+4. Verify mutation code paths are the current ones under:
+   - `src/features/streams/client/mutations/use-withdraw-mutation.ts`
+   - `src/features/streams/client/mutations/use-refresh-activity-mutation.ts`
 
-1. **Rich Notifications**
-   - Email employer when large withdrawal occurs
-   - Slack/Discord webhook integration
-   - In-app notifications
+## Pass Criteria
 
-2. **Analytics Dashboard**
-   - Total withdrawals by employee
-   - Average withdrawal amount
-   - Peak withdrawal times
-   - Withdrawal frequency trends
-
-3. **Activity Search & Filters**
-   - Filter by employee
-   - Filter by date range
-   - Filter by amount range
-   - Filter by status (success/failed/cancelled)
-
-4. **Export to CSV**
-   - Download activity history
-   - Include all metadata
-   - Format for accounting software
-
-5. **Real-time Updates**
-   - WebSocket notifications
-   - Live activity feed
-   - Push notifications
+- Every tested withdrawal/refresh attempt produces two activity rows.
+- Employer-facing row includes `metadata.visibleToEmployer = true`.
+- `metadata.status` matches the actual operation result.
+- `/dashboard/activity` shows the expected employer-facing entries.

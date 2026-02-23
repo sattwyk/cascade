@@ -1,5 +1,7 @@
 # Cascade Upgrade Authority Policy
 
+Status note (updated February 23, 2026): this policy aligns with `docs/production.md`, `docs/incident-response-runbook.md`, and `docs/key-management-policy.md`.
+
 This policy defines how program upgrades are approved and executed for a solo/duo-maintained project.
 
 ## Goals
@@ -27,7 +29,7 @@ Normal upgrades require:
 
 - multisig quorum approval (`2` signatures minimum)
 - validated build artifacts
-- successful localnet/CI checks
+- successful CI checks in `Anchor Localnet CI` (`quality-checks`, `localnet-tests`)
 - one independent review (if collaborator is available)
 
 ## Emergency Upgrade Procedure
@@ -50,7 +52,7 @@ Emergency path still requires multisig quorum; no bypass key is allowed.
 - Every upgrade must have:
   - commit hash and release tag
   - reason for upgrade
-  - test evidence (CI/localnet result)
+  - test evidence (CI result plus localnet validation evidence)
 - Upgrade decisions should be documented in PR notes or a release log.
 
 ## Immutability Milestone

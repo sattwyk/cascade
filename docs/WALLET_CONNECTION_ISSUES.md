@@ -1,233 +1,112 @@
-# Landing Page Wallet Connection - Duplicate Email Issues
+# Wallet Connection and Organization Resolution Notes
 
-## Critical Issues Found
+Status note (updated February 23, 2026): this document reflects current behavior in:
 
-### 1. **`resolveOrganizationContext` - Ambiguous Organization Selection** ⚠️
+- `src/features/organization/server/actions/organization-context.ts`
+- `src/core/workflows/employer-onboarding.ts`
+- `src/app/api/auth/resolve-role/route.ts`
 
-**Location:** `/src/app/dashboard/actions/organization-context.ts` (lines 50-65)
+## Executive Summary
 
-**Problem:**
+The previously reported wallet/email-org resolution issues were partially fixed.
 
-```typescript
-const whereClause = conditions.length === 2 ? or(...conditions) : conditions[0]!;
+- `registerOrganizationAdmin` role-overwrite concern: mostly fixed for same-org employee conflicts.
+- `resolve-role` route “first match wins” behavior: improved with organization-id and role preference selection.
+- `resolveOrganizationContext`: improved prioritization exists, but multi-org ambiguity can still occur in edge cases.
 
-const match = await db
-  .select({
-    /* ... */
-  })
-  .from(organizationUsers)
-  .innerJoin(organizations, eq(organizationUsers.organizationId, organizations.id))
-  .where(whereClause)
-  .limit(1); // ⚠️ ONLY TAKES FIRST MATCH
-```
+## Current Component Status
 
-**Scenario:**
-If a user (email: `john@example.com`) belongs to **multiple organizations** with different wallets:
+### 1) `resolveOrganizationContext`
 
-- Organization A: `john@example.com` + `wallet1`
-- Organization B: `john@example.com` + `wallet2`
+File:
 
-When they connect with `wallet2`, the query uses `OR(email = john, wallet = wallet2)` and **arbitrarily picks the first match**—could be Organization A even though they connected with wallet2!
+- `src/features/organization/server/actions/organization-context.ts`
 
-**Impact:**
+Current strategy order:
 
-- User connects with correct wallet but lands in **wrong organization**
-- Data shown is for different organization
-- User confusion and potential data leakage
+1. Use wallet + email + persisted org id cookie when available.
+2. Fallback to wallet-only match.
+3. Fallback to email-only match.
 
----
+Current residual risk:
 
-### 2. **`registerOrganizationAdmin` - Overwrites User Role** ⚠️
+- Wallet-only and email-only fallbacks still use `.limit(1)`, so multi-org users may still resolve to the wrong org if no explicit organization is selected.
+- Strategy 1 filters by persisted org id after a query using `OR(wallet, email)`, which is better than before but still depends on cookie accuracy.
 
-**Location:** `/src/workflows/employer-onboarding.ts` (lines 363-392)
+Severity:
 
-**Problem:**
+- Medium (context ambiguity), not the previous high-severity “always first match” behavior.
 
-```typescript
-.onConflictDoUpdate({
-  target: [organizationUsers.organizationId, organizationUsers.email],
-  set: {
-    displayName: derivedName,
-    walletAddress,
-    role: 'employer',  // ⚠️ ALWAYS OVERWRITES TO EMPLOYER
-    isPrimary: true,
-    joinedAt: now,
-    /* ... */
-  },
-})
-```
+### 2) `registerOrganizationAdmin`
 
-**Scenario:**
+File:
 
-1. User `john@example.com` is invited as **employee** → role = 'employee'
-2. Same user creates their own employer organization → role **overwrites** to 'employer'
-3. Now both records in same org have role='employer' **OR** the employee record is lost
+- `src/core/workflows/employer-onboarding.ts`
 
-**Impact:**
+Current behavior:
 
-- Employee loses access to their employee dashboard
-- Role confusion in the system
-- Permission issues
+- Before upsert, it checks if the same org+email already exists with `role = employee` and throws a fatal error in that case.
+- Upsert still sets `role = 'employer'`, but the employee-conflict case in the same organization is now explicitly blocked.
 
----
+Severity:
 
-### 3. **`resolve-role` API - First Match Wins** ⚠️
+- Low-to-medium residual risk.
+- Remaining caveat is mostly policy/data-model level (cross-org identity modeling), not a direct same-org silent overwrite bug.
 
-**Location:** `/src/app/api/auth/resolve-role/route.ts` (lines 46-58)
+### 3) `resolve-role` API route
 
-**Problem:**
+File:
 
-```typescript
-const [record] = await drizzleClientHttp
-  .select({
-    /* ... */
-  })
-  .from(organizationUsers)
-  .where(conditions.length === 2 ? and(...conditions) : conditions[0]!)
-  .limit(1); // ⚠️ ONLY FIRST MATCH
-```
+- `src/app/api/auth/resolve-role/route.ts`
 
-**Scenario:**
-Same user belongs to multiple organizations:
+Current behavior:
 
-- Organization A: employee
-- Organization B: employer
+- Looks up records by wallet address.
+- Selection preference is:
+  1. exact organization match (if `organizationId` is supplied)
+  2. intended role match
+  3. first wallet match
 
-When wallet connects, it picks **first match** arbitrarily—user might want Organization B but gets Organization A.
+Severity:
 
-**Impact:**
+- Medium residual ambiguity when users have multiple org memberships and client does not provide organization id.
 
-- Wrong organization context loaded
-- User can't access intended workspace
-- Confusing UX—user thinks wallet connection failed
+## Current Risk Matrix
 
----
+| Component                    | Current State                            | Severity | Recommended Action                                     |
+| ---------------------------- | ---------------------------------------- | -------- | ------------------------------------------------------ |
+| `resolveOrganizationContext` | Partially fixed, ambiguity remains       | Medium   | Require explicit org selection for multi-org sessions  |
+| `registerOrganizationAdmin`  | Same-org employee conflict now blocked   | Low/Med  | Keep guard; add tests for role transitions             |
+| `resolve-role` API           | Improved selection logic, still fallback | Medium   | Always send `organizationId` once user chooses context |
 
-## Recommended Fixes
+## Recommended Next Actions
 
-### Fix 1: Make `resolveOrganizationContext` Prioritize Wallet Match
+1. Add explicit organization selector UI for multi-org users after wallet connect.
+2. Persist selected organization id and require it in role-resolution flows.
+3. Add integration tests for:
+   - same wallet across multiple orgs
+   - same email across multiple org memberships
+   - role switching with and without explicit org id
+4. Decide identity policy explicitly:
+   - whether wallet must be unique globally
+   - or wallet/email can be reused across orgs with explicit context selection
 
-```typescript
-export async function resolveOrganizationContext(): Promise<OrganizationContext> {
-  // ... existing code ...
+## Suggested Test Scenarios
 
-  const db = drizzleClientHttp;
+### Scenario A: Multi-org with explicit org id
 
-  // First try exact wallet + email match
-  if (email && wallet) {
-    const exactMatch = await db
-      .select({
-        organizationId: organizations.id,
-        accountState: organizations.accountState,
-        primaryWallet: organizations.primaryWallet,
-      })
-      .from(organizationUsers)
-      .innerJoin(organizations, eq(organizationUsers.organizationId, organizations.id))
-      .where(and(eq(organizationUsers.email, email), eq(organizationUsers.walletAddress, wallet)))
-      .limit(1)
-      .then((rows) => rows.at(0));
+1. User belongs to `orgA` and `orgB`.
+2. Client sends `organizationId = orgB` to `resolve-role`.
+3. Verify `orgB` is selected.
 
-    if (exactMatch) {
-      return {
-        status: 'ok',
-        organizationId: exactMatch.organizationId,
-        accountState: exactMatch.accountState,
-        primaryWallet: exactMatch.primaryWallet,
-      };
-    }
-  }
+### Scenario B: Multi-org without org id
 
-  // Then try wallet only (more reliable than email)
-  if (wallet) {
-    const walletMatch = await db
-      .select({
-        /* ... */
-      })
-      .from(organizationUsers)
-      .innerJoin(organizations, eq(organizationUsers.organizationId, organizations.id))
-      .where(eq(organizationUsers.walletAddress, wallet))
-      .limit(1)
-      .then((rows) => rows.at(0));
+1. User belongs to multiple orgs under one wallet.
+2. Client sends wallet + intended role only.
+3. Verify fallback behavior is deterministic and documented.
 
-    if (walletMatch)
-      return {
-        /* ... */
-      };
-  }
+### Scenario C: Employee-to-employer conflict in same org
 
-  // Finally fallback to email (least reliable)
-  if (email) {
-    const emailMatch = await db
-      .select({
-        /* ... */
-      })
-      .from(organizationUsers)
-      .innerJoin(organizations, eq(organizationUsers.organizationId, organizations.id))
-      .where(eq(organizationUsers.email, email))
-      .limit(1)
-      .then((rows) => rows.at(0));
-
-    if (emailMatch)
-      return {
-        /* ... */
-      };
-  }
-
-  return { status: 'error', reason: 'organization-not-found' };
-}
-```
-
-### Fix 2: Add Organization Selector for Multi-Org Users
-
-If user belongs to multiple organizations, show a selection UI before proceeding to dashboard.
-
-### Fix 3: Prevent Email Reuse Across Organizations
-
-Add constraint or validation that prevents same email from having different roles in different organizations.
-
-### Fix 4: Make Wallet Primary Identifier
-
-Since wallets are unique to blockchain, use wallet as the PRIMARY unique identifier instead of email. Email can be secondary/metadata.
-
----
-
-## Current State Summary
-
-| Component                          | Issue                                  | Severity  | Risk             |
-| ---------------------------------- | -------------------------------------- | --------- | ---------------- |
-| `resolveOrganizationContext`       | OR query picks first match arbitrarily | 🔴 High   | Wrong org loaded |
-| `registerOrganizationAdmin`        | Overwrites employee role to employer   | 🔴 High   | Role confusion   |
-| `resolve-role` API                 | First match wins with multiple orgs    | 🟡 Medium | Wrong workspace  |
-| `upsertEmployee` (employee-invite) | Email conflict overwrites wallet       | 🟢 Fixed  | Already patched  |
-
----
-
-## Testing Scenarios
-
-### Scenario A: Multi-Organization User
-
-1. User creates employer account → `org1` + `john@example.com` + `wallet1`
-2. User invited as employee → `org2` + `john@example.com` + `wallet2`
-3. User connects `wallet2` → **May load org1 instead of org2!**
-
-### Scenario B: Role Confusion
-
-1. User invited as employee → role='employee'
-2. User creates own employer org with same email → role becomes 'employer'
-3. Original employee record lost or overwritten
-
-### Scenario C: Wallet Switch
-
-1. User has `org1` + `john@example.com` + `wallet1`
-2. User switches to `wallet2` in browser
-3. Cookie still has email, query matches by email → loads wrong org
-
----
-
-## Priority Recommendations
-
-1. ✅ **Already Fixed:** Employee duplicate email validation (add-employee-modal)
-2. 🔴 **Critical:** Fix `resolveOrganizationContext` to prioritize wallet + organizationId combo
-3. 🔴 **Critical:** Prevent same email from having different roles across organizations
-4. 🟡 **Important:** Add organization selector for multi-org users
-5. 🟡 **Nice-to-have:** Make wallet the primary unique identifier system-wide
+1. Existing `organization_users` row has `role = employee`.
+2. Run employer onboarding with same org+email.
+3. Verify onboarding fails with the expected fatal error.

@@ -1,18 +1,20 @@
 # Employee Duplicate Issue - Solutions
 
+Status note (updated February 23, 2026): this issue note is still valid, but file paths and migration commands below are updated to match the current repository structure.
+
 ## Problem Summary
 
 When adding employees with the **same email** but **different wallets**, the database's unique constraint on `(organization_id, email)` causes the `upsertEmployee` function to **update** the existing record instead of creating a new one. This makes it look like previous employees are deleted.
 
 ## Root Cause
 
-In `/src/db/schema.ts` line 187:
+In `src/core/db/schema.ts`:
 
 ```typescript
 uniqueIndex('employees_org_email_key').on(table.organizationId, table.email);
 ```
 
-In `/src/workflows/employee-invite.ts` lines 194-227:
+In `src/core/workflows/employee-invite.ts`:
 
 ```typescript
 .onConflictDoUpdate({
@@ -41,7 +43,7 @@ In `/src/workflows/employee-invite.ts` lines 194-227:
 
 ### Files Modified
 
-- `/src/components/dashboard/modals/add-employee-modal.tsx`
+- `src/features/employees/components/employer-add-employee-modal.tsx`
 
 ---
 
@@ -54,7 +56,7 @@ If your business requirement is to allow the same person (email) to have multipl
 Remove the unique constraint on email and use wallet as the unique identifier instead:
 
 ```typescript
-// In src/db/schema.ts - REMOVE this line:
+// In src/core/db/schema.ts - REMOVE this line:
 uniqueIndex('employees_org_email_key').on(table.organizationId, table.email),
 
 // ADD this instead:
@@ -65,13 +67,13 @@ uniqueIndex('employees_org_wallet_key').on(table.organizationId, table.primaryWa
 
 ```bash
 cd /home/satty/projects/cascade
-pnpm drizzle-kit generate:pg
-pnpm drizzle-kit push:pg
+pnpm db:generate
+pnpm db:push
 ```
 
 ### 3. Update Workflow Logic
 
-Change `/src/workflows/employee-invite.ts` to upsert on wallet instead:
+Change `src/core/workflows/employee-invite.ts` to upsert on wallet instead:
 
 ```typescript
 .onConflictDoUpdate({

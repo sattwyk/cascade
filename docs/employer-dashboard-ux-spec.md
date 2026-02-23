@@ -1,9 +1,11 @@
 # Employer Dashboard UX Specification
 
+Status note (updated February 23, 2026): this is a UX blueprint. For implementation truth, use `docs/employer-dashboard-integration.md`.
+
 ## Context & Objectives
 
 - Deliver an employer-facing dashboard that orchestrates Cascade’s payment stream lifecycle on Solana.
-- Replace the placeholder greet flow with data-rich management tools aligned with the Anchor program (`create_stream`, `top_up_stream`, `refresh_activity`, `employer_emergency_withdraw`, `close_stream`).
+- Replace legacy placeholder flows with data-rich management tools aligned with the Anchor program (`create_stream`, `top_up_stream`, `refresh_activity`, `employer_emergency_withdraw`, `close_stream`).
 - Provide clear, low-friction flows that surface wallet state, stream health, balances, and required actions.
 
 ## Personas & Assumptions
@@ -42,10 +44,10 @@
 
 ## Data Model & Hooks
 
-- Fetch streams via `usePaymentStreamQuery` (single) and `useEmployerStreamsQuery` (new aggregate hook that paginates through `[employer, employee]` pairs).
+- Fetch streams via dashboard hooks such as `useDashboardStreamsQuery` and stream-scoped activity hooks.
 - Mutation hooks from the Next.js guide (create, withdraw, refresh, top up, emergency withdraw, close).
-- After each mutation call `queryClient.invalidateQueries(['payment-stream'])` and relevant aggregate keys (`['employer-streams', employer]`).
-- Store UI state (selected stream, modals) with feature-level context (`cascade/ui/employer-dashboard-context.tsx`).
+- After each mutation invalidate `payment-stream` and dashboard query keys relevant to the affected view.
+- Store UI state (selected stream, modals, setup progress) with `src/features/organization/components/layout/employer-dashboard-context.tsx`.
 
 ## Detailed Flows
 
@@ -248,7 +250,7 @@
 
 ## Implementation Checklist
 
-- [ ] Integrate navigation scaffold (tabs/segments) into `cascade-feature`.
+- [ ] Integrate navigation scaffold updates into the employer dashboard shell/layout.
 - [ ] Build employer dashboard context provider to manage selected stream + modal state.
 - [ ] Implement Overview KPI cards & empty state.
 - [ ] Implement Streams list with detail drawer.

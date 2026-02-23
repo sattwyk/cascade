@@ -1,13 +1,15 @@
 # Dashboard Feature Flags Map
 
+Status note (updated February 23, 2026): this map reflects the current dashboard route structure under `src/app/dashboard` and current flags config.
+
 This document maps every dashboard view route to its feature flag key.
 
-All flags are declared in `src/flags.ts` and evaluated server-side in each route `page.tsx`.
+All flags are declared in `src/core/config/flags.ts` and evaluated server-side in each route `page.tsx`.
 
 ## Defaults
 
 - All dashboard view flags currently default to `true`.
-- If a flag is disabled, the page renders the shared disabled state component from `src/components/dashboard/feature-flag-disabled.tsx`.
+- If a flag is disabled, the page renders the shared disabled state component from `src/core/ui/feature-flag-disabled.tsx`.
 
 ## Employer Views
 

@@ -1,5 +1,7 @@
 # Cascade Threat Model
 
+Status note (updated February 23, 2026): this threat model reflects the current hardened instruction set and governance controls documented in `docs/production.md`, `docs/incident-response-runbook.md`, `docs/key-management-policy.md`, and `docs/upgrade-authority-policy.md`.
+
 This threat model is written for a solo/duo-maintained project that still aims for production-grade engineering quality.
 
 ## Scope

@@ -1,5 +1,7 @@
 # Cascade Key Management Policy
 
+Status note (updated February 23, 2026): this policy aligns with `docs/incident-response-runbook.md`, `docs/upgrade-authority-policy.md`, and the production gating checklist in `docs/production.md`.
+
 This policy defines practical key-management rules for a solo/duo-maintained production project.
 
 ## Scope

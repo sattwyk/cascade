@@ -1,5 +1,7 @@
 # Withdrawal Flow Diagram
 
+Status note (updated February 23, 2026): this diagram reflects current withdrawal handling in `src/features/streams/client/mutations/use-withdraw-mutation.ts`.
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        EMPLOYEE INITIATES WITHDRAWAL                     │
@@ -88,16 +90,16 @@
                                        ▼
                           ┌────────────────────────┐
                           │ Invalidate Queries:    │
-                          │ - Stream balance       │
-                          │ - Overview dashboard   │
-                          │ - Activity feed        │
+                          │ - payment-stream       │
+                          │ - employee overview    │
+                          │ - employee withdrawals │
                           └────────────┬───────────┘
                                        │
                                        ▼
                           ┌────────────────────────┐
                           │ UI Updates:            │
                           │ - New balance shows    │
-                          │ - Withdrawal in list   │
+                          │ - Withdrawal in history│
                           │ - Activity logged      │
                           └────────────────────────┘
 ```
@@ -109,7 +111,8 @@
 ### 1️⃣ ATA Check
 
 ```typescript
-if (!employeeTokenAccount.exists) {
+const ataAccountInfo = await client.rpc.getAccountInfo(employeeTokenAccount, { encoding: 'base64' }).send();
+if (!ataAccountInfo.value) {
   createAtaInstruction; // Idempotent - safe to call multiple times
 }
 ```
@@ -237,22 +240,22 @@ queryClient.setQueryData(OVERVIEW_KEY, (old) => ({
 
 ---
 
-## Query Invalidation Strategy
+## Query Invalidation Strategy (Current)
 
 ```typescript
 // After successful withdrawal:
 setTimeout(() => {
-  // 1. Refresh on-chain stream data
+  // 1) Refresh payment-stream queries
   invalidatePaymentStreamQuery();
 
-  // 2. Either apply optimistic OR refetch from DB
+  // 2) Either apply optimistic overview update OR refetch overview
   if (usedOptimisticUpdate) {
     applyOptimisticUpdate();
   } else {
     queryClient.invalidateQueries({ queryKey: EMPLOYEE_DASHBOARD_OVERVIEW_QUERY_KEY });
   }
 
-  // 3. Refresh activity feed (employer dashboard)
-  queryClient.invalidateQueries({ queryKey: ['organization-activity'] });
+  // 3) Refresh employee withdrawal history
+  queryClient.invalidateQueries({ queryKey: EMPLOYEE_WITHDRAWALS_QUERY_KEY });
 }, 1500); // Wait for blockchain confirmation
 ```

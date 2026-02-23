@@ -1,5 +1,7 @@
 # Employer Dashboard Product & Architecture Specification
 
+Status note (updated February 23, 2026): this is a product blueprint with hackathon-era framing. Use `docs/employer-dashboard-integration.md` as the implementation source of truth.
+
 ## 1. Vision
 
 Build a Solana-native employer dashboard that empowers payroll operators to configure, fund, and monitor Cascade payment streams in real time. The product should feel production-ready while staying achievable within hackathon timelines: deliver a polished, wallet-connected experience that demonstrates end-to-end streaming payroll on Solana, with clear upgrade paths to a full-fledged SaaS tool.
@@ -19,7 +21,7 @@ Derived from `anchor/docs/cascade-program.md` unless noted.
 - **Supported operations**: `create_stream`, `withdraw`, `refresh_activity`, `top_up_stream`, `employer_emergency_withdraw`, `close_stream`.
 - **Funds & custody**: employer funds escrow vault (SPL token); employee withdraws vested tokens hourly. Employer can claw back after 30 days of inactivity.
 - **Environment**: hackathon demo runs on Solana devnet; wallets managed in browser via Wallet UI.
-- **Backend**: none yet. Use local storage to persist organization profile and employee directory during hackathon.
+- **Backend**: server actions + database-backed flows now exist for organization, employees, streams, and activity logs (with selective client persistence fallbacks for setup UX).
 - **Data freshness**: real-time (React Query) polling for stream data (~60s) is sufficient.
 - **Token support**: single SPL mint per organization for MVP.
 
@@ -100,27 +102,28 @@ Derived from `anchor/docs/cascade-program.md` unless noted.
 
 ### 6.2 Key Modules
 
-- `src/features/cascade/data-access`
-  - `useEmployerStreamsQuery`: Fetch multiple stream PDAs (employer + employee seeds), retrieve vault balances, compute metrics (elapsed, available, inactivity).
-  - `stream-helpers.ts`: Bigint formatting, runway calculations.
-  - Mutation hooks for every program instruction (create, withdraw, refresh, top up, emergency, close).
-- `src/components/dashboard`
-  - Context provider storing UI state, employees, organization profile (local storage persistence).
-  - UI modules for overview, streams, employees, settings, modals.
+- `src/features/streams/client`
+  - Query + mutation hooks for stream instructions and dashboard stream views.
+  - PDA/amount/error utilities under `src/features/streams/client/utils`.
+- `src/features/organization/components/layout`
+  - `DashboardProvider` and employer dashboard layout/modal orchestration.
+- `src/features/employees`
+  - Employee listing/invite/update flows and dashboard-facing employee components.
 - `src/components/app-providers.tsx`: Compose React Query + wallet + theme providers.
 
 ### 6.3 Data Flow
 
 1. Wallet connects (Wallet UI) → `useSolana()` exposes `account`, `client`.
-2. `DashboardProvider` persists organization/employee state (local storage).
-3. `useEmployerStreamsQuery` derives PDAs from `account.address` + employee wallets, fetches `PaymentStream` accounts + vault balances via RPC.
+2. `DashboardProvider` coordinates modal/setup state with server-backed account-state synchronization.
+3. `useDashboardStreamsQuery` and `useDashboardEmployeesQuery` hydrate dashboard tabs from server actions.
 4. Components subscribe to query data to render metrics, statuses, and feed modals with required PDAs.
-5. Mutations (based on connected signer) call `useWalletUiSignAndSend` to submit instructions, then invalidate queries for UI refresh.
+5. Mutations (based on connected signer) submit instructions via `useWalletUiSignAndSendWithFallback`, then invalidate queries for UI refresh.
 
 ### 6.4 Environment
 
 - Devnet endpoints via Gill RPC (`useSolana().client`).
-- No backend; local storage keys (`cascade_account_state`, `cascade_employees`, `cascade_organization_profile`).
+- Backend-enabled flows are active when database configuration is present.
+- Local persistence fallback still exists for selected setup/account-state UX.
 - On submit, toasts show transaction signature + explorer link (via `toastTx`).
 
 ## 7. Implementation Plan (Hackathon)

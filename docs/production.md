@@ -4,15 +4,20 @@ This document defines what must be completed before treating the Cascade Anchor 
 
 ## Current Status
 
-The program has strong baseline structure (PDA custody model, account constraints, custom errors), but is not yet production-ready.
+As of February 23, 2026, the program hardening and test-infrastructure work in this runbook has been completed, but production go-live is still blocked.
 
-Primary gaps:
+Remaining blockers:
 
-1. Timestamp arithmetic is not consistently checked.
-2. Token transfer CPIs do not use `transfer_checked`.
-3. Vault close semantics need explicit token-program close handling.
-4. Production-grade test coverage and invariant testing are missing.
-5. Security/audit and operational governance artifacts are missing.
+1. External third-party audit has not been completed and closed out.
+2. Final production-like dry run has not been executed and signed off with evidence.
+
+Completed in-repo:
+
+1. Checked timestamp arithmetic and explicit error paths.
+2. Token CPIs migrated to `transfer_checked` with explicit mint wiring.
+3. Explicit vault token-account close CPI in `close_stream`.
+4. Invariant-focused localnet integration testing and CI workflow.
+5. Governance/runbook docs (`threat model`, `incident response`, `key management`, `upgrade authority`).
 
 ## Code Hardening Tasks
 
@@ -192,8 +197,7 @@ Mark all items complete before production go-live:
 
 ## Suggested Execution Order
 
-1. Code hardening (`timestamp` + `transfer_checked` + explicit vault close CPI).
-2. Test expansion and CI enforcement.
-3. Audit engagement and remediation loop.
-4. Governance/runbook finalization.
-5. Production release readiness review.
+1. External audit engagement and scope lock.
+2. Audit remediation loop (if findings are reported).
+3. Production-like dry run on devnet/staging with captured evidence.
+4. Final production readiness review and go/no-go decision.

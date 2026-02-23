@@ -1,5 +1,7 @@
 # Wallet Signing Error - "Unexpected error" Fix
 
+Status note (updated February 23, 2026): this troubleshooting note reflects the current stream client structure under `src/features/streams/client`.
+
 ## Problem Summary
 
 The error "Unexpected error" occurring in the Phantom wallet extension during `signAndSendTransaction` on line 45 of `use-create-stream-mutation.ts` indicates that the wallet extension is encountering an unexpected condition when attempting to sign a transaction.
@@ -10,7 +12,7 @@ The error "Unexpected error" occurring in the Phantom wallet extension during `s
 at #n (chrome-extension://bfnaelmomeimhlpmgjnjophhpkkoljpa/solana.js:3:416751)
 at async r.signAndSendTransaction (chrome-extension://bfnaelmomeimhlpmgjnjophhpkkoljpa/solana.js:3:418964)
 at async #g [as signAndSendTransaction] (chrome-extension://bfnaelmomeimhlpmgjnjophhpkkoljpa/solana.js:3:423826)
-at async useCreateStreamMutation.useMutation [as mutationFn] (src/features/cascade/data-access/use-create-stream-mutation.ts:45:25)
+at async useCreateStreamMutation.useMutation [as mutationFn] (src/features/streams/client/mutations/use-create-stream-mutation.ts)
 ```
 
 ## Root Causes
@@ -35,6 +37,10 @@ Enhanced error handling in all `signAndSend` mutation files:
 - `use-withdraw-mutation.ts`
 - `use-emergency-withdraw-mutation.ts`
 - `use-refresh-activity-mutation.ts`
+
+Also, transaction submission now routes through:
+
+- `src/features/streams/client/utils/use-wallet-ui-sign-and-send-with-fallback.ts`
 
 Each mutation now includes:
 
@@ -157,38 +163,38 @@ Based on the detailed error logs, you can:
 
 ## Files Modified
 
-1. `/src/features/cascade/data-access/use-create-stream-mutation.ts`
+1. `src/features/streams/client/mutations/use-create-stream-mutation.ts`
    - Added try-catch wrapping
    - Added pre-flight validation
    - Added detailed error logging
    - Fixed variable scoping for `signature`
 
-2. `/src/features/cascade/data-access/use-top-up-stream-mutation.ts`
+2. `src/features/streams/client/mutations/use-top-up-stream-mutation.ts`
    - Added try-catch wrapping
    - Added pre-flight validation
    - Added detailed error logging
 
-3. `/src/features/cascade/data-access/use-close-stream-mutation.ts`
+3. `src/features/streams/client/mutations/use-close-stream-mutation.ts`
    - Added try-catch wrapping
    - Added pre-flight validation
    - Added detailed error logging
 
-4. `/src/features/cascade/data-access/use-withdraw-mutation.ts`
+4. `src/features/streams/client/mutations/use-withdraw-mutation.ts`
    - Added try-catch wrapping
    - Added pre-flight validation
    - Added detailed error logging
 
-5. `/src/features/cascade/data-access/use-emergency-withdraw-mutation.ts`
+5. `src/features/streams/client/mutations/use-emergency-withdraw-mutation.ts`
    - Added try-catch wrapping
    - Added pre-flight validation
    - Added detailed error logging
 
-6. `/src/features/cascade/data-access/use-refresh-activity-mutation.ts`
+6. `src/features/streams/client/mutations/use-refresh-activity-mutation.ts`
    - Added try-catch wrapping
    - Added pre-flight validation
    - Added detailed error logging
 
-7. `/src/features/cascade/data-access/derive-cascade-pdas.ts`
+7. `src/features/streams/client/utils/derive-cascade-pdas.ts`
    - Enhanced `getErrorMessage()` function to handle more error types
 
 ## Testing Recommendations

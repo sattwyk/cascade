@@ -1,182 +1,139 @@
 # Cascade Next.js Integration Guide
 
-This document explains how to extend the Cascade starter dApp under `src/` so it can drive the on-chain payment stream program described in `anchor/docs/cascade-program.md`. The goal is to replace the placeholder “greet” flow with production-quality data hooks and UI that follow the project’s existing conventions.
+Status note (updated February 23, 2026): this guide reflects the current `src/features/streams` architecture and generated Anchor client workflow.
 
-## Prerequisites
+## Purpose
 
-- Node 20+, pnpm, and Anchor CLI installed.
-- A Solana wallet that works with Wallet UI.
-- The program deployed to the cluster you intend to use (update `anchor/Anchor.toml` and redeploy if you change clusters).
-- Familiarity with React Query, Wallet UI, and the generated client emitted by Codama.
+Use this guide when wiring Next.js UI flows to the Cascade Anchor program from this repository.
 
-## Generated Client Overview
+Canonical on-chain reference:
 
-- `@project/anchor` (see `tsconfig.json`) re-exports:
-  - The IDL (`CascadeIDL`).
-  - Gill-ready helpers such as `getCreateStreamInstruction`, `fetchPaymentStream`, and the `CASCADE_PROGRAM_ADDRESS`.
-- The helpers live in `anchor/src/client/js/generated/`:
-  - `instructions/` exposes both synchronous and `Async` variants that derive PDAs for you when possible.
-  - `accounts/paymentStream.ts` provides coders to decode on-chain state.
-- After changing the program or IDL run:
+- `anchor/docs/cascade-program.md`
 
-  ```bash
-  pnpm anchor build
-  pnpm anchor-client
-  ```
+## Current Integration Architecture
 
-  This regenerates the client bindings consumed by the app.
+- **Program client alias**: `@project/anchor` -> `anchor/src`
+- **Generated client output**: `anchor/src/client/js/generated`
+- **Wallet + RPC context**: `src/components/solana/solana-provider.tsx`, `src/components/solana/use-solana.tsx`
+- **Stream feature module**:
+  - Mutations: `src/features/streams/client/mutations`
+  - Queries: `src/features/streams/client/queries`
+  - PDA/helpers: `src/features/streams/client/utils/derive-cascade-pdas.ts`
+  - UI: `src/features/streams/components`
+  - Server actions: `src/features/streams/server/actions`
+- **Dashboard routes**: `src/app/dashboard/@employer`, `src/app/dashboard/@employee`
 
-## App Architecture Recap
+## Program Change -> Client Regeneration
 
-- Feature modules live under `src/features/*`.
-- Each feature uses three folders:
-  - `data-access/` for hooks (React Query + Wallet UI).
-  - `ui/` for presentational components.
-  - Root feature component (e.g. `cascade-feature.tsx`) that composes the data and UI pieces.
-- Shared Solana context comes from `useSolana()` in `src/components/solana/use-solana.tsx`, exposing the connected account and a Gill RPC client.
-- Toast notifications funnel through `toastTx` (`src/components/toast-tx.tsx`), so instruction hooks should reuse it.
+After any Anchor program or IDL change:
 
-## Implementation Blueprint
+```bash
+pnpm run anchor-build
+pnpm run codama:js
+```
 
-### 1. Replace the Greet Mutation
+Optional full sync command:
 
-1. Remove `use-greet-mutation.ts`.
-2. Create mutation hooks that mirror the greet pattern:
-   - `useCreateStreamMutation`
-   - `useWithdrawMutation`
-   - `useRefreshActivityMutation`
-   - `useTopUpStreamMutation`
-   - `useEmergencyWithdrawMutation`
-   - `useCloseStreamMutation`
+```bash
+pnpm run setup
+```
 
-Each mutation should:
+Then run checks:
+
+```bash
+pnpm test
+pnpm run anchor-test
+```
+
+## Instruction Wiring Pattern (Current Standard)
+
+When adding or updating a stream instruction in the app:
+
+1. Derive required PDAs using `derive-cascade-pdas.ts`.
+2. Build instruction with generated helpers from `@project/anchor`.
+3. Send with `useWalletUiSignAndSendWithFallback` (legacy first, retries v0 when needed).
+4. Persist off-chain side effects via server actions when applicable.
+5. Invalidate React Query caches via:
+   - `useInvalidatePaymentStreamQuery`
+   - `useInvalidateDashboardStreamsQuery`
+
+Minimal mutation pattern:
 
 ```ts
 const signer = useWalletUiSigner({ account });
-const signAndSend = useWalletUiSignAndSend();
+const signAndSend = useWalletUiSignAndSendWithFallback();
+const invalidatePaymentStreamQuery = useInvalidatePaymentStreamQuery();
 
-return useMutation({
-  mutationFn: async (input) => {
-    const instruction = await getCreateStreamInstructionAsync({
-      employer: signer,
-      employee: input.employee,
-      mint: input.mint,
-      employerTokenAccount: input.employerTokenAccount,
-      hourlyRate: input.hourlyRate,
-      totalDeposit: input.totalDeposit,
-    });
-    return await signAndSend(instruction, signer);
-  },
-  onSuccess: (signature) => toastTx(signature, 'Stream created'),
-  onError: (error) => toast.error(error instanceof Error ? error.message : 'Create stream failed'),
+const instruction = getTopUpStreamInstruction({
+  employer: signer,
+  stream,
+  mint,
+  vault,
+  employerTokenAccount,
+  additionalAmount,
 });
+
+const signature = await signAndSend(instruction, signer);
+toastTx(signature, 'Top up submitted');
+await invalidatePaymentStreamQuery();
 ```
 
-Use the synchronous `get<Name>Instruction` helpers when you already have the PDA addresses; reach for the `Async` variant when you want Gill to derive them automatically.
+## Data Fetching Pattern
 
-### 2. Add PDA Helpers
+- Server-side pages fetch initial data through server queries/actions.
+- Client components hydrate and keep data live through React Query hooks.
 
-Create `src/features/cascade/data-access/derive-cascade-pdas.ts` to ensure every hook derives PDAs consistently:
+Example path:
 
-```ts
-import { getAddressEncoder, getBytesEncoder, getProgramDerivedAddress } from 'gill';
+1. `src/app/dashboard/@employer/streams/page.tsx` calls `getStreamsForDashboard`.
+2. `src/features/streams/components/employer-streams-tab.tsx` uses `useDashboardStreamsQuery({ initialData })`.
+3. Mutations invalidate dashboard and stream query keys after successful transactions.
 
-import { CASCADE_PROGRAM_ADDRESS } from '@project/anchor';
+## Feature Flags
 
-const streamSeed = getBytesEncoder().encode(new Uint8Array([115, 116, 114, 101, 97, 109])); // "stream"
-const vaultSeed = getBytesEncoder().encode(new Uint8Array([118, 97, 117, 108, 116])); // "vault"
+Dashboard views are gated by server-side flags in `src/core/config/flags.ts`.
+When a flag is disabled, pages render `src/core/ui/feature-flag-disabled.tsx`.
 
-export async function derivePaymentStream(employer: string, employee: string) {
-  return getProgramDerivedAddress({
-    programAddress: CASCADE_PROGRAM_ADDRESS,
-    seeds: [streamSeed, getAddressEncoder().encode(employer), getAddressEncoder().encode(employee)],
-  });
-}
+## Local Development Loop
 
-export async function deriveVault(stream: string) {
-  return getProgramDerivedAddress({
-    programAddress: CASCADE_PROGRAM_ADDRESS,
-    seeds: [vaultSeed, getAddressEncoder().encode(stream)],
-  });
-}
+```bash
+pnpm dev
 ```
 
-### 3. Stream Fetching
+In another shell, run tests as needed:
 
-Replace `use-get-program-account-query.ts` with `use-payment-stream-query.ts`:
-
-```ts
-import { useQuery } from '@tanstack/react-query';
-
-import { fetchMaybePaymentStream } from '@project/anchor';
-
-import { useSolana } from '@/components/solana/use-solana';
-
-import { derivePaymentStream } from './derive-cascade-pdas';
-
-export function usePaymentStreamQuery({ employer, employee }: { employer?: string; employee?: string }) {
-  const { client, cluster } = useSolana();
-
-  return useQuery({
-    enabled: !!employer && !!employee,
-    queryKey: ['payment-stream', { cluster, employer, employee }],
-    queryFn: async () => {
-      const [streamAddress] = await derivePaymentStream(employer!, employee!);
-      return fetchMaybePaymentStream(client.rpc, streamAddress);
-    },
-  });
-}
+```bash
+pnpm test
+pnpm run anchor-test
 ```
 
-Return `undefined` when the account does not exist so the UI can prompt users to create a stream.
+Targeted localnet integration run:
 
-### 4. Feature UI Updates
+```bash
+CASCADE_RUN_LOCALNET_TESTS=1 pnpm exec vitest run anchor/tests/cascade.localnet.integration.test.ts
+```
 
-- Replace `CascadeUiCreate` with a form (`CascadeUiCreateStream`) that gathers employee address, mint, funding account, hourly rate, and deposit amount, then calls `useCreateStreamMutation`.
-- Expand `CascadeUiProgram`:
-  - Show decoded stream stats (hourly rate, total deposited, available balance computed client-side).
-  - Render action buttons wired to the new mutations.
-  - Guard each action based on the current wallet (e.g. only the employer should see emergency withdraw).
-- Preserve the existing `AppHero`, `Card`, and `AppAlert` styling for continuity.
+## Common Integration Failures
 
-### 5. Cache Invalidation
+1. **Stale generated client**: run `pnpm run anchor-build && pnpm run codama:js`.
+2. **Cluster mismatch**: wallet/network cluster differs from expected app environment.
+3. **Token account constraint failures**: wrong owner/mint passed into instruction accounts.
+4. **Unsupported mint decimals**: `create_stream` enforces 6-decimal mints.
+5. **Wallet transaction-version issues**: use the fallback sender utility (already standard in stream mutations).
 
-- After every successful mutation call `queryClient.invalidateQueries(['payment-stream'])`.
-- Consider optimistic updates when the expected balance change is deterministic (withdraw, top up) to reduce perceived latency.
+## Quick File Map
 
-### 6. Error Handling & UX
+- Program entrypoints: `anchor/programs/cascade/src/lib.rs`
+- Instruction handlers: `anchor/programs/cascade/src/instructions`
+- Stream state/invariants: `anchor/programs/cascade/src/state/payment_stream.rs`
+- Generated TS program helpers: `anchor/src/client/js/generated/instructions`
+- Main stream mutations: `src/features/streams/client/mutations`
+- Dashboard stream query: `src/features/streams/client/queries/use-employer-streams-query.ts`
 
-- Reuse `toastTx` for success notifications so users get Explorer links.
-- Surface helpful error messages (`toast.error`) when CPI calls fail (e.g. insufficient funds, inactive stream).
-- Disable buttons while mutations are pending to avoid duplicate submissions.
+## PR Checklist for Integration Changes
 
-### 7. Local Development Loop
-
-1. Start the dev server:
-
-   ```bash
-   pnpm dev
-   ```
-
-2. Connect a wallet via the Wallet UI dropdown.
-3. Fund the employer’s token account (use `spl-token` or a faucet).
-4. Create the stream, then switch to the employee wallet to test withdraw and refresh activity.
-5. Use `solana logs` or `anchor test` in another terminal if you need deeper on-chain diagnostics.
-
-### 8. Recommended Enhancements
-
-- Add input validation (e.g. Solana address format, non-zero deposit) using a lightweight schema helper.
-- Extract shared formatting helpers for bigint amounts (USDC decimals, etc.).
-- Provide a stream selector UI when employers manage multiple employees.
-- Add Vitest + React Testing Library coverage for the mutation hooks (mock Gill RPC) and form validation.
-
-## Reference Checklist
-
-- [ ] Generate PDA helpers.
-- [ ] Build React Query hooks for every instruction.
-- [ ] Replace greet UI with create stream form.
-- [ ] Render stream state and attach action buttons.
-- [ ] Wire toast notifications and query invalidation.
-- [ ] Manually verify flows on devnet (create, withdraw, refresh, top up, emergency withdraw, close).
-
-This workflow keeps the Next.js layer aligned with the existing boilerplate conventions while unlocking the full Cascade payment stream functionality exposed by the Anchor program.
+- [ ] Program + generated client are in sync.
+- [ ] New/changed instruction has mutation wiring in `src/features/streams/client/mutations`.
+- [ ] Query invalidation is included for affected views.
+- [ ] Localnet integration tests pass.
+- [ ] `pnpm test` and `pnpm run anchor-test` pass.
