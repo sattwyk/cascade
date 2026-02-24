@@ -2,6 +2,7 @@
   "typescript.tsdk": "node_modules/typescript/lib",
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
+    "source.fixAll.oxc": "always",
     "source.fixAll.eslint": "always"
   },
   "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],

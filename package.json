@@ -7,7 +7,7 @@
     "anchor-test": "cd anchor && anchor test",
     "build": "next build",
     "codama:js": "codama run js -c ./anchor/codama.js",
-    "ci": "pnpm run build && pnpm run lint && pnpm run format:check && pnpm run codama:js",
+    "ci": "pnpm run build && pnpm run lint:ci && pnpm run format:check && pnpm run codama:js",
     "dev": "next dev",
     "docs:sync": "bash ./scripts/sync-docs.sh",
     "db:generate": "drizzle-kit generate",
@@ -17,7 +17,9 @@
     "db:studio": "drizzle-kit studio",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "eslint",
+    "lint": "oxlint . --report-unused-disable-directives && eslint",
+    "lint:ci": "oxlint . --format=github --report-unused-disable-directives && eslint",
+    "lint:ox": "oxlint . --report-unused-disable-directives",
     "test": "vitest run",
     "test:watch": "vitest",
     "setup": "pnpm run anchor keys sync && pnpm run codama:js",
@@ -27,7 +29,11 @@
     "knip": "knip"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,cjs,mjs,json,css,scss,md,mdx,yml,yaml}": "pnpm exec prettier --write"
+    "*.{js,jsx,ts,tsx,cjs,mjs}": [
+      "oxlint",
+      "pnpm exec prettier --write"
+    ],
+    "*.{json,css,scss,md,mdx,yml,yaml}": "pnpm exec prettier --write"
   },
   "version": "0.0.0",
   "private": true,
@@ -130,10 +136,12 @@
     "drizzle-kit": "^0.31.9",
     "eslint": "^10.0.1",
     "eslint-config-next": "16.1.6",
+    "eslint-plugin-oxlint": "^1.50.0",
     "esrun": "^3.2.30",
     "husky": "^9.1.7",
     "knip": "^5.85.0",
     "lint-staged": "^16.2.7",
+    "oxlint": "^1.50.0",
     "postcss": "^8.5.6",
     "postgres": "^3.4.8",
     "prettier": "^3.8.1",

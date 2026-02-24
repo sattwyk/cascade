@@ -1,5 +1,6 @@
 import nextVitals from 'eslint-config-next/core-web-vitals';
 import nextTs from 'eslint-config-next/typescript';
+import oxlint from 'eslint-plugin-oxlint';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 const eslintConfig = defineConfig([
@@ -25,6 +26,8 @@ const eslintConfig = defineConfig([
     '.corepack-bin/**',
     '.sbf-sdk/**',
   ]),
+  // Disable ESLint rules that Oxlint already handles (must be last).
+  oxlint.configs['flat/recommended'],
 ]);
 
 export default eslintConfig;
