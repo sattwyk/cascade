@@ -27,6 +27,8 @@ jobs:
 
       - name: Enable Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@main
+        with:
+          use-flakehub: false
 
       - name: Cache Next.js build
         uses: actions/cache@v4
@@ -62,6 +64,8 @@ jobs:
 
       - name: Enable Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@main
+        with:
+          use-flakehub: false
 
       - name: Run Anchor test suite (includes localnet integration lane)
         shell: bash
