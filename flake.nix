@@ -95,6 +95,19 @@
                 touch "$PWD/.sbf-sdk/.copied"
               fi
               export SBF_SDK_PATH="$PWD/.sbf-sdk"
+
+              # Pre-install platform-tools so the SBF rustc is available.
+              # This downloads into ~/.cache/solana/<version>/platform-tools/.
+              cargo-build-sbf --install-only 2>/dev/null
+
+              # Determine the platform-tools version and point RUSTC at the
+              # downloaded SBF-capable rustc. Without this, cargo-build-sbf
+              # tries `cargo +<toolchain>` which requires rustup (absent in Nix).
+              _pt_version=$(cargo-build-sbf --version 2>&1 | grep "platform-tools" | awk '{print $2}')
+              _pt_rustc="$HOME/.cache/solana/$_pt_version/platform-tools/rust/bin/rustc"
+              if [ -x "$_pt_rustc" ]; then
+                export RUSTC="$_pt_rustc"
+              fi
             fi
 
             # Solana local config setup

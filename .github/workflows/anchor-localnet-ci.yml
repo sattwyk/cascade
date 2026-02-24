@@ -76,5 +76,12 @@ jobs:
 
             # anchor test reads Anchor.toml [scripts].test:
             # CASCADE_RUN_LOCALNET_TESTS=1 pnpm exec vitest run
-            pnpm run anchor-test
+            #
+            # --no-idl: skip IDL regeneration which runs `cargo +nightly`
+            # (requires rustup, absent in Nix). The committed IDL is canonical.
+            #
+            # --no-rustup-override: Nix provides rustc directly (no rustup),
+            # so cargo-build-sbf must not invoke `cargo +toolchain`.
+            # The shellHook already exports RUSTC to the platform-tools binary.
+            cd anchor && anchor test --no-idl -- --no-rustup-override
           '
