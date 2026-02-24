@@ -125,3 +125,7 @@ db-run:
 # Stop local db container(s).
 db-stop:
     docker compose down
+
+# Clean up development artifacts before a fresh install.
+clean:
+    pnpm run clean

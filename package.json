@@ -29,7 +29,8 @@
     "start": "next start",
     "prepare": "husky",
     "setup:localnet-faucet": "bash ./scripts/setup-localnet-faucet.sh",
-    "knip": "knip"
+    "knip": "knip",
+    "clean": "bash ./scripts/clean.sh"
   },
   "dependencies": {
     "@flags-sdk/statsig": "^0.2.5",
