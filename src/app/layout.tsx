@@ -1,13 +1,12 @@
 import type React from 'react';
 
 import type { Metadata } from 'next';
-
-import { Analytics } from '@vercel/analytics/next';
+import { Geist, Geist_Mono, Source_Serif_4 } from 'next/font/google';
 
 import './globals.css';
-
-import { Geist, Geist_Mono, Source_Serif_4 } from 'next/font/google';
 import Script from 'next/script';
+
+import { Analytics } from '@vercel/analytics/next';
 
 import { AppProviders } from '@/components/app-providers';
 import { ReactScan } from '@/components/react-scan';

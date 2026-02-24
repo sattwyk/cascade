@@ -4,7 +4,6 @@
     "bradlc.vscode-tailwindcss",
     "dbaeumer.vscode-eslint",
     "oxc.oxc-vscode",
-    "esbenp.prettier-vscode",
     "yoavbls.pretty-ts-errors"
   ]
 }

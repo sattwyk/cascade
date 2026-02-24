@@ -324,7 +324,7 @@ pnpm exec vitest run anchor/tests/cascade.test.ts
 # Lint code
 pnpm lint
 
-# Format code with Prettier
+# Format code with Oxfmt
 pnpm format
 
 # Check formatting
