@@ -5,7 +5,10 @@ use anchor_spl::token::{self, Token, TokenAccount, TransferChecked};
 
 const INACTIVITY_THRESHOLD_SECONDS: i64 = 30 * 24 * 60 * 60;
 
-fn get_employee_inactive_duration(current_timestamp: i64, employee_last_activity_at: i64) -> Option<i64> {
+fn get_employee_inactive_duration(
+    current_timestamp: i64,
+    employee_last_activity_at: i64,
+) -> Option<i64> {
     current_timestamp
         .checked_sub(employee_last_activity_at)
         .filter(|duration| *duration >= 0)
@@ -30,7 +33,15 @@ pub fn employer_emergency_withdraw(ctx: Context<EmployerEmergencyWithdraw>) -> R
         ErrorCode::EmployeeStillActive
     );
 
+    stream.assert_accounting_invariant()?;
+    let expected_vault_balance = stream.expected_vault_balance()?;
     let withdrawable_vault_balance = ctx.accounts.vault.amount;
+    // Donations can increase the vault above expected, but any deficit indicates
+    // broken stream accounting and must fail.
+    require!(
+        withdrawable_vault_balance >= expected_vault_balance,
+        ErrorCode::VaultBalanceInvariantViolated
+    );
 
     // Transfer remaining balance back to employer
     let employer_key = stream.employer.key();
@@ -59,8 +70,11 @@ pub fn employer_emergency_withdraw(ctx: Context<EmployerEmergencyWithdraw>) -> R
         )?;
     }
 
-    // Mark stream as inactive
+    // Stream vault is emptied (plus optional donation overflow), so mark the
+    // accounted stream balance as fully withdrawn before close.
+    stream.withdrawn_amount = stream.total_deposited;
     stream.is_active = false;
+    stream.assert_accounting_invariant()?;
 
     Ok(())
 }
