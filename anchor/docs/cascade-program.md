@@ -78,9 +78,10 @@ All instructions are thin wrappers in `programs/cascade/src/instructions` and th
 - **Behaviour:**
   1. Confirms the caller matches the recorded employer.
   2. Requires `employee_last_activity_at` to be at least 30 days in the past.
-  3. Validates the destination employer token account (owner + mint) before instruction logic runs.
-  4. Reads the current `vault.amount` and, if non-zero, uses the stream PDA signer to move that full balance back to the employer’s token account.
-  5. Marks the stream inactive (`is_active = false`).
+  3. Enforces stream/vault accounting invariants before transfer, including rejecting deficit vault balances (`VaultBalanceInvariantViolated`).
+  4. Validates the destination employer token account (owner + mint) before instruction logic runs.
+  5. Reads the current `vault.amount` and, if non-zero, uses the stream PDA signer to move that full balance back to the employer’s token account.
+  6. Marks the stream inactive and synchronizes stream accounting by setting `withdrawn_amount = total_deposited`, so subsequent `close_stream` invariant checks remain valid.
 
 ### `close_stream()`
 
@@ -94,7 +95,7 @@ All instructions are thin wrappers in `programs/cascade/src/instructions` and th
 2. **Payroll cadence:** Employee periodically calls `withdraw` to collect vested funds. Each withdrawal updates last activity automatically.
 3. **Keep-alive:** If the employee wants to stay active without withdrawing (e.g. during leave), they use `refresh_activity` before 30 days have elapsed.
 4. **Additional funding:** Employer can call `top_up_stream` any time the stream is still active to extend runway.
-5. **Emergency reclamation:** If the employee disappears for 30+ days, the employer can recover the remaining balance via `employer_emergency_withdraw`, which also deactivates the stream.
+5. **Emergency reclamation:** If the employee disappears for 30+ days, the employer can recover the remaining balance via `employer_emergency_withdraw`, which also deactivates the stream and finalizes stream accounting for clean close-out.
 6. **Clean-up:** Once the stream is inactive, the employer can call `close_stream` to reclaim rent. If any tokens are still in the vault, `close_stream` drains them to the employer token account before closing.
 
 ## Generated TypeScript Client

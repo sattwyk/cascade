@@ -229,10 +229,12 @@ An employee can:
 2. Add Playwright critical-path E2E coverage for employee withdraw/refresh flows.
 3. Keep existing Anchor localnet and Vitest suites as mandatory lower-layer coverage.
 4. Add assertions for dual-perspective activity log creation.
+5. Add deterministic time-control strategy in Anchor integration harness so inactivity-threshold flows can be tested end-to-end.
 
 - Exit criteria:
 
 1. Critical user journeys are covered at UI layer and validated against program- and unit-level suites.
+2. Inactivity-threshold lifecycle (`employer_emergency_withdraw` -> `close_stream`) is covered by integration tests.
 
 ### D2. Localnet CI quality contract
 
@@ -322,34 +324,35 @@ An employee can:
 
 Legend: P0 = must for phase goal, P1 = important, P2 = nice-to-have.
 
-| ID    | Priority | Target Phase | Item                                                                                                     | Status  |
-| ----- | -------- | ------------ | -------------------------------------------------------------------------------------------------------- | ------- |
-| R-001 | P0       | 1            | Replace employee streams mock data with live query-backed flow                                           | Planned |
-| R-002 | P0       | 1            | Remove unsupported reactivate action from stream UI                                                      | Planned |
-| R-003 | P0       | 1            | Feature-flag or relabel non-core placeholder surfaces                                                    | Planned |
-| R-004 | P0       | 2            | Build on-chain to DB reconciliation worker                                                               | Planned |
-| R-005 | P0       | 2            | Harden emergency withdraw DB state updates                                                               | Planned |
-| R-006 | P0       | 2            | Harden close stream DB state updates                                                                     | Planned |
-| R-007 | P1       | 2            | Optimize stream activity query path (remove in-memory filter strategy)                                   | Planned |
-| R-008 | P0       | 2            | Add explicit multi-org selector and persistence                                                          | Planned |
-| R-009 | P0       | 2            | Require org id in role/organization resolution where applicable                                          | Planned |
-| R-010 | P0       | 2            | Add org resolution integration tests                                                                     | Planned |
-| R-011 | P0       | 3            | Add integration tests for employer critical flows                                                        | Planned |
-| R-012 | P0       | 3            | Add integration tests for employee critical flows                                                        | Planned |
-| R-013 | P1       | 3            | Add degraded-mode persistence/optimistic tests                                                           | Planned |
-| R-014 | P1       | 3            | Add mutation telemetry correlation (tx signature to DB events)                                           | Planned |
-| R-015 | P1       | 3            | Validate and schedule alert generation workflow cadence                                                  | Planned |
-| R-016 | P0       | 4            | Execute devnet release smoke matrix and publish evidence                                                 | Planned |
-| R-017 | P0       | 4            | Publish devnet MUP release notes and known limitations                                                   | Planned |
-| R-018 | P0       | 5            | Run external audit and close findings                                                                    | Planned |
-| R-019 | P0       | 5            | Execute production-like dry run with final sign-off                                                      | Planned |
-| R-020 | P1       | 5            | Verifiable build and artifact verification process for release tags                                      | Planned |
-| R-021 | P0       | 2            | Add composite activity index (`organization_id`, `stream_id`, `occurred_at`) and migrate                 | Planned |
-| R-022 | P0       | 2            | Enforce `streamId` on stream lifecycle activity writes and block null stream writes for lifecycle events | Planned |
-| R-023 | P1       | 2            | Backfill historical activity rows to map `metadata.streamAddress` to `streamId`                          | Planned |
-| R-024 | P0       | 2            | Implement resumable reconciliation cursor using `last_synced_slot` with paginated batches                | Planned |
-| R-025 | P0       | 3            | Add Playwright suite for critical employer and employee journeys                                         | Planned |
-| R-026 | P1       | 3            | Define and enforce layered test contract (Playwright + Anchor + Vitest) in CI                            | Planned |
+| ID    | Priority | Target Phase | Item                                                                                                                                   | Status  |
+| ----- | -------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| R-001 | P0       | 1            | Replace employee streams mock data with live query-backed flow                                                                         | Planned |
+| R-002 | P0       | 1            | Remove unsupported reactivate action from stream UI                                                                                    | Planned |
+| R-003 | P0       | 1            | Feature-flag or relabel non-core placeholder surfaces                                                                                  | Planned |
+| R-004 | P0       | 2            | Build on-chain to DB reconciliation worker                                                                                             | Planned |
+| R-005 | P0       | 2            | Harden emergency withdraw DB state updates                                                                                             | Planned |
+| R-006 | P0       | 2            | Harden close stream DB state updates                                                                                                   | Planned |
+| R-007 | P1       | 2            | Optimize stream activity query path (remove in-memory filter strategy)                                                                 | Planned |
+| R-008 | P0       | 2            | Add explicit multi-org selector and persistence                                                                                        | Planned |
+| R-009 | P0       | 2            | Require org id in role/organization resolution where applicable                                                                        | Planned |
+| R-010 | P0       | 2            | Add org resolution integration tests                                                                                                   | Planned |
+| R-011 | P0       | 3            | Add integration tests for employer critical flows                                                                                      | Planned |
+| R-012 | P0       | 3            | Add integration tests for employee critical flows                                                                                      | Planned |
+| R-013 | P1       | 3            | Add degraded-mode persistence/optimistic tests                                                                                         | Planned |
+| R-014 | P1       | 3            | Add mutation telemetry correlation (tx signature to DB events)                                                                         | Planned |
+| R-015 | P1       | 3            | Validate and schedule alert generation workflow cadence                                                                                | Planned |
+| R-016 | P0       | 4            | Execute devnet release smoke matrix and publish evidence                                                                               | Planned |
+| R-017 | P0       | 4            | Publish devnet MUP release notes and known limitations                                                                                 | Planned |
+| R-018 | P0       | 5            | Run external audit and close findings                                                                                                  | Planned |
+| R-019 | P0       | 5            | Execute production-like dry run with final sign-off                                                                                    | Planned |
+| R-020 | P1       | 5            | Verifiable build and artifact verification process for release tags                                                                    | Planned |
+| R-021 | P0       | 2            | Add composite activity index (`organization_id`, `stream_id`, `occurred_at`) and migrate                                               | Planned |
+| R-022 | P0       | 2            | Enforce `streamId` on stream lifecycle activity writes and block null stream writes for lifecycle events                               | Planned |
+| R-023 | P1       | 2            | Backfill historical activity rows to map `metadata.streamAddress` to `streamId`                                                        | Planned |
+| R-024 | P0       | 2            | Implement resumable reconciliation cursor using `last_synced_slot` with paginated batches                                              | Planned |
+| R-025 | P0       | 3            | Add Playwright suite for critical employer and employee journeys                                                                       | Planned |
+| R-026 | P1       | 3            | Define and enforce layered test contract (Playwright + Anchor + Vitest) in CI                                                          | Planned |
+| R-027 | P1       | 3            | Add deterministic time-control harness support and integration test for `employer_emergency_withdraw` then `close_stream` success path | Planned |
 
 ## 9. Release Gates
 
