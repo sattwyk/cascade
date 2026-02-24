@@ -17,7 +17,7 @@ Build a Solana-native employer dashboard that empowers payroll operators to conf
 
 Derived from `anchor/docs/cascade-program.md` unless noted.
 
-- **Program** (`6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ`): governs payment streams via PDAs (`PaymentStream`, `Vault`).
+- **Program** (`FiE8MasF8sQEsruhk5FGxwR25DvQDS4nfji3h2bvVRoi`): governs payment streams via PDAs (`PaymentStream`, `Vault`).
 - **Supported operations**: `create_stream`, `withdraw`, `refresh_activity`, `top_up_stream`, `employer_emergency_withdraw`, `close_stream`.
 - **Funds & custody**: employer funds escrow vault (SPL token); employee withdraws vested tokens hourly. Employer can claw back after 30 days of inactivity.
 - **Environment**: hackathon demo runs on Solana devnet; wallets managed in browser via Wallet UI.

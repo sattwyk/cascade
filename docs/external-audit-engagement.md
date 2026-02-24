@@ -12,7 +12,7 @@ This document defines how to complete the required third-party Solana/Anchor aud
 
 ## Scope for Auditor
 
-- Program: `cascade` (`6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ`)
+- Program: `cascade` (`FiE8MasF8sQEsruhk5FGxwR25DvQDS4nfji3h2bvVRoi`)
 - Code paths:
   - stream creation
   - withdraw

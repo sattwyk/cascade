@@ -1,6 +1,6 @@
 # Cascade Program Capabilities & Gaps
 
-This note summarises what the deployed Cascade Anchor program (`6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ`) **can** do today, what it explicitly **does not** cover, and how we can bridge those gaps without touching on-chain code. Where a product requirement truly needs a new instruction or state, that is also called out.
+This note summarises what the deployed Cascade Anchor program (`FiE8MasF8sQEsruhk5FGxwR25DvQDS4nfji3h2bvVRoi`) **can** do today, what it explicitly **does not** cover, and how we can bridge those gaps without touching on-chain code. Where a product requirement truly needs a new instruction or state, that is also called out.
 
 Status note (updated February 23, 2026): this document reflects the current hardening state of the Anchor program in `anchor/programs/cascade/src`.
 

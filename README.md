@@ -62,7 +62,7 @@ All transactions are recorded on-chain for complete transparency and auditabilit
 
 ### Technical Highlights
 
-- **Solana Anchor Program**: On-chain program handling payment logic ([Program ID: `6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ`](https://explorer.solana.com/address/6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ))
+- **Solana Anchor Program**: On-chain program handling payment logic ([Program ID: `FiE8MasF8sQEsruhk5FGxwR25DvQDS4nfji3h2bvVRoi`](https://explorer.solana.com/address/FiE8MasF8sQEsruhk5FGxwR25DvQDS4nfji3h2bvVRoi))
 - **Next.js 16 App Router**: Modern React frontend with Server Components and parallel routes
 - **Gill**: Type-safe Solana web library for transactions and RPC calls
 - **Wallet UI**: Seamless multi-wallet connection with Solana mobile support

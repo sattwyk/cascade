@@ -14,7 +14,7 @@ import { assertIsInstructionWithAccounts, containsBytes, fixEncoderSize, getByte
 import { getPaymentStreamCodec, type PaymentStream, type PaymentStreamArgs } from '../accounts';
 import { getCloseStreamInstructionAsync, getCreateStreamInstructionAsync, getEmployerEmergencyWithdrawInstruction, getRefreshActivityInstruction, getTopUpStreamInstruction, getWithdrawInstruction, parseCloseStreamInstruction, parseCreateStreamInstruction, parseEmployerEmergencyWithdrawInstruction, parseRefreshActivityInstruction, parseTopUpStreamInstruction, parseWithdrawInstruction, type CloseStreamAsyncInput, type CreateStreamAsyncInput, type EmployerEmergencyWithdrawInput, type ParsedCloseStreamInstruction, type ParsedCreateStreamInstruction, type ParsedEmployerEmergencyWithdrawInstruction, type ParsedRefreshActivityInstruction, type ParsedTopUpStreamInstruction, type ParsedWithdrawInstruction, type RefreshActivityInput, type TopUpStreamInput, type WithdrawInput } from '../instructions';
 
-export const CASCADE_PROGRAM_ADDRESS = '6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ' as Address<'6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ'>;
+export const CASCADE_PROGRAM_ADDRESS = 'FiE8MasF8sQEsruhk5FGxwR25DvQDS4nfji3h2bvVRoi' as Address<'FiE8MasF8sQEsruhk5FGxwR25DvQDS4nfji3h2bvVRoi'>;
 
 export enum CascadeAccount { PaymentStream }
 
@@ -37,7 +37,7 @@ if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Arr
     throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION, { instructionData: data, programName: "cascade" });
 }
 
-export type ParsedCascadeInstruction<TProgram extends string = '6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ'> =
+export type ParsedCascadeInstruction<TProgram extends string = 'FiE8MasF8sQEsruhk5FGxwR25DvQDS4nfji3h2bvVRoi'> =
 | { instructionType: CascadeInstruction.CloseStream } & ParsedCloseStreamInstruction<TProgram>
 | { instructionType: CascadeInstruction.CreateStream } & ParsedCreateStreamInstruction<TProgram>
 | { instructionType: CascadeInstruction.EmployerEmergencyWithdraw } & ParsedEmployerEmergencyWithdrawInstruction<TProgram>

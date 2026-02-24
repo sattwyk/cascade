@@ -6,7 +6,7 @@ This threat model is written for a solo/duo-maintained project that still aims f
 
 ## Scope
 
-- Onchain program: `cascade` (`6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ`)
+- Onchain program: `cascade` (`FiE8MasF8sQEsruhk5FGxwR25DvQDS4nfji3h2bvVRoi`)
 - Client stack: generated Anchor/Gill instruction clients and app mutation flows
 - Operational controls around upgrade authority and incident handling
 

@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/cascade.json`.
  */
 export type Cascade = {
-  "address": "6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ",
+  "address": "FiE8MasF8sQEsruhk5FGxwR25DvQDS4nfji3h2bvVRoi",
   "metadata": {
     "name": "cascade",
     "version": "0.1.0",

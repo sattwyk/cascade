@@ -1,6 +1,6 @@
 # Cascade Payment Stream Program
 
-This document explains the Cascade on-chain program (program id `6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ`) and how to interact with it from the generated TypeScript client that lives under `src/client/js`. The program implements a payroll-style streaming vault that escrows tokens on behalf of an employer and lets an employee withdraw vested earnings over time, while providing inactivity checks and emergency clawback for the employer. Stream creation enforces a 6-decimal mint policy (e.g. USDC-style stablecoins).
+This document explains the Cascade on-chain program (program id `FiE8MasF8sQEsruhk5FGxwR25DvQDS4nfji3h2bvVRoi`) and how to interact with it from the generated TypeScript client that lives under `src/client/js`. The program implements a payroll-style streaming vault that escrows tokens on behalf of an employer and lets an employee withdraw vested earnings over time, while providing inactivity checks and emergency clawback for the employer. Stream creation enforces a 6-decimal mint policy (e.g. USDC-style stablecoins).
 
 ## Core Accounts and PDAs
 
