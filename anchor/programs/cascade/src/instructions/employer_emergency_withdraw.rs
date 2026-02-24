@@ -14,6 +14,28 @@ fn get_employee_inactive_duration(
         .filter(|duration| *duration >= 0)
 }
 
+fn assert_vault_balance_not_deficit(
+    withdrawable_vault_balance: u64,
+    expected_vault_balance: u64,
+) -> Result<()> {
+    // Donations can increase the vault above expected, but any deficit indicates
+    // broken stream accounting and must fail.
+    require!(
+        withdrawable_vault_balance >= expected_vault_balance,
+        ErrorCode::VaultBalanceInvariantViolated
+    );
+    Ok(())
+}
+
+fn finalize_stream_after_emergency_withdraw(stream: &mut PaymentStream) -> Result<()> {
+    // Stream vault is emptied (plus optional donation overflow), so mark the
+    // accounted stream balance as fully withdrawn before close.
+    stream.withdrawn_amount = stream.total_deposited;
+    stream.is_active = false;
+    stream.assert_accounting_invariant()?;
+    Ok(())
+}
+
 pub fn employer_emergency_withdraw(ctx: Context<EmployerEmergencyWithdraw>) -> Result<()> {
     let stream = &mut ctx.accounts.stream;
     let clock = Clock::get()?;
@@ -36,12 +58,7 @@ pub fn employer_emergency_withdraw(ctx: Context<EmployerEmergencyWithdraw>) -> R
     stream.assert_accounting_invariant()?;
     let expected_vault_balance = stream.expected_vault_balance()?;
     let withdrawable_vault_balance = ctx.accounts.vault.amount;
-    // Donations can increase the vault above expected, but any deficit indicates
-    // broken stream accounting and must fail.
-    require!(
-        withdrawable_vault_balance >= expected_vault_balance,
-        ErrorCode::VaultBalanceInvariantViolated
-    );
+    assert_vault_balance_not_deficit(withdrawable_vault_balance, expected_vault_balance)?;
 
     // Transfer remaining balance back to employer
     let employer_key = stream.employer.key();
@@ -70,18 +87,19 @@ pub fn employer_emergency_withdraw(ctx: Context<EmployerEmergencyWithdraw>) -> R
         )?;
     }
 
-    // Stream vault is emptied (plus optional donation overflow), so mark the
-    // accounted stream balance as fully withdrawn before close.
-    stream.withdrawn_amount = stream.total_deposited;
-    stream.is_active = false;
-    stream.assert_accounting_invariant()?;
+    finalize_stream_after_emergency_withdraw(stream)?;
 
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::get_employee_inactive_duration;
+    use super::{
+        assert_vault_balance_not_deficit, finalize_stream_after_emergency_withdraw,
+        get_employee_inactive_duration,
+    };
+    use crate::state::PaymentStream;
+    use anchor_lang::prelude::Pubkey;
 
     #[test]
     fn returns_duration_when_current_timestamp_is_after_last_activity() {
@@ -93,6 +111,47 @@ mod tests {
     fn returns_none_when_last_activity_is_in_the_future() {
         let duration = get_employee_inactive_duration(400, 1_000);
         assert_eq!(duration, None);
+    }
+
+    #[test]
+    fn rejects_deficit_vault_balance() {
+        let result = assert_vault_balance_not_deficit(4, 5);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn allows_matching_or_surplus_vault_balance() {
+        assert!(assert_vault_balance_not_deficit(5, 5).is_ok());
+        assert!(assert_vault_balance_not_deficit(6, 5).is_ok());
+    }
+
+    #[test]
+    fn marks_stream_fully_withdrawn_and_inactive_after_emergency_withdraw() {
+        let mut stream = PaymentStream {
+            employer: Pubkey::new_unique(),
+            employee: Pubkey::new_unique(),
+            mint: Pubkey::new_unique(),
+            vault: Pubkey::new_unique(),
+            hourly_rate: 1,
+            total_deposited: 10,
+            withdrawn_amount: 3,
+            created_at: 0,
+            employee_last_activity_at: 0,
+            is_active: true,
+            bump: 0,
+        };
+
+        let result = finalize_stream_after_emergency_withdraw(&mut stream);
+
+        assert!(result.is_ok());
+        assert_eq!(stream.withdrawn_amount, stream.total_deposited);
+        assert!(!stream.is_active);
+        assert_eq!(
+            stream
+                .expected_vault_balance()
+                .expect("expected vault balance should be valid"),
+            0
+        );
     }
 }
 
