@@ -2,387 +2,227 @@
 
 # Cascade
 
-**Real-time hourly payments on Solana—solving cash flow problems for hourly workers.**
+Real-time hourly payments on Solana for employers and employees.
 
-> **⚠️ Work in progress — devnet only**
-> This is a hackathon/demo project. The app runs on **Solana devnet** exclusively. Do not use real funds, and do not rely on it for actual payroll or payments. Everything can break, change, or be reset at any time.
+> Work in progress and devnet/localnet focused.
+> Do not use real funds or treat this as production payroll software.
 
-Cascade is a blockchain-based payment streaming platform that enables employers to pay hourly workers continuously as they work, rather than waiting for bi-weekly or monthly payroll cycles. Built on Solana for near-instant settlement and minimal fees, Cascade improves worker cash flow and employer flexibility through automated, transparent wage distribution.
+## Current Status (February 24, 2026)
 
----
+Cascade is moving toward a **minimum usable product (MUP)** release on devnet.
 
-## The Problem
+- Employer core stream flows are integrated in the dashboard.
+- Anchor program supports create, top up, withdraw, refresh activity, emergency withdraw, and close.
+- Roadmap for release sequencing is finalized in [ROADMAP.md](./ROADMAP.md).
 
-Traditional payroll systems create unnecessary financial stress for hourly workers:
+Known active gaps before MUP gate:
 
-- **Delayed compensation**: Workers wait weeks or months to access earned wages
-- **Poor cash flow**: Hourly employees can't cover unexpected expenses between pay periods
-- **Opaque systems**: Limited visibility into earnings and payment schedules
-- **High costs**: Traditional payment rails involve expensive intermediaries and slow settlement
+- Employee streams page is still being migrated from mock data to live query-backed data.
+- Multi-organization context UX needs explicit org selection.
+- Stream activity query path needs DB-level optimization (currently over-fetch + in-memory filtering).
+- Some non-core surfaces are placeholder/preview and controlled by feature flags (`templates`, `reports`, etc.).
 
-Cascade solves this by streaming payments hourly using Solana's blockchain, giving workers immediate access to their earnings while maintaining employer control and security.
+## What Cascade Solves
 
----
+Traditional payroll is periodic and delayed. Cascade enables hourly workers to withdraw vested funds as they accrue, while employers retain controls over funding and inactivity handling.
 
-## How It Works
+## Core Capabilities
 
-Cascade uses an Anchor program on Solana to create **payment streams** between employers and employees:
+### On-chain (Anchor program)
 
-1. **Employer creates a stream**: Deposits funds into an escrow vault and sets an hourly rate
-2. **Funds vest continuously**: Tokens unlock hourly based on elapsed time
-3. **Employee withdraws anytime**: Workers can claim vested funds on-demand without waiting for payroll cycles
-4. **Automated security**: Built-in inactivity checks and emergency withdrawal after 30 days of employee inactivity
+Program id in-repo: `FiE8MasF8sQEsruhk5FGxwR25DvQDS4nfji3h2bvVRoi`
 
-All transactions are recorded on-chain for complete transparency and auditability.
+- `create_stream`
+- `top_up_stream`
+- `withdraw`
+- `refresh_activity`
+- `employer_emergency_withdraw`
+- `close_stream`
 
----
+Important constraints:
 
-![Cascade Dashboard](./public/dashboard-preview.png)
+- 6-decimal mint policy is enforced.
+- No pause/resume instruction today.
+- No stream reactivation instruction today.
+- No in-place stream term edits (rate/mint/employee); close + recreate is required.
 
----
+See [anchor/docs/cascade-program.md](./anchor/docs/cascade-program.md) and [docs/cascade-program-capabilities.md](./docs/cascade-program-capabilities.md).
 
-## Features
+### Product surfaces
 
-### For Employers
+Employer:
 
-- **Payment Streaming**: Fund vaults that automatically unlock tokens hourly
-- **Top-Up Flexibility**: Add funds to active streams at any time
-- **Emergency Controls**: Reclaim funds if employees become inactive (30+ days)
-- **Real-Time Dashboard**: Monitor active streams, runway, and employee activity
-- **Employee Management**: Track employees, invitations, and payment history
-- **Activity Logging**: Audit trail of all stream operations and transactions
-- **Low Costs**: Leverage Solana's sub-cent transaction fees
+- Onboarding and organization setup
+- Employee directory/invitations
+- Streams management (create/top-up/emergency/close)
+- Activity and alerts views
 
-### For Employees
+Employee:
 
-- **Instant Access**: Withdraw vested earnings anytime without waiting for payday
-- **Transparent Earnings**: See exactly how much you've earned in real-time
-- **Keep-Alive Option**: Signal activity without withdrawing to prevent stream deactivation
-- **Non-Custodial**: Control your wallet; no third-party holds your funds
+- Overview, history, and profile
+- Withdraw and activity refresh flows
 
-### Technical Highlights
+Route flags map:
 
-- **Solana Anchor Program**: On-chain program handling payment logic ([Program ID: `FiE8MasF8sQEsruhk5FGxwR25DvQDS4nfji3h2bvVRoi`](https://explorer.solana.com/address/FiE8MasF8sQEsruhk5FGxwR25DvQDS4nfji3h2bvVRoi))
-- **Next.js 16 App Router**: Modern React frontend with Server Components and parallel routes
-- **Gill**: Type-safe Solana web library for transactions and RPC calls
-- **Wallet UI**: Seamless multi-wallet connection with Solana mobile support
-- **React Query**: Real-time data fetching with optimistic updates and cache invalidation
-- **PostgreSQL + Drizzle ORM**: Relational database for organization metadata, employees, and activity logs
-- **Vercel Workflow**: Durable execution for email verification and onboarding flows
-- **Statsig Feature Flags**: Dynamic feature rollout and A/B testing via Vercel Flags SDK
-- **Sentry**: Error tracking and performance monitoring
-
----
+- [docs/feature-flags-dashboard.md](./docs/feature-flags-dashboard.md)
 
 ## Quick Start
 
-The hosted version is available at [cascade.sattwyk.com](https://cascade.sattwyk.com) — connect your Solana wallet and you're ready to go.
+### 1. Tooling
 
-For local development, follow the steps below.
-
-### 1. Enter the dev environment
-
-The project ships a [Nix flake](./flake.nix) that provisions all required tooling (Node.js, pnpm, Rust, Solana CLI, Anchor, Docker, `just`). If you have Nix with flakes enabled:
+Preferred: Nix shell with pinned dependencies.
 
 ```bash
 nix develop
 ```
 
-This drops you into a shell with every dependency pinned and ready. No Nix? Install the tools manually:
+Without Nix, install:
 
-- Node.js 22+ and pnpm 10+
-- Rust (stable) with `wasm32-unknown-unknown` target
-- Solana CLI and Anchor
-- Docker (for the local database)
+- Node.js 22+
+- pnpm 10+
+- Rust + Cargo
+- Solana CLI
+- Anchor CLI
+- Docker
 
 ### 2. First-time setup
 
 ```bash
-# Clone the repo
 git clone https://github.com/sattwyk/cascade.git
 cd cascade
-
-# Verify toolchain, install deps, configure .env, build Anchor program
 just setup-local
 ```
 
-`just setup-local` runs `just doctor` → `pnpm install` → copies `.env.example` → `pnpm run setup` (key sync + codegen) → `pnpm anchor-build` in one shot.
+`just setup-local` runs local checks, installs deps, prepares `.env`, syncs Anchor keys, regenerates client bindings, and builds the Anchor program.
 
-### 3. Start the local database
+### 3. Start database
 
 ```bash
-# Starts Postgres + Neon HTTP proxy via Docker Compose, then pushes schema
 just setup-db
 ```
 
-### 4. Configure environment variables
+### 4. Configure environment
 
-Edit `.env` (created in step 2) with your credentials:
-
-```bash
-DATABASE_URL=postgres://postgres:postgres@db.localtest.me:5432/main  # set automatically for local Docker
-
-RESEND_API_KEY=          # transactional email (Resend)
-SENTRY_DSN=              # error tracking
-STATSIG_SERVER_API_KEY=  # feature flags
-FLAGS_SECRET=            # Vercel Flags SDK secret
-
-# Dev faucet — mint test tokens on devnet/localnet
-CASCADE_ENABLE_DEV_FAUCET=true
-CASCADE_DEV_FAUCET_AUTHORITY_KEYPAIR=  # base58 keypair with mint authority
-CASCADE_DEV_FAUCET_USDC_MINT=          # USDC mint address
-```
-
-See [`.env.example`](./.env.example) for the full list.
-
-### 5. Run the app
+Use [`.env.example`](./.env.example) as the source of truth. Minimum common vars:
 
 ```bash
-# Start Next.js + local database together
-just dev-all
-
-# Or separately
-just dev           # Next.js only
-docker compose up  # database only
-```
-
-Visit [http://localhost:3000](http://localhost:3000).
-
-### Anchor program
-
-```bash
-just anchor-localnet   # start local validator
-just anchor-build      # compile the program
-just anchor-test       # run on-chain tests
-just anchor-deploy     # deploy to devnet (default)
-```
-
----
-
-## Architecture
-
-```
-cascade/
-├── anchor/                    # Solana Anchor program (Rust)
-│   ├── programs/cascade/      # Program source
-│   ├── tests/                 # On-chain program tests
-│   └── src/client/js/         # Generated TypeScript client
-├── src/
-│   ├── app/                   # Next.js App Router
-│   │   ├── dashboard/         # Employer & employee dashboards (parallel routes)
-│   │   ├── onboarding/        # Multi-step onboarding flows
-│   │   └── api/               # API routes for workflows & faucets
-│   ├── components/            # React components
-│   │   ├── dashboard/         # Employer dashboard UI
-│   │   ├── employee-dashboard/# Employee dashboard UI
-│   │   ├── onboarding/        # Onboarding wizard components
-│   │   └── ui/                # Shadcn/ui components
-│   ├── features/              # Feature-specific logic
-│   │   ├── account/           # Account profile/preferences
-│   │   ├── alerts/            # Notifications and alerting UI
-│   │   ├── employees/         # Employee management
-│   │   ├── onboarding/        # Invite + verification flows
-│   │   ├── organization/      # Organization settings/activity
-│   │   └── streams/           # Stream mutations, queries, utilities
-│   ├── db/                    # Drizzle ORM schema & client
-│   ├── email/                 # React Email templates
-│   ├── workflows/             # Vercel Workflow definitions
-│   └── lib/                   # Shared utilities & config
-└── docs/                      # Technical documentation
-```
-
-**Key Technologies:**
-
-- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS 4
-- **Blockchain**: Solana, Anchor, Gill, Wallet UI
-- **Database**: PostgreSQL (Neon), Drizzle ORM
-- **State**: React Query (TanStack Query)
-- **Email**: React Email, Resend
-- **Workflows**: Vercel Workflow (durable execution)
-- **Feature Flags**: Statsig, Vercel Flags SDK
-- **Monitoring**: Sentry, Vercel Analytics
-- **Testing**: Vitest
-
----
-
-## Usage
-
-### Creating a Payment Stream (Employer)
-
-```typescript
-import { getCreateStreamInstructionAsync } from '@project/anchor';
-
-const instruction = await getCreateStreamInstructionAsync({
-  employer, // Employer wallet signer
-  employee: employeeAddress, // Employee Solana address
-  mint, // SPL token mint (e.g., USDC)
-  employerTokenAccount, // Employer's token account
-  hourlyRate: 10_000000n, // 10 USDC/hour (6 decimals)
-  totalDeposit: 1_000_000000n, // 1000 USDC initial deposit
-});
-
-// Sign and send transaction using Wallet UI + Gill...
-```
-
-### Withdrawing Funds (Employee)
-
-```typescript
-import { getWithdrawInstruction } from '@project/anchor';
-
-const withdrawIx = getWithdrawInstruction({
-  employee, // Employee wallet signer
-  stream, // Payment stream PDA
-  vault, // Vault PDA
-  employeeTokenAccount, // Employee's token account
-  amount: 50_000000n, // Withdraw 50 USDC
-});
-
-// Sign and send transaction...
-```
-
-For complete code examples and PDA derivation, see [`anchor/docs/cascade-program.md`](./anchor/docs/cascade-program.md).
-
----
-
-## Documentation
-
-- **[Cascade Program Guide](./anchor/docs/cascade-program.md)**: Complete Anchor program reference with instruction examples
-- **[Employer Dashboard Spec](./docs/employer-dashboard-product-spec.md)**: Product requirements and technical architecture
-- **[Next.js Integration Guide](./docs/cascade-nextjs-guide.md)**: How to integrate the Cascade program with Next.js
-- **[Feature Flags Dashboard](./docs/feature-flags-dashboard.md)**: Using Statsig feature flags
-
----
-
-## Environment Variables
-
-Key environment variables (see [`.env.example`](./.env.example) for complete list):
-
-```bash
-# Database
 DATABASE_URL=postgres://user:pass@localhost:5432/cascade
-
-# Email (Resend)
-RESEND_API_KEY=your-resend-api-key
-
-# Monitoring (Sentry)
-SENTRY_DSN=your-sentry-dsn
-NEXT_PUBLIC_SENTRY_DSN=your-public-sentry-dsn
-
-# Feature Flags (Statsig)
-STATSIG_SERVER_API_KEY=your-statsig-server-api-key
-FLAGS_SECRET=your-flags-secret
-
-# Dev Faucet (for hackathons/testing on devnet)
-CASCADE_ENABLE_DEV_FAUCET=false
-CASCADE_DEV_FAUCET_AUTHORITY_KEYPAIR=your-base58-keypair
-CASCADE_DEV_FAUCET_USDC_MINT=your-usdc-mint-address
+STATSIG_SERVER_API_KEY=...
+FLAGS_SECRET=...
+SENTRY_DSN=...
+RESEND_API_KEY=...
 ```
 
----
+Optional dev faucet and cluster settings are also documented in [`.env.example`](./.env.example).
 
-## Roadmap
-
-### Current (MVP) ✅
-
-- ✅ On-chain payment streaming with hourly vesting
-- ✅ Employer dashboard for stream management
-- ✅ Employee dashboard for viewing streams and withdrawing
-- ✅ Multi-wallet support via Wallet UI
-- ✅ Database-backed employee directory and activity logs
-- ✅ Email verification and onboarding workflows
-- ✅ Feature flags for gradual rollout
-
-### Next Steps
-
-- [ ] Multi-token support (SOL, USDT, EURC)
-- [ ] Automated alerts (email/SMS for low balance, inactivity)
-- [ ] Batch operations (bulk top-up, scheduled payments)
-- [ ] Advanced analytics (burn rate forecasting, trends)
-- [ ] Mobile-optimized employee app
-- [ ] Multi-organization support (SaaS platform)
-
----
-
-## Development
-
-### Running Tests
+### 5. Run app
 
 ```bash
-# Run frontend tests
+just dev-all
+```
+
+Or individually:
+
+```bash
+just dev
+docker compose up -d
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+## Common Commands
+
+```bash
+# Web
+pnpm dev
+pnpm build
+pnpm lint
+pnpm format
+pnpm format:check
 pnpm test
 
-# Run Anchor program tests
-pnpm anchor-test
-
-# Run a specific test file
-pnpm exec vitest run anchor/tests/cascade.test.ts
-```
-
-### Code Quality
-
-```bash
-# Lint code
-pnpm lint
-
-# Format code with Oxfmt
-pnpm format
-
-# Check formatting
-pnpm format:check
-
-# Run all CI checks
-pnpm ci
-```
-
-### Database Migrations
-
-```bash
-# Generate migration from schema changes
+# Database
 pnpm db:generate
-
-# Apply migrations to database
 pnpm db:migrate
-
-# Push schema directly (dev only)
 pnpm db:push
+pnpm db:studio
+
+# Anchor / codegen
+pnpm setup
+pnpm anchor-build
+pnpm anchor-localnet
+pnpm anchor-test
+pnpm codama:js
 ```
 
----
+`just` wrappers are available in [justfile](./justfile).
+
+## Testing Notes
+
+- `pnpm test` runs Vitest suites.
+- Localnet integration tests are gated and run when `CASCADE_RUN_LOCALNET_TESTS=1` (or local Anchor provider env is set).
+- `pnpm anchor-test` runs Anchor tests inside `anchor/`.
+
+Example:
+
+```bash
+CASCADE_RUN_LOCALNET_TESTS=1 pnpm test
+```
+
+## Repository Structure (Current)
+
+```text
+cascade/
+├── anchor/                    # Anchor program + tests + generated TS client
+│   ├── programs/cascade/src/
+│   ├── tests/
+│   └── src/client/js/
+├── src/
+│   ├── app/                   # Next.js App Router routes (incl. dashboard parallel routes)
+│   ├── core/                  # Shared infrastructure: db, auth, ui, workflows, config
+│   ├── features/              # Domain modules: streams, employees, organization, onboarding, alerts
+│   ├── components/            # Shared app/landing/Solana components
+│   └── types/
+├── docs/                      # Product, integration, security, ops docs
+├── ROADMAP.md                 # MUP execution roadmap
+└── justfile                   # Dev workflow commands
+```
+
+## Docs Index
+
+Core:
+
+- [ROADMAP.md](./ROADMAP.md)
+- [anchor/docs/cascade-program.md](./anchor/docs/cascade-program.md)
+- [docs/cascade-program-capabilities.md](./docs/cascade-program-capabilities.md)
+- [docs/employer-dashboard-integration.md](./docs/employer-dashboard-integration.md)
+- [docs/cascade-nextjs-guide.md](./docs/cascade-nextjs-guide.md)
+- [docs/feature-flags-dashboard.md](./docs/feature-flags-dashboard.md)
+
+Readiness and operations:
+
+- [docs/production.md](./docs/production.md)
+- [docs/production-dry-run.md](./docs/production-dry-run.md)
+- [docs/external-audit-engagement.md](./docs/external-audit-engagement.md)
+- [docs/threat-model.md](./docs/threat-model.md)
+- [docs/incident-response-runbook.md](./docs/incident-response-runbook.md)
+- [docs/key-management-policy.md](./docs/key-management-policy.md)
+- [docs/upgrade-authority-policy.md](./docs/upgrade-authority-policy.md)
 
 ## Contributing
 
-Contributions are welcome! Please:
+Contributions are welcome.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-Ensure all checks pass before submitting:
-
-```bash
-pnpm ci
-```
-
----
+1. Fork the repo
+2. Create a branch
+3. Make changes
+4. Run checks (`pnpm ci`)
+5. Open a PR
 
 ## License
 
-This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
+Apache License 2.0. See [LICENSE](./LICENSE).
 
 ---
 
-## Acknowledgments
-
-Built with:
-
-- [Anchor](https://www.anchor-lang.com/) - Solana program framework
-- [Gill](https://github.com/wallet-standard/gill) - Type-safe Solana web library
-- [Wallet UI](https://wallet-ui.com/) - Multi-wallet connection for Solana
-- [Next.js](https://nextjs.org/) - React framework
-- [Drizzle ORM](https://orm.drizzle.team/) - TypeScript ORM
-- [Vercel Workflow](https://vercel.com/docs/workflow) - Durable execution engine
-- [Statsig](https://statsig.com/) - Feature flags and experimentation
-
-**Cascade** — Pay workers hourly, transparently, on Solana.
+Last reviewed: February 24, 2026
