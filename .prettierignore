@@ -15,3 +15,8 @@ package-lock.json
 pnpm-lock.yaml
 yarn.lock
 src/components/react-scan.tsx
+
+# Nix shell artifacts
+.corepack
+.corepack-bin
+.sbf-sdk

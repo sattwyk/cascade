@@ -20,6 +20,10 @@ const eslintConfig = defineConfig([
     'out/**',
     'build/**',
     'next-env.d.ts',
+    // Nix shell artifacts (corepack, Solana SBF SDK)
+    '.corepack/**',
+    '.corepack-bin/**',
+    '.sbf-sdk/**',
   ]),
 ]);
 
