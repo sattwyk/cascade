@@ -61,3 +61,24 @@ test-ledger
 
 # drizzle
 drizzle.prod.config.ts
+
+# docs
+.next-docs
+.anchor-docs
+.gill-docs
+.wallet-ui-docs
+
+# agents
+.agents
+.llms
+
+# Nix
+result
+result-*
+.direnv/
+.envrc
+.corepack/
+.corepack-bin/
+.sbf-sdk/
+# Sentry Config File
+.env.sentry-build-plugin

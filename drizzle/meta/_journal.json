@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1761652333886,
+      "tag": "0000_nifty_bullseye",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1761737741934,
+      "tag": "0001_cynical_centennial",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1761883238244,
+      "tag": "0002_stream_amount_numeric",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1761883394897,
+      "tag": "0003_deep_bastion",
+      "breakpoints": true
+    }
+  ]
+}

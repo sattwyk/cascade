@@ -3,9 +3,9 @@ import Link from 'next/link';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { EmployeeOnboardingForm } from '@/components/onboarding/employee/employee-onboarding-form';
-import { drizzleClientHttp } from '@/db';
-import { employeeInvitations, employees, organizations } from '@/db/schema';
+import { drizzleClientHttp } from '@/core/db';
+import { employeeInvitations, employees, organizations } from '@/core/db/schema';
+import { EmployeeOnboardingForm } from '@/features/onboarding/components/employee-onboarding-form';
 
 type EmployeeOnboardingPageProps = {
   params: Promise<{ inviteId: string }>;

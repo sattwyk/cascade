@@ -1,5 +1,7 @@
 # Hackathon Devnet Production Setup
 
+Status note (updated February 23, 2026): this guide reflects the current dev-faucet implementation via server action `requestDevTokenTopUp` in `src/features/organization/server/actions/request-dev-token-top-up.ts`.
+
 This guide explains how to deploy Cascade to production (e.g., Vercel) while using Solana devnet for your hackathon project.
 
 ## Overview
@@ -158,7 +160,7 @@ Success → Update UI & Log Activity
 
 ```bash
 # Install Vercel CLI
-npm i -g vercel
+pnpm dlx vercel@latest --version
 
 # Deploy
 vercel --prod
@@ -189,16 +191,9 @@ Or set variables via Vercel Dashboard:
 
 ### Verify Setup
 
-```bash
-# Test the faucet endpoint (after deployment)
-curl -X POST https://your-app.vercel.app/api/test-faucet \
-  -H "Content-Type: application/json" \
-  -d '{
-    "token": "USDC",
-    "amount": 100,
-    "recipient": "YOUR_WALLET_ADDRESS"
-  }'
-```
+There is no `/api/test-faucet` endpoint in the current app.
+Dev top-up uses the server action in `src/features/organization/server/actions/request-dev-token-top-up.ts`
+and is invoked from the dashboard UI.
 
 ### User Testing Flow
 
@@ -229,6 +224,7 @@ curl -X POST https://your-app.vercel.app/api/test-faucet \
 - Verify mint addresses are correct
 - Check RPC connection: `CASCADE_SOLANA_DEVNET_RPC`
 - Ensure you're using devnet cluster in your app
+- Check server logs for error details from `requestDevTokenTopUp`
 
 ### Transaction Fails
 

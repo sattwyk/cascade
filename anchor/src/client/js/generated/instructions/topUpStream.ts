@@ -6,247 +6,86 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import {
-  combineCodec,
-  fixDecoderSize,
-  fixEncoderSize,
-  getBytesDecoder,
-  getBytesEncoder,
-  getStructDecoder,
-  getStructEncoder,
-  getU64Decoder,
-  getU64Encoder,
-  transformEncoder,
-  type AccountMeta,
-  type AccountSignerMeta,
-  type Address,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
-  type Instruction,
-  type InstructionWithAccounts,
-  type InstructionWithData,
-  type ReadonlyAccount,
-  type ReadonlyUint8Array,
-  type TransactionSigner,
-  type WritableAccount,
-  type WritableSignerAccount,
-} from 'gill';
+import { SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError } from '@solana/errors';
+import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { combineCodec, fixDecoderSize, fixEncoderSize, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from 'gill';
 import { CASCADE_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const TOP_UP_STREAM_DISCRIMINATOR = new Uint8Array([
-  12, 244, 26, 215, 160, 204, 9, 151,
-]);
+export const TOP_UP_STREAM_DISCRIMINATOR = new Uint8Array([12, 244, 26, 215, 160, 204, 9, 151]);
 
-export function getTopUpStreamDiscriminatorBytes() {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(
-    TOP_UP_STREAM_DISCRIMINATOR
-  );
-}
+export function getTopUpStreamDiscriminatorBytes() { return fixEncoderSize(getBytesEncoder(), 8).encode(TOP_UP_STREAM_DISCRIMINATOR); }
 
-export type TopUpStreamInstruction<
-  TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS,
-  TAccountEmployer extends string | AccountMeta<string> = string,
-  TAccountStream extends string | AccountMeta<string> = string,
-  TAccountVault extends string | AccountMeta<string> = string,
-  TAccountEmployerTokenAccount extends string | AccountMeta<string> = string,
-  TAccountTokenProgram extends
-    | string
-    | AccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
-  TRemainingAccounts extends readonly AccountMeta<string>[] = [],
-> = Instruction<TProgram> &
-  InstructionWithData<ReadonlyUint8Array> &
-  InstructionWithAccounts<
-    [
-      TAccountEmployer extends string
-        ? WritableSignerAccount<TAccountEmployer> &
-            AccountSignerMeta<TAccountEmployer>
-        : TAccountEmployer,
-      TAccountStream extends string
-        ? WritableAccount<TAccountStream>
-        : TAccountStream,
-      TAccountVault extends string
-        ? WritableAccount<TAccountVault>
-        : TAccountVault,
-      TAccountEmployerTokenAccount extends string
-        ? WritableAccount<TAccountEmployerTokenAccount>
-        : TAccountEmployerTokenAccount,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
-      ...TRemainingAccounts,
-    ]
-  >;
+export type TopUpStreamInstruction<TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS, TAccountEmployer extends string | AccountMeta<string> = string, TAccountStream extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountEmployerTokenAccount extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
+Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountEmployer extends string ? WritableSignerAccount<TAccountEmployer> & AccountSignerMeta<TAccountEmployer> : TAccountEmployer, TAccountStream extends string ? WritableAccount<TAccountStream> : TAccountStream, TAccountMint extends string ? ReadonlyAccount<TAccountMint> : TAccountMint, TAccountVault extends string ? WritableAccount<TAccountVault> : TAccountVault, TAccountEmployerTokenAccount extends string ? WritableAccount<TAccountEmployerTokenAccount> : TAccountEmployerTokenAccount, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
-export type TopUpStreamInstructionData = {
-  discriminator: ReadonlyUint8Array;
-  additionalAmount: bigint;
-};
+export type TopUpStreamInstructionData = { discriminator: ReadonlyUint8Array; additionalAmount: bigint;  };
 
-export type TopUpStreamInstructionDataArgs = {
-  additionalAmount: number | bigint;
-};
+export type TopUpStreamInstructionDataArgs = { additionalAmount: number | bigint;  };
 
 export function getTopUpStreamInstructionDataEncoder(): FixedSizeEncoder<TopUpStreamInstructionDataArgs> {
-  return transformEncoder(
-    getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['additionalAmount', getU64Encoder()],
-    ]),
-    (value) => ({ ...value, discriminator: TOP_UP_STREAM_DISCRIMINATOR })
-  );
+    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['additionalAmount', getU64Encoder()]]), (value) => ({ ...value, discriminator: TOP_UP_STREAM_DISCRIMINATOR }));
 }
 
 export function getTopUpStreamInstructionDataDecoder(): FixedSizeDecoder<TopUpStreamInstructionData> {
-  return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['additionalAmount', getU64Decoder()],
-  ]);
+    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['additionalAmount', getU64Decoder()]]);
 }
 
-export function getTopUpStreamInstructionDataCodec(): FixedSizeCodec<
-  TopUpStreamInstructionDataArgs,
-  TopUpStreamInstructionData
-> {
-  return combineCodec(
-    getTopUpStreamInstructionDataEncoder(),
-    getTopUpStreamInstructionDataDecoder()
-  );
+export function getTopUpStreamInstructionDataCodec(): FixedSizeCodec<TopUpStreamInstructionDataArgs, TopUpStreamInstructionData> {
+    return combineCodec(getTopUpStreamInstructionDataEncoder(), getTopUpStreamInstructionDataDecoder());
 }
 
-export type TopUpStreamInput<
-  TAccountEmployer extends string = string,
-  TAccountStream extends string = string,
-  TAccountVault extends string = string,
-  TAccountEmployerTokenAccount extends string = string,
-  TAccountTokenProgram extends string = string,
-> = {
+export type TopUpStreamInput<TAccountEmployer extends string = string, TAccountStream extends string = string, TAccountMint extends string = string, TAccountVault extends string = string, TAccountEmployerTokenAccount extends string = string, TAccountTokenProgram extends string = string> =  {
   employer: TransactionSigner<TAccountEmployer>;
-  stream: Address<TAccountStream>;
-  vault: Address<TAccountVault>;
-  employerTokenAccount: Address<TAccountEmployerTokenAccount>;
-  tokenProgram?: Address<TAccountTokenProgram>;
-  additionalAmount: TopUpStreamInstructionDataArgs['additionalAmount'];
-};
-
-export function getTopUpStreamInstruction<
-  TAccountEmployer extends string,
-  TAccountStream extends string,
-  TAccountVault extends string,
-  TAccountEmployerTokenAccount extends string,
-  TAccountTokenProgram extends string,
-  TProgramAddress extends Address = typeof CASCADE_PROGRAM_ADDRESS,
->(
-  input: TopUpStreamInput<
-    TAccountEmployer,
-    TAccountStream,
-    TAccountVault,
-    TAccountEmployerTokenAccount,
-    TAccountTokenProgram
-  >,
-  config?: { programAddress?: TProgramAddress }
-): TopUpStreamInstruction<
-  TProgramAddress,
-  TAccountEmployer,
-  TAccountStream,
-  TAccountVault,
-  TAccountEmployerTokenAccount,
-  TAccountTokenProgram
-> {
-  // Program address.
-  const programAddress = config?.programAddress ?? CASCADE_PROGRAM_ADDRESS;
-
-  // Original accounts.
-  const originalAccounts = {
-    employer: { value: input.employer ?? null, isWritable: true },
-    stream: { value: input.stream ?? null, isWritable: true },
-    vault: { value: input.vault ?? null, isWritable: true },
-    employerTokenAccount: {
-      value: input.employerTokenAccount ?? null,
-      isWritable: true,
-    },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-  };
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedAccount
-  >;
-
-  // Original args.
-  const args = { ...input };
-
-  // Resolve default values.
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
-  }
-
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-  return Object.freeze({
-    accounts: [
-      getAccountMeta(accounts.employer),
-      getAccountMeta(accounts.stream),
-      getAccountMeta(accounts.vault),
-      getAccountMeta(accounts.employerTokenAccount),
-      getAccountMeta(accounts.tokenProgram),
-    ],
-    data: getTopUpStreamInstructionDataEncoder().encode(
-      args as TopUpStreamInstructionDataArgs
-    ),
-    programAddress,
-  } as TopUpStreamInstruction<
-    TProgramAddress,
-    TAccountEmployer,
-    TAccountStream,
-    TAccountVault,
-    TAccountEmployerTokenAccount,
-    TAccountTokenProgram
-  >);
+stream: Address<TAccountStream>;
+mint: Address<TAccountMint>;
+vault: Address<TAccountVault>;
+employerTokenAccount: Address<TAccountEmployerTokenAccount>;
+tokenProgram?: Address<TAccountTokenProgram>;
+additionalAmount: TopUpStreamInstructionDataArgs["additionalAmount"];
 }
 
-export type ParsedTopUpStreamInstruction<
-  TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS,
-  TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
-> = {
-  programAddress: Address<TProgram>;
-  accounts: {
-    employer: TAccountMetas[0];
-    stream: TAccountMetas[1];
-    vault: TAccountMetas[2];
-    employerTokenAccount: TAccountMetas[3];
-    tokenProgram: TAccountMetas[4];
-  };
-  data: TopUpStreamInstructionData;
-};
+export function getTopUpStreamInstruction<TAccountEmployer extends string, TAccountStream extends string, TAccountMint extends string, TAccountVault extends string, TAccountEmployerTokenAccount extends string, TAccountTokenProgram extends string, TProgramAddress extends Address = typeof CASCADE_PROGRAM_ADDRESS>(input: TopUpStreamInput<TAccountEmployer, TAccountStream, TAccountMint, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>, config?: { programAddress?: TProgramAddress } ): TopUpStreamInstruction<TProgramAddress, TAccountEmployer, TAccountStream, TAccountMint, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram> {
+  // Program address.
+const programAddress = config?.programAddress ?? CASCADE_PROGRAM_ADDRESS;
 
-export function parseTopUpStreamInstruction<
-  TProgram extends string,
-  TAccountMetas extends readonly AccountMeta[],
->(
-  instruction: Instruction<TProgram> &
-    InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
-): ParsedTopUpStreamInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
-    // TODO: Coded error.
-    throw new Error('Not enough accounts');
-  }
-  let accountIndex = 0;
-  const getNextAccount = () => {
-    const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
-    accountIndex += 1;
-    return accountMeta;
-  };
-  return {
-    programAddress: instruction.programAddress,
-    accounts: {
-      employer: getNextAccount(),
-      stream: getNextAccount(),
-      vault: getNextAccount(),
-      employerTokenAccount: getNextAccount(),
-      tokenProgram: getNextAccount(),
-    },
-    data: getTopUpStreamInstructionDataDecoder().decode(instruction.data),
-  };
+ // Original accounts.
+const originalAccounts = { employer: { value: input.employer ?? null, isWritable: true }, stream: { value: input.stream ?? null, isWritable: true }, mint: { value: input.mint ?? null, isWritable: false }, vault: { value: input.vault ?? null, isWritable: true }, employerTokenAccount: { value: input.employerTokenAccount ?? null, isWritable: true }, tokenProgram: { value: input.tokenProgram ?? null, isWritable: false } }
+const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
+
+
+// Original args.
+const args = { ...input,  };
+
+
+// Resolve default values.
+if (!accounts.tokenProgram.value) {
+accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+}
+
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+return Object.freeze({ accounts: [getAccountMeta("employer", accounts.employer), getAccountMeta("stream", accounts.stream), getAccountMeta("mint", accounts.mint), getAccountMeta("vault", accounts.vault), getAccountMeta("employerTokenAccount", accounts.employerTokenAccount), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getTopUpStreamInstructionDataEncoder().encode(args as TopUpStreamInstructionDataArgs), programAddress } as TopUpStreamInstruction<TProgramAddress, TAccountEmployer, TAccountStream, TAccountMint, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>);
+}
+
+export type ParsedTopUpStreamInstruction<TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
+accounts: {
+employer: TAccountMetas[0];
+stream: TAccountMetas[1];
+mint: TAccountMetas[2];
+vault: TAccountMetas[3];
+employerTokenAccount: TAccountMetas[4];
+tokenProgram: TAccountMetas[5];
+};
+data: TopUpStreamInstructionData; };
+
+export function parseTopUpStreamInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(instruction: Instruction<TProgram> & InstructionWithAccounts<TAccountMetas> & InstructionWithData<ReadonlyUint8Array>): ParsedTopUpStreamInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 6) {
+  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 6 });
+}
+let accountIndex = 0;
+const getNextAccount = () => {
+  const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
+  accountIndex += 1;
+  return accountMeta;
+}
+  return { programAddress: instruction.programAddress, accounts: { employer: getNextAccount(), stream: getNextAccount(), mint: getNextAccount(), vault: getNextAccount(), employerTokenAccount: getNextAccount(), tokenProgram: getNextAccount() }, data: getTopUpStreamInstructionDataDecoder().decode(instruction.data) };
 }

@@ -16,10 +16,10 @@ import {
 } from '@tanstack/react-table';
 import { Download } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/core/ui/button';
+import { Input } from '@/core/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/core/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/core/ui/table';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];

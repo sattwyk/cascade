@@ -6,14 +6,14 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-cascade = "6erxegH47t73aQjWm3fZEkwva57tz2JH7ZMxdoayzxVQ"
+cascade = "FiE8MasF8sQEsruhk5FGxwR25DvQDS4nfji3h2bvVRoi"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "devnet"
+cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "pnpm exec vitest"
+test = "CASCADE_RUN_LOCALNET_TESTS=1 pnpm exec vitest run"

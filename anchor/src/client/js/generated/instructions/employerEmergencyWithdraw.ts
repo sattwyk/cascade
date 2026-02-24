@@ -6,237 +6,81 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import {
-  combineCodec,
-  fixDecoderSize,
-  fixEncoderSize,
-  getBytesDecoder,
-  getBytesEncoder,
-  getStructDecoder,
-  getStructEncoder,
-  transformEncoder,
-  type AccountMeta,
-  type AccountSignerMeta,
-  type Address,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
-  type Instruction,
-  type InstructionWithAccounts,
-  type InstructionWithData,
-  type ReadonlyAccount,
-  type ReadonlyUint8Array,
-  type TransactionSigner,
-  type WritableAccount,
-  type WritableSignerAccount,
-} from 'gill';
+import { SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError } from '@solana/errors';
+import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { combineCodec, fixDecoderSize, fixEncoderSize, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from 'gill';
 import { CASCADE_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const EMPLOYER_EMERGENCY_WITHDRAW_DISCRIMINATOR = new Uint8Array([
-  53, 243, 175, 174, 220, 22, 246, 211,
-]);
+export const EMPLOYER_EMERGENCY_WITHDRAW_DISCRIMINATOR = new Uint8Array([53, 243, 175, 174, 220, 22, 246, 211]);
 
-export function getEmployerEmergencyWithdrawDiscriminatorBytes() {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(
-    EMPLOYER_EMERGENCY_WITHDRAW_DISCRIMINATOR
-  );
-}
+export function getEmployerEmergencyWithdrawDiscriminatorBytes() { return fixEncoderSize(getBytesEncoder(), 8).encode(EMPLOYER_EMERGENCY_WITHDRAW_DISCRIMINATOR); }
 
-export type EmployerEmergencyWithdrawInstruction<
-  TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS,
-  TAccountEmployer extends string | AccountMeta<string> = string,
-  TAccountStream extends string | AccountMeta<string> = string,
-  TAccountVault extends string | AccountMeta<string> = string,
-  TAccountEmployerTokenAccount extends string | AccountMeta<string> = string,
-  TAccountTokenProgram extends
-    | string
-    | AccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
-  TRemainingAccounts extends readonly AccountMeta<string>[] = [],
-> = Instruction<TProgram> &
-  InstructionWithData<ReadonlyUint8Array> &
-  InstructionWithAccounts<
-    [
-      TAccountEmployer extends string
-        ? WritableSignerAccount<TAccountEmployer> &
-            AccountSignerMeta<TAccountEmployer>
-        : TAccountEmployer,
-      TAccountStream extends string
-        ? WritableAccount<TAccountStream>
-        : TAccountStream,
-      TAccountVault extends string
-        ? WritableAccount<TAccountVault>
-        : TAccountVault,
-      TAccountEmployerTokenAccount extends string
-        ? WritableAccount<TAccountEmployerTokenAccount>
-        : TAccountEmployerTokenAccount,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
-      ...TRemainingAccounts,
-    ]
-  >;
+export type EmployerEmergencyWithdrawInstruction<TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS, TAccountEmployer extends string | AccountMeta<string> = string, TAccountStream extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountEmployerTokenAccount extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
+Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountEmployer extends string ? WritableSignerAccount<TAccountEmployer> & AccountSignerMeta<TAccountEmployer> : TAccountEmployer, TAccountStream extends string ? WritableAccount<TAccountStream> : TAccountStream, TAccountMint extends string ? ReadonlyAccount<TAccountMint> : TAccountMint, TAccountVault extends string ? WritableAccount<TAccountVault> : TAccountVault, TAccountEmployerTokenAccount extends string ? WritableAccount<TAccountEmployerTokenAccount> : TAccountEmployerTokenAccount, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
-export type EmployerEmergencyWithdrawInstructionData = {
-  discriminator: ReadonlyUint8Array;
-};
+export type EmployerEmergencyWithdrawInstructionData = { discriminator: ReadonlyUint8Array;  };
 
-export type EmployerEmergencyWithdrawInstructionDataArgs = {};
+export type EmployerEmergencyWithdrawInstructionDataArgs = {  };
 
 export function getEmployerEmergencyWithdrawInstructionDataEncoder(): FixedSizeEncoder<EmployerEmergencyWithdrawInstructionDataArgs> {
-  return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({
-      ...value,
-      discriminator: EMPLOYER_EMERGENCY_WITHDRAW_DISCRIMINATOR,
-    })
-  );
+    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]), (value) => ({ ...value, discriminator: EMPLOYER_EMERGENCY_WITHDRAW_DISCRIMINATOR }));
 }
 
 export function getEmployerEmergencyWithdrawInstructionDataDecoder(): FixedSizeDecoder<EmployerEmergencyWithdrawInstructionData> {
-  return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-  ]);
+    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)]]);
 }
 
-export function getEmployerEmergencyWithdrawInstructionDataCodec(): FixedSizeCodec<
-  EmployerEmergencyWithdrawInstructionDataArgs,
-  EmployerEmergencyWithdrawInstructionData
-> {
-  return combineCodec(
-    getEmployerEmergencyWithdrawInstructionDataEncoder(),
-    getEmployerEmergencyWithdrawInstructionDataDecoder()
-  );
+export function getEmployerEmergencyWithdrawInstructionDataCodec(): FixedSizeCodec<EmployerEmergencyWithdrawInstructionDataArgs, EmployerEmergencyWithdrawInstructionData> {
+    return combineCodec(getEmployerEmergencyWithdrawInstructionDataEncoder(), getEmployerEmergencyWithdrawInstructionDataDecoder());
 }
 
-export type EmployerEmergencyWithdrawInput<
-  TAccountEmployer extends string = string,
-  TAccountStream extends string = string,
-  TAccountVault extends string = string,
-  TAccountEmployerTokenAccount extends string = string,
-  TAccountTokenProgram extends string = string,
-> = {
+export type EmployerEmergencyWithdrawInput<TAccountEmployer extends string = string, TAccountStream extends string = string, TAccountMint extends string = string, TAccountVault extends string = string, TAccountEmployerTokenAccount extends string = string, TAccountTokenProgram extends string = string> =  {
   employer: TransactionSigner<TAccountEmployer>;
-  stream: Address<TAccountStream>;
-  vault: Address<TAccountVault>;
-  employerTokenAccount: Address<TAccountEmployerTokenAccount>;
-  tokenProgram?: Address<TAccountTokenProgram>;
-};
-
-export function getEmployerEmergencyWithdrawInstruction<
-  TAccountEmployer extends string,
-  TAccountStream extends string,
-  TAccountVault extends string,
-  TAccountEmployerTokenAccount extends string,
-  TAccountTokenProgram extends string,
-  TProgramAddress extends Address = typeof CASCADE_PROGRAM_ADDRESS,
->(
-  input: EmployerEmergencyWithdrawInput<
-    TAccountEmployer,
-    TAccountStream,
-    TAccountVault,
-    TAccountEmployerTokenAccount,
-    TAccountTokenProgram
-  >,
-  config?: { programAddress?: TProgramAddress }
-): EmployerEmergencyWithdrawInstruction<
-  TProgramAddress,
-  TAccountEmployer,
-  TAccountStream,
-  TAccountVault,
-  TAccountEmployerTokenAccount,
-  TAccountTokenProgram
-> {
-  // Program address.
-  const programAddress = config?.programAddress ?? CASCADE_PROGRAM_ADDRESS;
-
-  // Original accounts.
-  const originalAccounts = {
-    employer: { value: input.employer ?? null, isWritable: true },
-    stream: { value: input.stream ?? null, isWritable: true },
-    vault: { value: input.vault ?? null, isWritable: true },
-    employerTokenAccount: {
-      value: input.employerTokenAccount ?? null,
-      isWritable: true,
-    },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-  };
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedAccount
-  >;
-
-  // Resolve default values.
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
-  }
-
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-  return Object.freeze({
-    accounts: [
-      getAccountMeta(accounts.employer),
-      getAccountMeta(accounts.stream),
-      getAccountMeta(accounts.vault),
-      getAccountMeta(accounts.employerTokenAccount),
-      getAccountMeta(accounts.tokenProgram),
-    ],
-    data: getEmployerEmergencyWithdrawInstructionDataEncoder().encode({}),
-    programAddress,
-  } as EmployerEmergencyWithdrawInstruction<
-    TProgramAddress,
-    TAccountEmployer,
-    TAccountStream,
-    TAccountVault,
-    TAccountEmployerTokenAccount,
-    TAccountTokenProgram
-  >);
+stream: Address<TAccountStream>;
+mint: Address<TAccountMint>;
+vault: Address<TAccountVault>;
+employerTokenAccount: Address<TAccountEmployerTokenAccount>;
+tokenProgram?: Address<TAccountTokenProgram>;
 }
 
-export type ParsedEmployerEmergencyWithdrawInstruction<
-  TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS,
-  TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
-> = {
-  programAddress: Address<TProgram>;
-  accounts: {
-    employer: TAccountMetas[0];
-    stream: TAccountMetas[1];
-    vault: TAccountMetas[2];
-    employerTokenAccount: TAccountMetas[3];
-    tokenProgram: TAccountMetas[4];
-  };
-  data: EmployerEmergencyWithdrawInstructionData;
-};
+export function getEmployerEmergencyWithdrawInstruction<TAccountEmployer extends string, TAccountStream extends string, TAccountMint extends string, TAccountVault extends string, TAccountEmployerTokenAccount extends string, TAccountTokenProgram extends string, TProgramAddress extends Address = typeof CASCADE_PROGRAM_ADDRESS>(input: EmployerEmergencyWithdrawInput<TAccountEmployer, TAccountStream, TAccountMint, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>, config?: { programAddress?: TProgramAddress } ): EmployerEmergencyWithdrawInstruction<TProgramAddress, TAccountEmployer, TAccountStream, TAccountMint, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram> {
+  // Program address.
+const programAddress = config?.programAddress ?? CASCADE_PROGRAM_ADDRESS;
 
-export function parseEmployerEmergencyWithdrawInstruction<
-  TProgram extends string,
-  TAccountMetas extends readonly AccountMeta[],
->(
-  instruction: Instruction<TProgram> &
-    InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
-): ParsedEmployerEmergencyWithdrawInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
-    // TODO: Coded error.
-    throw new Error('Not enough accounts');
-  }
-  let accountIndex = 0;
-  const getNextAccount = () => {
-    const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
-    accountIndex += 1;
-    return accountMeta;
-  };
-  return {
-    programAddress: instruction.programAddress,
-    accounts: {
-      employer: getNextAccount(),
-      stream: getNextAccount(),
-      vault: getNextAccount(),
-      employerTokenAccount: getNextAccount(),
-      tokenProgram: getNextAccount(),
-    },
-    data: getEmployerEmergencyWithdrawInstructionDataDecoder().decode(
-      instruction.data
-    ),
-  };
+ // Original accounts.
+const originalAccounts = { employer: { value: input.employer ?? null, isWritable: true }, stream: { value: input.stream ?? null, isWritable: true }, mint: { value: input.mint ?? null, isWritable: false }, vault: { value: input.vault ?? null, isWritable: true }, employerTokenAccount: { value: input.employerTokenAccount ?? null, isWritable: true }, tokenProgram: { value: input.tokenProgram ?? null, isWritable: false } }
+const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
+
+
+// Resolve default values.
+if (!accounts.tokenProgram.value) {
+accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+}
+
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+return Object.freeze({ accounts: [getAccountMeta("employer", accounts.employer), getAccountMeta("stream", accounts.stream), getAccountMeta("mint", accounts.mint), getAccountMeta("vault", accounts.vault), getAccountMeta("employerTokenAccount", accounts.employerTokenAccount), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getEmployerEmergencyWithdrawInstructionDataEncoder().encode({}), programAddress } as EmployerEmergencyWithdrawInstruction<TProgramAddress, TAccountEmployer, TAccountStream, TAccountMint, TAccountVault, TAccountEmployerTokenAccount, TAccountTokenProgram>);
+}
+
+export type ParsedEmployerEmergencyWithdrawInstruction<TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
+accounts: {
+employer: TAccountMetas[0];
+stream: TAccountMetas[1];
+mint: TAccountMetas[2];
+vault: TAccountMetas[3];
+employerTokenAccount: TAccountMetas[4];
+tokenProgram: TAccountMetas[5];
+};
+data: EmployerEmergencyWithdrawInstructionData; };
+
+export function parseEmployerEmergencyWithdrawInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(instruction: Instruction<TProgram> & InstructionWithAccounts<TAccountMetas> & InstructionWithData<ReadonlyUint8Array>): ParsedEmployerEmergencyWithdrawInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 6) {
+  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 6 });
+}
+let accountIndex = 0;
+const getNextAccount = () => {
+  const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
+  accountIndex += 1;
+  return accountMeta;
+}
+  return { programAddress: instruction.programAddress, accounts: { employer: getNextAccount(), stream: getNextAccount(), mint: getNextAccount(), vault: getNextAccount(), employerTokenAccount: getNextAccount(), tokenProgram: getNextAccount() }, data: getEmployerEmergencyWithdrawInstructionDataDecoder().decode(instruction.data) };
 }

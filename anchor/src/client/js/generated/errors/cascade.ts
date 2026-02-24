@@ -6,12 +6,8 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import {
-  isProgramError,
-  type Address,
-  type SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
-  type SolanaError,
-} from 'gill';
+import { type SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM, type SolanaError } from '@solana/errors';
+import { isProgramError, type Address } from 'gill';
 import { CASCADE_PROGRAM_ADDRESS } from '../programs';
 
 /** StreamInactive: This stream is no longer active */
@@ -30,37 +26,22 @@ export const CASCADE_ERROR__EMPLOYER_LOCK_ACTIVE = 0x1775; // 6005
 export const CASCADE_ERROR__MATH_OVERFLOW = 0x1776; // 6006
 /** StreamStillActive: Stream is still active and cannot be closed */
 export const CASCADE_ERROR__STREAM_STILL_ACTIVE = 0x1777; // 6007
-/** VaultNotEmpty: Vault must be empty before closing stream */
-export const CASCADE_ERROR__VAULT_NOT_EMPTY = 0x1778; // 6008
 /** InvalidTimestamp: Invalid timestamp detected */
-export const CASCADE_ERROR__INVALID_TIMESTAMP = 0x1779; // 6009
+export const CASCADE_ERROR__INVALID_TIMESTAMP = 0x1778; // 6008
+/** UnsupportedMintDecimals: Only 6-decimal stablecoin mints are supported */
+export const CASCADE_ERROR__UNSUPPORTED_MINT_DECIMALS = 0x1779; // 6009
+/** InvalidTokenAccount: Provided token account does not match expected owner or mint */
+export const CASCADE_ERROR__INVALID_TOKEN_ACCOUNT = 0x177a; // 6010
+/** InvalidStreamAccounting: Stream accounting invariant violated */
+export const CASCADE_ERROR__INVALID_STREAM_ACCOUNTING = 0x177b; // 6011
+/** VaultBalanceInvariantViolated: Vault balance is lower than stream accounting expects */
+export const CASCADE_ERROR__VAULT_BALANCE_INVARIANT_VIOLATED = 0x177c; // 6012
 
-export type CascadeError =
-  | typeof CASCADE_ERROR__EMPLOYEE_STILL_ACTIVE
-  | typeof CASCADE_ERROR__EMPLOYER_LOCK_ACTIVE
-  | typeof CASCADE_ERROR__INSUFFICIENT_BALANCE
-  | typeof CASCADE_ERROR__INVALID_TIMESTAMP
-  | typeof CASCADE_ERROR__MATH_OVERFLOW
-  | typeof CASCADE_ERROR__STREAM_INACTIVE
-  | typeof CASCADE_ERROR__STREAM_STILL_ACTIVE
-  | typeof CASCADE_ERROR__UNAUTHORIZED_EMPLOYEE
-  | typeof CASCADE_ERROR__UNAUTHORIZED_EMPLOYER
-  | typeof CASCADE_ERROR__VAULT_NOT_EMPTY;
+export type CascadeError = typeof CASCADE_ERROR__EMPLOYEE_STILL_ACTIVE | typeof CASCADE_ERROR__EMPLOYER_LOCK_ACTIVE | typeof CASCADE_ERROR__INSUFFICIENT_BALANCE | typeof CASCADE_ERROR__INVALID_STREAM_ACCOUNTING | typeof CASCADE_ERROR__INVALID_TIMESTAMP | typeof CASCADE_ERROR__INVALID_TOKEN_ACCOUNT | typeof CASCADE_ERROR__MATH_OVERFLOW | typeof CASCADE_ERROR__STREAM_INACTIVE | typeof CASCADE_ERROR__STREAM_STILL_ACTIVE | typeof CASCADE_ERROR__UNAUTHORIZED_EMPLOYEE | typeof CASCADE_ERROR__UNAUTHORIZED_EMPLOYER | typeof CASCADE_ERROR__UNSUPPORTED_MINT_DECIMALS | typeof CASCADE_ERROR__VAULT_BALANCE_INVARIANT_VIOLATED;
 
 let cascadeErrorMessages: Record<CascadeError, string> | undefined;
 if (process.env.NODE_ENV !== 'production') {
-  cascadeErrorMessages = {
-    [CASCADE_ERROR__EMPLOYEE_STILL_ACTIVE]: `Employee is still active, cannot perform emergency withdrawal`,
-    [CASCADE_ERROR__EMPLOYER_LOCK_ACTIVE]: `Employer lock period has not expired yet`,
-    [CASCADE_ERROR__INSUFFICIENT_BALANCE]: `Insufficient balance available for withdrawal`,
-    [CASCADE_ERROR__INVALID_TIMESTAMP]: `Invalid timestamp detected`,
-    [CASCADE_ERROR__MATH_OVERFLOW]: `Mathematical operation overflow`,
-    [CASCADE_ERROR__STREAM_INACTIVE]: `This stream is no longer active`,
-    [CASCADE_ERROR__STREAM_STILL_ACTIVE]: `Stream is still active and cannot be closed`,
-    [CASCADE_ERROR__UNAUTHORIZED_EMPLOYEE]: `Only the employee can perform this action`,
-    [CASCADE_ERROR__UNAUTHORIZED_EMPLOYER]: `Only the employer can perform this action`,
-    [CASCADE_ERROR__VAULT_NOT_EMPTY]: `Vault must be empty before closing stream`,
-  };
+  cascadeErrorMessages = { [CASCADE_ERROR__EMPLOYEE_STILL_ACTIVE]: `Employee is still active, cannot perform emergency withdrawal`, [CASCADE_ERROR__EMPLOYER_LOCK_ACTIVE]: `Employer lock period has not expired yet`, [CASCADE_ERROR__INSUFFICIENT_BALANCE]: `Insufficient balance available for withdrawal`, [CASCADE_ERROR__INVALID_STREAM_ACCOUNTING]: `Stream accounting invariant violated`, [CASCADE_ERROR__INVALID_TIMESTAMP]: `Invalid timestamp detected`, [CASCADE_ERROR__INVALID_TOKEN_ACCOUNT]: `Provided token account does not match expected owner or mint`, [CASCADE_ERROR__MATH_OVERFLOW]: `Mathematical operation overflow`, [CASCADE_ERROR__STREAM_INACTIVE]: `This stream is no longer active`, [CASCADE_ERROR__STREAM_STILL_ACTIVE]: `Stream is still active and cannot be closed`, [CASCADE_ERROR__UNAUTHORIZED_EMPLOYEE]: `Only the employee can perform this action`, [CASCADE_ERROR__UNAUTHORIZED_EMPLOYER]: `Only the employer can perform this action`, [CASCADE_ERROR__UNSUPPORTED_MINT_DECIMALS]: `Only 6-decimal stablecoin mints are supported`, [CASCADE_ERROR__VAULT_BALANCE_INVARIANT_VIOLATED]: `Vault balance is lower than stream accounting expects` };
 }
 
 export function getCascadeErrorMessage(code: CascadeError): string {
@@ -72,17 +53,9 @@ export function getCascadeErrorMessage(code: CascadeError): string {
 }
 
 export function isCascadeError<TProgramErrorCode extends CascadeError>(
-  error: unknown,
-  transactionMessage: {
-    instructions: Record<number, { programAddress: Address }>;
-  },
-  code?: TProgramErrorCode
-): error is SolanaError<typeof SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM> &
-  Readonly<{ context: Readonly<{ code: TProgramErrorCode }> }> {
-  return isProgramError<TProgramErrorCode>(
-    error,
-    transactionMessage,
-    CASCADE_PROGRAM_ADDRESS,
-    code
-  );
+    error: unknown,
+    transactionMessage: { instructions: Record<number, { programAddress: Address }> },
+    code?: TProgramErrorCode,
+): error is SolanaError<typeof SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM> & Readonly<{ context: Readonly<{ code: TProgramErrorCode }> }> {
+  return isProgramError<TProgramErrorCode>(error, transactionMessage, CASCADE_PROGRAM_ADDRESS, code);
 }

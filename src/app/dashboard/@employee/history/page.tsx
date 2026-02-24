@@ -1,8 +1,19 @@
-import { getEmployeeWithdrawalHistory } from '@/app/dashboard/@employee/actions/withdrawal-history';
+import { employeeDashboardHistoryViewFlag } from '@/core/config/flags';
+import { DashboardFeatureFlagDisabled } from '@/core/ui/feature-flag-disabled';
+import { getEmployeeWithdrawalHistory } from '@/features/streams/server/actions/employee-withdrawal-history';
 
 import { EmployeeHistoryContent } from './employee-history-content';
 
 export default async function EmployeeHistoryPage() {
+  if (!(await employeeDashboardHistoryViewFlag())) {
+    return (
+      <DashboardFeatureFlagDisabled
+        title="Payment History"
+        description="Enable `dashboard_employee_history_view` to access this employee dashboard page."
+      />
+    );
+  }
+
   const initialData = await getEmployeeWithdrawalHistory();
   return <EmployeeHistoryContent initialData={initialData} />;
 }

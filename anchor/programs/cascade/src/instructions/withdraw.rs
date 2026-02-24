@@ -1,7 +1,9 @@
 use crate::errors::ErrorCode;
 use crate::state::PaymentStream;
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+use anchor_spl::token::{self, Token, TokenAccount, TransferChecked};
+
+const SECONDS_PER_HOUR: i64 = 60 * 60;
 
 pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
     let stream = &mut ctx.accounts.stream;
@@ -12,6 +14,7 @@ pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
         ctx.accounts.employee.key() == stream.employee,
         ErrorCode::UnauthorizedEmployee
     );
+    stream.assert_accounting_invariant()?;
 
     // Calculate total earned based on time elapsed
     let seconds_elapsed = clock
@@ -19,7 +22,7 @@ pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
         .checked_sub(stream.created_at)
         .ok_or(ErrorCode::InvalidTimestamp)?;
 
-    let hours_elapsed = seconds_elapsed / 3600;
+    let hours_elapsed = seconds_elapsed / SECONDS_PER_HOUR;
     let total_earned_uncapped = (hours_elapsed as u64)
         .checked_mul(stream.hourly_rate)
         .ok_or(ErrorCode::MathOverflow)?;
@@ -45,14 +48,15 @@ pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
     ];
     let signer = &[&seeds[..]];
 
-    let cpi_accounts = Transfer {
+    let cpi_accounts = TransferChecked {
+        mint: ctx.accounts.mint.to_account_info(),
         from: ctx.accounts.vault.to_account_info(),
         to: ctx.accounts.employee_token_account.to_account_info(),
         authority: stream.to_account_info(),
     };
     let cpi_program = ctx.accounts.token_program.to_account_info();
     let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts).with_signer(signer);
-    token::transfer(cpi_ctx, amount)?;
+    token::transfer_checked(cpi_ctx, amount, ctx.accounts.mint.decimals)?;
 
     // Update stream state
     stream.withdrawn_amount = stream
@@ -60,6 +64,7 @@ pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
         .checked_add(amount)
         .ok_or(ErrorCode::MathOverflow)?;
     stream.employee_last_activity_at = clock.unix_timestamp;
+    stream.assert_accounting_invariant()?;
 
     Ok(())
 }
@@ -73,14 +78,21 @@ pub struct Withdraw<'info> {
         mut,
         seeds = [b"stream", stream.employer.as_ref(), employee.key().as_ref()],
         bump = stream.bump,
-        has_one = vault
+        has_one = vault,
+        has_one = mint
     )]
     pub stream: Account<'info, PaymentStream>,
+
+    pub mint: Account<'info, token::Mint>,
 
     #[account(mut)]
     pub vault: Account<'info, TokenAccount>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = employee_token_account.owner == employee.key() @ ErrorCode::InvalidTokenAccount,
+        constraint = employee_token_account.mint == stream.mint @ ErrorCode::InvalidTokenAccount
+    )]
     pub employee_token_account: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,

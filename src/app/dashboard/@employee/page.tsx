@@ -1,7 +1,18 @@
-import { getEmployeeDashboardOverview } from '@/app/dashboard/@employee/actions/overview';
-import { EmployeeDashboardOverview } from '@/components/employee-dashboard/employee-dashboard-overview';
+import { employeeDashboardOverviewViewFlag } from '@/core/config/flags';
+import { DashboardFeatureFlagDisabled } from '@/core/ui/feature-flag-disabled';
+import { EmployeeDashboardOverview } from '@/features/employees/components/employee-dashboard-overview';
+import { getEmployeeDashboardOverview } from '@/features/employees/server/actions/employee-dashboard-overview';
 
 export default async function EmployeeOverviewPage() {
+  if (!(await employeeDashboardOverviewViewFlag())) {
+    return (
+      <DashboardFeatureFlagDisabled
+        title="Employee Dashboard"
+        description="Enable `dashboard_employee_overview_view` to access this employee dashboard page."
+      />
+    );
+  }
+
   const initialData = await getEmployeeDashboardOverview();
   return <EmployeeDashboardOverview initialData={initialData} />;
 }

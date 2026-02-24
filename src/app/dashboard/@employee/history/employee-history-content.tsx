@@ -5,11 +5,11 @@ import { useMemo } from 'react';
 import { type SolanaClusterMoniker } from 'gill';
 import { CircleDollarSign, LineChart, Wallet } from 'lucide-react';
 
-import type { EmployeeWithdrawal } from '@/app/dashboard/@employee/actions/withdrawal-history';
 import { useSolana } from '@/components/solana/use-solana';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { WalletDropdown } from '@/components/wallet-dropdown';
-import { useEmployeeWithdrawalsQuery } from '@/features/employee-dashboard/data-access/use-employee-withdrawals-query';
+import { WalletDropdown } from '@/components/solana/wallet-dropdown';
+import { Card, CardContent, CardHeader, CardTitle } from '@/core/ui/card';
+import { useEmployeeWithdrawalsQuery } from '@/features/streams/client/queries/use-employee-withdrawals-query';
+import type { EmployeeWithdrawal } from '@/features/streams/server/actions/employee-withdrawal-history';
 
 import { getEmployeeHistoryColumns, type Payment } from './columns';
 import { DataTable } from './data-table';
@@ -47,6 +47,7 @@ export function EmployeeHistoryContent({ initialData }: EmployeeHistoryContentPr
     () => payments.reduce((sum, payment) => sum + (Number.isFinite(payment.amount) ? payment.amount : 0), 0),
     [payments],
   );
+  const columns = useMemo(() => getEmployeeHistoryColumns(clusterMoniker), [clusterMoniker]);
 
   const totalTransactions = payments.length;
   const averagePayment = totalTransactions > 0 ? totalWithdrawn / totalTransactions : 0;
@@ -69,8 +70,6 @@ export function EmployeeHistoryContent({ initialData }: EmployeeHistoryContentPr
       </div>
     );
   }
-
-  const columns = useMemo(() => getEmployeeHistoryColumns(clusterMoniker), [clusterMoniker]);
 
   return (
     <div className="space-y-6">

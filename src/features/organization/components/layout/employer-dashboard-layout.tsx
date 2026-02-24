@@ -1,0 +1,166 @@
+'use client';
+
+import type React from 'react';
+
+import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
+
+import { useSolana } from '@/components/solana/use-solana';
+import { useIsMobile } from '@/core/hooks/use-mobile';
+import { Button } from '@/core/ui/button';
+import { SidebarInset, SidebarProvider } from '@/core/ui/sidebar';
+
+import { useDashboard } from './employer-dashboard-context';
+import { DashboardHeader } from './employer-dashboard-header';
+import { DashboardRightRail } from './employer-right-rail';
+import { AppSidebar } from './employer-sidebar';
+
+interface DashboardLayoutProps {
+  children: React.ReactNode;
+}
+
+const AddEmployeeModal = dynamic(
+  () => import('@/features/employees/components/employer-add-employee-modal').then((mod) => mod.AddEmployeeModal),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
+const ArchiveEmployeeModal = dynamic(
+  () =>
+    import('@/features/employees/components/employer-archive-employee-modal').then((mod) => mod.ArchiveEmployeeModal),
+  { loading: () => null, ssr: false },
+);
+const CloseStreamModal = dynamic(
+  () => import('@/features/streams/components/close-stream-modal').then((mod) => mod.CloseStreamModal),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
+const CreateStreamModal = dynamic(
+  () => import('@/features/streams/components/create-stream-modal').then((mod) => mod.CreateStreamModal),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
+const EditEmployeeModal = dynamic(
+  () => import('@/features/employees/components/employer-edit-employee-modal').then((mod) => mod.EditEmployeeModal),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
+const EmergencyWithdrawModal = dynamic(
+  () => import('@/features/streams/components/emergency-withdraw-modal').then((mod) => mod.EmergencyWithdrawModal),
+  { loading: () => null, ssr: false },
+);
+const TopUpAccountModal = dynamic(
+  () => import('@/features/account/components/top-up-account-modal').then((mod) => mod.TopUpAccountModal),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
+const TopUpStreamModal = dynamic(
+  () => import('@/features/streams/components/top-up-stream-modal').then((mod) => mod.TopUpStreamModal),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
+const ViewStreamsModal = dynamic(
+  () => import('@/features/streams/components/view-streams-modal').then((mod) => mod.ViewStreamsModal),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
+
+export function DashboardLayout({ children }: DashboardLayoutProps) {
+  const router = useRouter();
+  const isMobile = useIsMobile();
+  const { account, connected } = useSolana();
+
+  const { activeModal, closeModal } = useDashboard();
+
+  if (!connected || !account) {
+    return (
+      <div className="flex min-h-svh items-center justify-center bg-background p-6">
+        <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 text-center shadow-sm">
+          <h2 className="text-xl font-semibold">Wallet disconnected</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Connect your employer wallet from the landing page to access the dashboard.
+          </p>
+          <Button className="mt-4" onClick={() => router.push('/')}>
+            Return to landing
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <SidebarProvider defaultOpen>
+      <AppSidebar />
+
+      <SidebarInset className="bg-background">
+        <div className="flex h-svh flex-col">
+          <DashboardHeader />
+
+          <div className="flex flex-1 overflow-hidden">
+            <main className="flex-1 overflow-y-auto">
+              <div className="p-4 sm:p-5 md:p-6 lg:p-8">{children}</div>
+            </main>
+
+            {!isMobile && (
+              <aside className="hidden h-full w-64 shrink-0 overflow-y-auto border-l border-border bg-card lg:block xl:w-80">
+                <DashboardRightRail />
+              </aside>
+            )}
+          </div>
+        </div>
+      </SidebarInset>
+
+      {activeModal.type === 'create-stream' ? (
+        <CreateStreamModal isOpen onClose={closeModal} initialEmployeeId={activeModal.employeeId} />
+      ) : null}
+      {activeModal.type === 'add-employee' ? <AddEmployeeModal isOpen onClose={closeModal} /> : null}
+      {activeModal.type === 'top-up-account' ? <TopUpAccountModal isOpen onClose={closeModal} /> : null}
+      {activeModal.type === 'top-up-stream' ? (
+        <TopUpStreamModal isOpen onClose={closeModal} streamId={activeModal.streamId} />
+      ) : null}
+      {activeModal.type === 'emergency-withdraw' ? (
+        <EmergencyWithdrawModal isOpen onClose={closeModal} streamId={activeModal.streamId} />
+      ) : null}
+      {activeModal.type === 'close-stream' ? (
+        <CloseStreamModal isOpen onClose={closeModal} streamId={activeModal.streamId} />
+      ) : null}
+      {activeModal.type === 'view-streams' ? (
+        <ViewStreamsModal
+          isOpen
+          onClose={closeModal}
+          employeeName={activeModal.employee.name}
+          employeeId={activeModal.employee.id}
+        />
+      ) : null}
+      {activeModal.type === 'edit-employee' ? (
+        <EditEmployeeModal
+          isOpen
+          onClose={closeModal}
+          employeeId={activeModal.employee.id}
+          employee={activeModal.employee}
+        />
+      ) : null}
+      {activeModal.type === 'archive-employee' ? (
+        <ArchiveEmployeeModal
+          isOpen
+          onClose={closeModal}
+          employeeId={activeModal.employee.id}
+          employeeName={activeModal.employee.name}
+        />
+      ) : null}
+    </SidebarProvider>
+  );
+}

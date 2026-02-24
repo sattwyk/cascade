@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useRef } from 'react';
 
 import {
   createSolanaDevnet,
@@ -13,8 +13,15 @@ import { WalletUiGillProvider } from '@wallet-ui/react-gill';
 
 import { solanaMobileWalletAdapter } from './solana-mobile-wallet-adapter';
 
+const isDevelopment = process.env.NODE_ENV === 'development';
+const clusters = isDevelopment
+  ? [createSolanaLocalnet(), createSolanaDevnet()]
+  : [createSolanaDevnet(), createSolanaLocalnet()];
+const developmentDefaultClusterId: SolanaClusterId = 'solana:localnet';
+const walletUiClusterStorageKey = 'wallet-ui:cluster';
+
 const config = createWalletUiConfig({
-  clusters: [createSolanaDevnet(), createSolanaLocalnet()],
+  clusters,
 });
 
 solanaMobileWalletAdapter({ clusters: config.clusters });
@@ -22,8 +29,24 @@ solanaMobileWalletAdapter({ clusters: config.clusters });
 function WalletClusterGuard() {
   const { account } = useWalletUi();
   const { cluster, clusters, setCluster } = useWalletUiCluster();
+  const checkedDevelopmentDefaultRef = useRef(false);
 
   useEffect(() => {
+    if (isDevelopment && !checkedDevelopmentDefaultRef.current && typeof window !== 'undefined') {
+      checkedDevelopmentDefaultRef.current = true;
+      let hasPersistedClusterSelection = false;
+      try {
+        hasPersistedClusterSelection = window.localStorage.getItem(walletUiClusterStorageKey) !== null;
+      } catch {
+        hasPersistedClusterSelection = false;
+      }
+
+      if (!hasPersistedClusterSelection && cluster.id !== developmentDefaultClusterId) {
+        setCluster(developmentDefaultClusterId);
+        return;
+      }
+    }
+
     const walletChains = account?.chains ?? [];
     if (walletChains.length === 0) return;
 

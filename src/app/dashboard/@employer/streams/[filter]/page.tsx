@@ -1,5 +1,7 @@
-import { getStreamsForDashboard } from '@/app/dashboard/data/streams';
-import { StreamsTab } from '@/components/dashboard/tabs/streams-tab';
+import { employerDashboardStreamsViewFlag } from '@/core/config/flags';
+import { DashboardFeatureFlagDisabled } from '@/core/ui/feature-flag-disabled';
+import { StreamsTab } from '@/features/streams/components/employer-streams-tab';
+import { getStreamsForDashboard } from '@/features/streams/server/queries/employer-list-streams';
 
 const STREAM_FILTER_MAP: Record<string, string> = {
   all: 'all-streams',
@@ -14,6 +16,15 @@ const STREAM_FILTER_MAP: Record<string, string> = {
 };
 
 export default async function DashboardStreamsFilterPage({ params }: { params: Promise<{ filter: string }> }) {
+  if (!(await employerDashboardStreamsViewFlag())) {
+    return (
+      <DashboardFeatureFlagDisabled
+        title="Streams"
+        description="Enable `dashboard_employer_streams_view` to access this employer dashboard page."
+      />
+    );
+  }
+
   const { filter } = await params;
   const rawFilter = filter?.toLowerCase();
   const resolvedFilter = STREAM_FILTER_MAP[rawFilter] ?? 'all-streams';

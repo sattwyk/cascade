@@ -1,6 +1,6 @@
-import { readFileSync } from 'fs';
-
 import bs58 from 'bs58';
+
+import { readFileSync } from 'fs';
 
 const keypairJson = JSON.parse(readFileSync(process.env.HOME + '/.config/solana/faucet-authority.json', 'utf-8'));
 const keypairArray = new Uint8Array(keypairJson);

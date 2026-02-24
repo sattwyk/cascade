@@ -1,14 +1,22 @@
 'use client';
 
-import { ReactNode, Suspense } from 'react';
+import { ReactNode } from 'react';
 
-import { DashboardProvider } from '@/components/dashboard/dashboard-context';
-import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
-import { useRole } from '@/components/dashboard/role-context';
-import { EmployeeDashboardProvider } from '@/components/employee-dashboard/employee-dashboard-context';
-import { EmployeeDashboardLayout } from '@/components/employee-dashboard/employee-dashboard-layout';
+import dynamic from 'next/dynamic';
+
+import { EmployeeDashboardProvider } from '@/features/employees/components/employee-dashboard-context';
+import { DashboardProvider } from '@/features/organization/components/layout/employer-dashboard-context';
+import { useRole } from '@/features/organization/components/layout/role-context';
 
 const dashboardFallback = <div className="p-6 text-sm text-muted-foreground">Loading dashboard...</div>;
+
+const EmployerShell = dynamic(() => import('./shells/employer-shell').then((mod) => mod.EmployerShell), {
+  loading: () => dashboardFallback,
+});
+
+const EmployeeShell = dynamic(() => import('./shells/employee-shell').then((mod) => mod.EmployeeShell), {
+  loading: () => dashboardFallback,
+});
 
 type DashboardLayoutClientProps = {
   children: ReactNode;
@@ -22,22 +30,14 @@ export function DashboardLayoutClient({ children, employer, employee }: Dashboar
   if (role === 'employee') {
     return (
       <EmployeeDashboardProvider>
-        <Suspense fallback={dashboardFallback}>
-          <EmployeeDashboardLayout>
-            <Suspense fallback={dashboardFallback}>{employee || children}</Suspense>
-          </EmployeeDashboardLayout>
-        </Suspense>
+        <EmployeeShell>{employee || children}</EmployeeShell>
       </EmployeeDashboardProvider>
     );
   }
 
   return (
     <DashboardProvider>
-      <Suspense fallback={dashboardFallback}>
-        <DashboardLayout>
-          <Suspense fallback={dashboardFallback}>{employer || children}</Suspense>
-        </DashboardLayout>
-      </Suspense>
+      <EmployerShell>{employer || children}</EmployerShell>
     </DashboardProvider>
   );
 }

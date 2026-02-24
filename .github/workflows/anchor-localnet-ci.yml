@@ -1,0 +1,89 @@
+name: Anchor Localnet CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: anchor-localnet-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-checks:
+    name: Web Build + Lint + Format + Codegen
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Enable Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
+        with:
+          use-flakehub: false
+
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
+
+      - name: Run repository quality checks
+        shell: bash
+        env:
+          # Dummy connection string so Next.js static generation doesn't crash
+          # when src/core/db/index.ts evaluates neon(process.env.DATABASE_URL)
+          DATABASE_URL: 'postgres://ci:ci@localhost:5432/ci'
+        run: |
+          nix develop --command bash -euo pipefail -c '
+            pnpm install --frozen-lockfile
+            pnpm run ci
+          '
+
+  localnet-tests:
+    name: Anchor + Localnet Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Enable Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
+        with:
+          use-flakehub: false
+
+      - name: Run Anchor test suite (includes localnet integration lane)
+        shell: bash
+        run: |
+          nix develop --command bash -euo pipefail -c '
+            mkdir -p ~/.config/solana
+            if [ ! -f ~/.config/solana/id.json ]; then
+              solana-keygen new --no-bip39-passphrase --silent --outfile ~/.config/solana/id.json
+            fi
+
+            pnpm install --frozen-lockfile
+
+            # anchor test reads Anchor.toml [scripts].test:
+            # CASCADE_RUN_LOCALNET_TESTS=1 pnpm exec vitest run
+            #
+            # --no-idl: skip IDL regeneration which runs `cargo +nightly`
+            # (requires rustup, absent in Nix). The committed IDL is canonical.
+            #
+            # --no-rustup-override: Nix provides rustc directly (no rustup),
+            # so cargo-build-sbf must not invoke `cargo +toolchain`.
+            # The shellHook already exports RUSTC to the platform-tools binary.
+            cd anchor && anchor test --no-idl -- --no-rustup-override
+          '

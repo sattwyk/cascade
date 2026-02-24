@@ -2,42 +2,92 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 
 anchor_dir := "anchor"
 
-# Default target prints the available recipes.
-default:
+default: help
+
+# Show available recipes.
+help:
     @just --list
 
-# --- Next.js workflows ---
+# Verify required local tooling is installed.
+doctor:
+    command -v pnpm >/dev/null || (echo "Missing dependency: pnpm" && exit 1)
+    command -v anchor >/dev/null || (echo "Missing dependency: anchor" && exit 1)
+    command -v solana >/dev/null || (echo "Missing dependency: solana CLI" && exit 1)
+    command -v rustc >/dev/null || (echo "Missing dependency: rustc" && exit 1)
+    command -v cargo >/dev/null || (echo "Missing dependency: cargo" && exit 1)
+    command -v docker >/dev/null || (echo "Missing dependency: docker" && exit 1)
+    @echo "Local toolchain looks good."
 
-# Install JavaScript dependencies with pnpm.
+# Install workspace dependencies.
 install:
     pnpm install
+
+# Create a local env file from .env.example if missing.
+setup-env:
+    if [ ! -f .env ]; then cp .env.example .env; fi
+    @echo ".env is ready."
+
+# Setup Anchor keys + regenerate client + compile program.
+setup-anchor:
+    pnpm run setup
+    pnpm run anchor-build
+
+# Configure localnet dev faucet authority + local USDC/USDT mints in .env.local.
+setup-localnet-faucet:
+    pnpm run setup:localnet-faucet
+
+# Start local infrastructure and sync schema.
+setup-db:
+    docker compose up -d
+    pnpm db:push
+    @echo "Database is ready."
+
+# One command for first-time local setup.
+setup-local: doctor install setup-env setup-anchor
+    @echo "Local setup complete."
+    @echo "Optional next steps:"
+    @echo "  just setup-db"
+    @echo "  just dev-all"
 
 # Run the Next.js development server.
 dev:
     pnpm dev
 
-# Run the next.js and databases
+# Run Next.js + local db.
 dev-all: db-run dev
 
-# Run Next.js lint checks.
+# Start local validator via Anchor.
+anchor-localnet:
+    pnpm run anchor-localnet
+
+# Run web unit/integration tests.
+test:
+    pnpm test
+
+# Run Anchor localnet tests.
+anchor-test:
+    pnpm run anchor-test
+
+# Run all automated tests.
+test-all: test anchor-test
+
+# Lint the workspace.
 lint:
     pnpm lint
 
-# Format the entire workspace (Next.js + Anchor).
+# Format the entire workspace (web + Anchor).
 format: format-web format-anchor
 
 # Check formatting without writing changes.
 format-check: format-check-web format-check-anchor
 
-# Format only the Next.js workspace with Prettier.
+# Format only the web workspace.
 format-web:
     pnpm format
 
-# Check Next.js formatting without modifying files.
+# Check web formatting without modifying files.
 format-check-web:
     pnpm format:check
-
-# --- Anchor workflows ---
 
 # Format the Anchor project with cargo fmt.
 format-anchor:
@@ -49,15 +99,7 @@ format-check-anchor:
 
 # Build the Anchor program.
 anchor-build:
-    cd {{anchor_dir}} && anchor build
-
-# Run Anchor integration tests (spins up a local validator automatically).
-anchor-test:
-    cd {{anchor_dir}} && anchor test
-
-# Launch a persistent local test validator.
-anchor-validator:
-    cd {{anchor_dir}} && anchor localnet
+    pnpm run anchor-build
 
 # Deploy the Anchor program to the given cluster (localnet/devnet/testnet/mainnet).
 anchor-deploy cluster="devnet":
@@ -76,7 +118,14 @@ anchor-deploy-testnet:
 anchor-deploy-mainnet:
     just anchor-deploy cluster=mainnet
 
-# db
-
-db-run: 
+# Start local db container(s).
+db-run:
     docker compose up -d
+
+# Stop local db container(s).
+db-stop:
+    docker compose down
+
+# Clean up development artifacts before a fresh install.
+clean:
+    pnpm run clean

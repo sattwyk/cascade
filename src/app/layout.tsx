@@ -1,29 +1,29 @@
 import type React from 'react';
 
 import type { Metadata } from 'next';
+import { Geist, Geist_Mono, Source_Serif_4 } from 'next/font/google';
+
+import './globals.css';
+import Script from 'next/script';
 
 import { Analytics } from '@vercel/analytics/next';
 
-import './globals.css';
-
-import { Geist, Geist_Mono, Source_Serif_4 } from 'next/font/google';
-
 import { AppProviders } from '@/components/app-providers';
 import { ReactScan } from '@/components/react-scan';
-import { Toaster } from '@/components/ui/sonner';
+import { Toaster } from '@/core/ui/sonner';
 
 // Initialize fonts
-const _geist = Geist({
+const geist = Geist({
   subsets: ['latin'],
-  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
+  variable: '--font-geist',
 });
-const _geistMono = Geist_Mono({
+const geistMono = Geist_Mono({
   subsets: ['latin'],
-  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
+  variable: '--font-geist-mono',
 });
-const _sourceSerif_4 = Source_Serif_4({
+const sourceSerif4 = Source_Serif_4({
   subsets: ['latin'],
-  weight: ['200', '300', '400', '500', '600', '700', '800', '900'],
+  variable: '--font-source-serif-4',
 });
 
 export const metadata: Metadata = {
@@ -53,9 +53,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="light" style={{ colorScheme: 'light' }}>
+    <html
+      lang="en"
+      className={`${geist.variable} ${geistMono.variable} ${sourceSerif4.variable} light`}
+      style={{ colorScheme: 'light' }}
+    >
+      <head>
+        {process.env.NODE_ENV === 'development' && (
+          <Script
+            src="//unpkg.com/react-grab/dist/index.global.js"
+            crossOrigin="anonymous"
+            strategy="beforeInteractive"
+          />
+        )}
+      </head>
       <ReactScan />
-      <body className={`font-sans antialiased`}>
+      <body className="font-sans antialiased">
         <AppProviders>
           {children}
           <Toaster />

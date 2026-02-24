@@ -1,8 +1,33 @@
-// NOTE: The local createCodamaConfig is a temporary workaround until gill ships the fix for https://github.com/gillsdk/gill/issues/207
-// Future versions can "import { createCodamaConfig } from 'gill'" directly
-import { createCodamaConfig } from './src/create-codama-config.js';
+import { GILL_EXTERNAL_MODULE_MAP } from 'gill';
 
-export default createCodamaConfig({
-  clientJs: 'anchor/src/client/js/generated',
+const dependencyMap = {
+  ...GILL_EXTERNAL_MODULE_MAP,
+  solanaErrors: '@solana/errors',
+  solanaInstructionPlans: '@solana/instruction-plans',
+  solanaPluginInterfaces: '@solana/plugin-interfaces',
+  solanaProgramClientCore: '@solana/program-client-core',
+  solanaRpcApi: '@solana/rpc-api',
+};
+
+export default {
   idl: 'target/idl/cascade.json',
-});
+  scripts: {
+    js: {
+      from: '@codama/renderers-js',
+      args: [
+        'anchor/src/client/js',
+        {
+          dependencyMap,
+          dependencyVersions: {
+            '@solana/program-client-core': '^6.1.0',
+            gill: '0.14.0',
+          },
+          formatCode: false,
+          generatedFolder: 'generated',
+          kitImportStrategy: 'granular',
+          syncPackageJson: false,
+        },
+      ],
+    },
+  },
+};

@@ -1,10 +1,11 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
+import * as Sentry from '@sentry/nextjs';
 import { eq } from 'drizzle-orm';
 
-import { drizzleClientHttp } from '@/db';
-import { organizationUsers } from '@/db/schema';
+import { drizzleClientHttp } from '@/core/db';
+import { organizationUsers } from '@/core/db/schema';
 
 const hasDatabase = Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL.trim().length > 0);
 
@@ -65,8 +66,14 @@ export async function POST(request: Request) {
         : undefined;
       const roleMatch = records.find((record) => record.role === intendedRole);
       user = exactMatch ?? roleMatch ?? records[0];
+
+      Sentry.logger.info('Resolved user role', {
+        role: user?.role,
+        organizationId: user?.organizationId,
+      });
     } catch (error) {
       dbUnavailable = true;
+      Sentry.logger.error('Wallet role lookup failed', { error });
       console.error('[auth] Wallet role lookup failed', error);
     }
   }

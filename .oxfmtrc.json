@@ -1,0 +1,45 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 120,
+  "semi": true,
+  "singleQuote": true,
+  "trailingComma": "all",
+  "arrowParens": "always",
+  "ignorePatterns": [
+    "anchor/src/client/js/generated/**",
+    "anchor/.anchor/**",
+    "anchor/target/**",
+    "dist/**",
+    "coverage/**",
+    ".next/**",
+    "tmp/**",
+    "src/components/react-scan.tsx",
+    ".corepack/**",
+    ".corepack-bin/**",
+    ".sbf-sdk/**"
+  ],
+  "sortImports": {
+    "customGroups": [
+      {
+        "groupName": "react",
+        "elementNamePattern": ["react", "react-**"]
+      },
+      {
+        "groupName": "next",
+        "elementNamePattern": ["next", "next/**"]
+      },
+      {
+        "groupName": "project",
+        "elementNamePattern": ["@project/**"]
+      },
+      {
+        "groupName": "alias",
+        "elementNamePattern": ["@/**"]
+      }
+    ],
+    "groups": ["react", "next", "external", "project", "alias", ["parent", "sibling", "index"], "unknown"]
+  },
+  "sortTailwindcss": {
+    "stylesheet": "./src/app/globals.css"
+  }
+}

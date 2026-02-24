@@ -6,172 +6,70 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import {
-  combineCodec,
-  fixDecoderSize,
-  fixEncoderSize,
-  getBytesDecoder,
-  getBytesEncoder,
-  getStructDecoder,
-  getStructEncoder,
-  transformEncoder,
-  type AccountMeta,
-  type AccountSignerMeta,
-  type Address,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
-  type Instruction,
-  type InstructionWithAccounts,
-  type InstructionWithData,
-  type ReadonlyUint8Array,
-  type TransactionSigner,
-  type WritableAccount,
-  type WritableSignerAccount,
-} from 'gill';
+import { SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError } from '@solana/errors';
+import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { combineCodec, fixDecoderSize, fixEncoderSize, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from 'gill';
 import { CASCADE_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const REFRESH_ACTIVITY_DISCRIMINATOR = new Uint8Array([
-  55, 172, 115, 3, 200, 89, 189, 250,
-]);
+export const REFRESH_ACTIVITY_DISCRIMINATOR = new Uint8Array([55, 172, 115, 3, 200, 89, 189, 250]);
 
-export function getRefreshActivityDiscriminatorBytes() {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(
-    REFRESH_ACTIVITY_DISCRIMINATOR
-  );
-}
+export function getRefreshActivityDiscriminatorBytes() { return fixEncoderSize(getBytesEncoder(), 8).encode(REFRESH_ACTIVITY_DISCRIMINATOR); }
 
-export type RefreshActivityInstruction<
-  TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS,
-  TAccountEmployee extends string | AccountMeta<string> = string,
-  TAccountStream extends string | AccountMeta<string> = string,
-  TRemainingAccounts extends readonly AccountMeta<string>[] = [],
-> = Instruction<TProgram> &
-  InstructionWithData<ReadonlyUint8Array> &
-  InstructionWithAccounts<
-    [
-      TAccountEmployee extends string
-        ? WritableSignerAccount<TAccountEmployee> &
-            AccountSignerMeta<TAccountEmployee>
-        : TAccountEmployee,
-      TAccountStream extends string
-        ? WritableAccount<TAccountStream>
-        : TAccountStream,
-      ...TRemainingAccounts,
-    ]
-  >;
+export type RefreshActivityInstruction<TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS, TAccountEmployee extends string | AccountMeta<string> = string, TAccountStream extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
+Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountEmployee extends string ? WritableSignerAccount<TAccountEmployee> & AccountSignerMeta<TAccountEmployee> : TAccountEmployee, TAccountStream extends string ? WritableAccount<TAccountStream> : TAccountStream, ...TRemainingAccounts]>;
 
-export type RefreshActivityInstructionData = {
-  discriminator: ReadonlyUint8Array;
-};
+export type RefreshActivityInstructionData = { discriminator: ReadonlyUint8Array;  };
 
-export type RefreshActivityInstructionDataArgs = {};
+export type RefreshActivityInstructionDataArgs = {  };
 
 export function getRefreshActivityInstructionDataEncoder(): FixedSizeEncoder<RefreshActivityInstructionDataArgs> {
-  return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: REFRESH_ACTIVITY_DISCRIMINATOR })
-  );
+    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]), (value) => ({ ...value, discriminator: REFRESH_ACTIVITY_DISCRIMINATOR }));
 }
 
 export function getRefreshActivityInstructionDataDecoder(): FixedSizeDecoder<RefreshActivityInstructionData> {
-  return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-  ]);
+    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)]]);
 }
 
-export function getRefreshActivityInstructionDataCodec(): FixedSizeCodec<
-  RefreshActivityInstructionDataArgs,
-  RefreshActivityInstructionData
-> {
-  return combineCodec(
-    getRefreshActivityInstructionDataEncoder(),
-    getRefreshActivityInstructionDataDecoder()
-  );
+export function getRefreshActivityInstructionDataCodec(): FixedSizeCodec<RefreshActivityInstructionDataArgs, RefreshActivityInstructionData> {
+    return combineCodec(getRefreshActivityInstructionDataEncoder(), getRefreshActivityInstructionDataDecoder());
 }
 
-export type RefreshActivityInput<
-  TAccountEmployee extends string = string,
-  TAccountStream extends string = string,
-> = {
+export type RefreshActivityInput<TAccountEmployee extends string = string, TAccountStream extends string = string> =  {
   employee: TransactionSigner<TAccountEmployee>;
-  stream: Address<TAccountStream>;
-};
-
-export function getRefreshActivityInstruction<
-  TAccountEmployee extends string,
-  TAccountStream extends string,
-  TProgramAddress extends Address = typeof CASCADE_PROGRAM_ADDRESS,
->(
-  input: RefreshActivityInput<TAccountEmployee, TAccountStream>,
-  config?: { programAddress?: TProgramAddress }
-): RefreshActivityInstruction<
-  TProgramAddress,
-  TAccountEmployee,
-  TAccountStream
-> {
-  // Program address.
-  const programAddress = config?.programAddress ?? CASCADE_PROGRAM_ADDRESS;
-
-  // Original accounts.
-  const originalAccounts = {
-    employee: { value: input.employee ?? null, isWritable: true },
-    stream: { value: input.stream ?? null, isWritable: true },
-  };
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedAccount
-  >;
-
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-  return Object.freeze({
-    accounts: [
-      getAccountMeta(accounts.employee),
-      getAccountMeta(accounts.stream),
-    ],
-    data: getRefreshActivityInstructionDataEncoder().encode({}),
-    programAddress,
-  } as RefreshActivityInstruction<
-    TProgramAddress,
-    TAccountEmployee,
-    TAccountStream
-  >);
+stream: Address<TAccountStream>;
 }
 
-export type ParsedRefreshActivityInstruction<
-  TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS,
-  TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
-> = {
-  programAddress: Address<TProgram>;
-  accounts: {
-    employee: TAccountMetas[0];
-    stream: TAccountMetas[1];
-  };
-  data: RefreshActivityInstructionData;
-};
+export function getRefreshActivityInstruction<TAccountEmployee extends string, TAccountStream extends string, TProgramAddress extends Address = typeof CASCADE_PROGRAM_ADDRESS>(input: RefreshActivityInput<TAccountEmployee, TAccountStream>, config?: { programAddress?: TProgramAddress } ): RefreshActivityInstruction<TProgramAddress, TAccountEmployee, TAccountStream> {
+  // Program address.
+const programAddress = config?.programAddress ?? CASCADE_PROGRAM_ADDRESS;
 
-export function parseRefreshActivityInstruction<
-  TProgram extends string,
-  TAccountMetas extends readonly AccountMeta[],
->(
-  instruction: Instruction<TProgram> &
-    InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
-): ParsedRefreshActivityInstruction<TProgram, TAccountMetas> {
+ // Original accounts.
+const originalAccounts = { employee: { value: input.employee ?? null, isWritable: true }, stream: { value: input.stream ?? null, isWritable: true } }
+const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
+
+
+
+
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+return Object.freeze({ accounts: [getAccountMeta("employee", accounts.employee), getAccountMeta("stream", accounts.stream)], data: getRefreshActivityInstructionDataEncoder().encode({}), programAddress } as RefreshActivityInstruction<TProgramAddress, TAccountEmployee, TAccountStream>);
+}
+
+export type ParsedRefreshActivityInstruction<TProgram extends string = typeof CASCADE_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
+accounts: {
+employee: TAccountMetas[0];
+stream: TAccountMetas[1];
+};
+data: RefreshActivityInstructionData; };
+
+export function parseRefreshActivityInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(instruction: Instruction<TProgram> & InstructionWithAccounts<TAccountMetas> & InstructionWithData<ReadonlyUint8Array>): ParsedRefreshActivityInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
-    // TODO: Coded error.
-    throw new Error('Not enough accounts');
-  }
-  let accountIndex = 0;
-  const getNextAccount = () => {
-    const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
-    accountIndex += 1;
-    return accountMeta;
-  };
-  return {
-    programAddress: instruction.programAddress,
-    accounts: { employee: getNextAccount(), stream: getNextAccount() },
-    data: getRefreshActivityInstructionDataDecoder().decode(instruction.data),
-  };
+  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 2 });
+}
+let accountIndex = 0;
+const getNextAccount = () => {
+  const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
+  accountIndex += 1;
+  return accountMeta;
+}
+  return { programAddress: instruction.programAddress, accounts: { employee: getNextAccount(), stream: getNextAccount() }, data: getRefreshActivityInstructionDataDecoder().decode(instruction.data) };
 }
